@@ -180,7 +180,7 @@ If you just finished the quickstart, read the [Start Here learning map](./docs/R
 
 ## Contributing
 
-FDEKit is MIT licensed and open to contributions. Start with [CONTRIBUTING.md](./CONTRIBUTING.md), and please follow the [Code of Conduct](./CODE_OF_CONDUCT.md).
+FDEKit is MIT licensed and open to contributions. Start with [CONTRIBUTING.md](./CONTRIBUTING.md).
 
 Good first contribution areas:
 

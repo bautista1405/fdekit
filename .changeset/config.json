@@ -1,0 +1,40 @@
+{
+  "$schema": "https://unpkg.com/@changesets/config@3.1.1/schema.json",
+  "changelog": "@changesets/cli/changelog",
+  "commit": false,
+  "fixed": [
+    [
+      "fdekit",
+      "@fdekit/core",
+      "@fdekit/runtime",
+      "@fdekit/console",
+      "@fdekit/provider-anthropic",
+      "@fdekit/provider-google",
+      "@fdekit/provider-mock",
+      "@fdekit/provider-ollama",
+      "@fdekit/provider-openai",
+      "@fdekit/connector-codebase",
+      "@fdekit/connector-customer-api",
+      "@fdekit/connector-github",
+      "@fdekit/connector-hubspot",
+      "@fdekit/connector-jira",
+      "@fdekit/connector-k6",
+      "@fdekit/connector-linear",
+      "@fdekit/connector-postgres",
+      "@fdekit/connector-salesforce",
+      "@fdekit/connector-slack",
+      "@fdekit/environment-docker",
+      "@fdekit/environment-floci"
+    ]
+  ],
+  "linked": [],
+  "access": "public",
+  "baseBranch": "main",
+  "updateInternalDependencies": "patch",
+  "ignore": [
+    "@fdekit/example-codebase-agent",
+    "@fdekit/example-load-test-agent",
+    "@fdekit/example-sales-research-agent",
+    "@fdekit/example-support-triage"
+  ]
+}

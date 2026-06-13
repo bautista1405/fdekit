@@ -1,0 +1,109 @@
+{
+  "accounts": [
+    {
+      "id": "acct_company",
+      "name": "company Cloud",
+      "domain": "companycloud.example",
+      "segment": "enterprise",
+      "industry": "Cloud infrastructure",
+      "employeeCount": 1800,
+      "currentStack": [
+        "Salesforce",
+        "Snowflake",
+        "Zendesk",
+        "Slack"
+      ],
+      "priorities": [
+        "reduce cloud support churn",
+        "improve enterprise onboarding",
+        "control infrastructure spend"
+      ],
+      "painPoints": [
+        "support escalations take too long to route",
+        "renewal risk is hard to spot early"
+      ],
+      "recommendedAngle": "connect support signals to renewal risk and cloud cost governance"
+    },
+    {
+      "id": "acct_nova",
+      "name": "Nova Retail",
+      "domain": "novaretail.example",
+      "segment": "mid-market",
+      "industry": "Retail operations",
+      "employeeCount": 420,
+      "currentStack": [
+        "HubSpot",
+        "Postgres",
+        "Slack"
+      ],
+      "priorities": [
+        "automate store support workflows",
+        "standardize reporting"
+      ],
+      "painPoints": [
+        "manual account research slows sales cycles"
+      ],
+      "recommendedAngle": "turn repeated operational workflows into governed agent recipes"
+    }
+  ],
+  "contacts": [
+    {
+      "id": "cont_maya",
+      "accountId": "acct_company",
+      "name": "Maya Chen",
+      "title": "Chief Revenue Officer",
+      "personas": [
+        "CRO",
+        "economic buyer",
+        "revenue leader"
+      ],
+      "publicContext": "Owns enterprise renewal motion and expansion planning."
+    },
+    {
+      "id": "cont_eli",
+      "accountId": "acct_company",
+      "name": "Eli Hart",
+      "title": "VP Support Engineering",
+      "personas": [
+        "technical evaluator",
+        "support leader",
+        "champion"
+      ],
+      "publicContext": "Leads support tooling and escalation operations."
+    },
+    {
+      "id": "cont_sana",
+      "accountId": "acct_nova",
+      "name": "Sana Patel",
+      "title": "Director of Operations",
+      "personas": [
+        "operations leader",
+        "champion"
+      ],
+      "publicContext": "Runs store support and internal reporting workflows."
+    }
+  ],
+  "intentSignals": [
+    {
+      "id": "sig_company_renewal",
+      "accountId": "acct_company",
+      "source": "crm-note",
+      "summary": "Enterprise renewal is due this quarter and support escalations are a board-level metric.",
+      "confidence": "high"
+    },
+    {
+      "id": "sig_company_cost",
+      "accountId": "acct_company",
+      "source": "public-job-posting",
+      "summary": "Hiring for platform cost governance and customer reliability automation.",
+      "confidence": "medium"
+    },
+    {
+      "id": "sig_nova_ops",
+      "accountId": "acct_nova",
+      "source": "crm-note",
+      "summary": "Operations team is evaluating automation for weekly support reporting.",
+      "confidence": "medium"
+    }
+  ]
+}

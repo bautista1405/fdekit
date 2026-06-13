@@ -1,0 +1,14 @@
+[
+  {
+    "name": "enterprise account research brief",
+    "input": {
+      "accountId": "acct_company",
+      "persona": "CRO"
+    },
+    "expected": {
+      "accountId": "acct_company",
+      "accountName": "company Cloud",
+      "outcome": "crm-note"
+    }
+  }
+]

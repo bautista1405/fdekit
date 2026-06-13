@@ -1,0 +1,62 @@
+{
+  "name": "@fdekit/runtime",
+  "version": "0.1.0",
+  "description": "Runtime utilities for loading and evaluating FDEKit deployments",
+  "main": "dist/index.js",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "tsc -p .",
+    "typecheck": "tsc -p . --noEmit",
+    "test": "vitest run",
+    "clean": "rm -rf dist *.tsbuildinfo"
+  },
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./agents": {
+      "import": "./dist/agents/index.js",
+      "types": "./dist/agents/index.d.ts"
+    },
+    "./artifacts": {
+      "import": "./dist/artifact-store/index.js",
+      "types": "./dist/artifact-store/index.d.ts"
+    },
+    "./config": {
+      "import": "./dist/config/index.js",
+      "types": "./dist/config/index.d.ts"
+    },
+    "./deployments": {
+      "import": "./dist/deployments/index.js",
+      "types": "./dist/deployments/index.d.ts"
+    },
+    "./evals": {
+      "import": "./dist/evals/index.js",
+      "types": "./dist/evals/index.d.ts"
+    },
+    "./governance": {
+      "import": "./dist/governance/index.js",
+      "types": "./dist/governance/index.d.ts"
+    },
+    "./macro-evals": {
+      "import": "./dist/macro-evals/index.js",
+      "types": "./dist/macro-evals/index.d.ts"
+    },
+    "./traces": {
+      "import": "./dist/traces/index.js",
+      "types": "./dist/traces/index.d.ts"
+    }
+  },
+  "files": ["dist"],
+  "license": "MIT",
+  "dependencies": {
+    "@fdekit/core": "0.1.0",
+    "typescript": "^5.4.5"
+  },
+  "type": "module"
+}

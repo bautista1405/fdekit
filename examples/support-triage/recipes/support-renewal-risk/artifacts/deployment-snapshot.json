@@ -1,0 +1,383 @@
+{
+  "schemaVersion": 1,
+  "createdAt": "2026-06-12T22:26:38.696Z",
+  "deployment": {
+    "name": "support-triage-example",
+    "version": "0.1.0",
+    "recipe": {
+      "name": "support-triage",
+      "version": "0.1.0"
+    },
+    "environment": "local",
+    "providers": {
+      "mock": {
+        "name": "mock",
+        "model": "support-triage-local",
+        "env": [],
+        "options": {}
+      }
+    },
+    "connectors": {
+      "customerApi": {
+        "name": "customer-api",
+        "env": [
+          "CUSTOMER_API_URL"
+        ],
+        "tools": {
+          "customer.get": {
+            "category": "context",
+            "description": "Look up customer profile, subscription, and account context",
+            "environments": [],
+            "hasArgsSchema": true,
+            "scopes": [
+              "customer:read"
+            ],
+            "tags": [
+              "customer",
+              "read"
+            ]
+          },
+          "ticket.escalate": {
+            "category": "escalation",
+            "description": "Escalate a support ticket into the customer API escalation queue",
+            "environments": [],
+            "hasArgsSchema": true,
+            "scopes": [
+              "ticket:write"
+            ],
+            "tags": [
+              "action",
+              "escalation",
+              "ticket"
+            ]
+          },
+          "ticket.get": {
+            "category": "context",
+            "description": "Look up a support ticket with customer context",
+            "environments": [],
+            "hasArgsSchema": true,
+            "scopes": [
+              "ticket:read"
+            ],
+            "tags": [
+              "read",
+              "ticket"
+            ]
+          }
+        }
+      },
+      "github": {
+        "name": "github",
+        "env": [],
+        "tools": {
+          "issue.create": {
+            "category": "issue",
+            "description": "Create an engineering issue from an escalated support case",
+            "environments": [],
+            "hasArgsSchema": true,
+            "scopes": [
+              "issues:write"
+            ],
+            "tags": [
+              "action",
+              "escalation",
+              "issue"
+            ]
+          }
+        }
+      },
+      "slack": {
+        "name": "slack",
+        "env": [],
+        "tools": {
+          "slack.message": {
+            "category": "messaging",
+            "description": "Send a Slack message to an escalation channel",
+            "environments": [],
+            "hasArgsSchema": true,
+            "scopes": [
+              "slack:write"
+            ],
+            "tags": [
+              "action",
+              "escalation",
+              "message"
+            ]
+          }
+        }
+      }
+    },
+    "agents": {
+      "supportTriage": {
+        "provider": "mock",
+        "instructions": "./agents/support-triage.md",
+        "tools": [],
+        "policies": [
+          "limit-tool-use"
+        ],
+        "evals": []
+      }
+    },
+    "governance": {
+      "auditEnabled": true,
+      "allowedEnvironments": [
+        "development",
+        "local",
+        "staging"
+      ],
+      "deniedEnvironments": [],
+      "environmentTools": [
+        "issue.create",
+        "slack.message",
+        "ticket.escalate"
+      ],
+      "budgetCaps": [
+        {
+          "scope": "deployment",
+          "maxUsd": 0.25
+        }
+      ],
+      "allowedScopes": [
+        "customer:read",
+        "issues:write",
+        "slack:write",
+        "ticket:read",
+        "ticket:write"
+      ],
+      "deniedScopes": [],
+      "requireScopes": true,
+      "denyPII": true,
+      "redactSecrets": true
+    },
+    "policies": [],
+    "evals": {
+      "support-triage-dataset": {
+        "agent": "supportTriage",
+        "dataset": "./evals/support-triage.json",
+        "maxSteps": 8,
+        "cases": [],
+        "assertions": [
+          "expected-tool-call:customer.get",
+          "expected-tool-call:ticket.get",
+          "max-cost",
+          "max-latency",
+          "no-policy-violation"
+        ]
+      }
+    },
+    "workflow": {
+      "name": "Support triage escalation",
+      "owner": "support-ops",
+      "currentState": {
+        "summary": "Support manually gathers customer, subscription, and ticket context before escalating renewal-risk issues",
+        "handoffs": [
+          "support",
+          "engineering",
+          "customer-success"
+        ],
+        "baseline": {
+          "cycleTime": "4h median triage for high-priority enterprise tickets",
+          "manualSteps": 7
+        }
+      },
+      "targetState": {
+        "summary": "The agent gathers context, creates the engineering issue, notifies Slack, and moves the ticket into escalation with approval evidence",
+        "target": "<30m triage for P1/P2 enterprise renewal-risk tickets",
+        "evidence": [
+          "ticket summary",
+          "customer context",
+          "issue link",
+          "Slack handoff",
+          "approval/audit record"
+        ]
+      },
+      "scorecard": {
+        "volume": "high",
+        "manualEffort": "high",
+        "fragmentedSystems": [
+          "customer-api",
+          "ticketing",
+          "github",
+          "slack"
+        ],
+        "repeatableDecisions": "high",
+        "measurablePain": [
+          "triage-cycle-time",
+          "sla-breach-risk",
+          "handoff-quality"
+        ],
+        "riskBoundary": "Issue creation, Slack notifications, and ticket escalation remain approval-gated before production"
+      }
+    },
+    "outcomeMetrics": [
+      {
+        "name": "triage-cycle-time",
+        "baseline": "4h median",
+        "target": "<30m for P1/P2"
+      },
+      {
+        "name": "sla-breach-risk",
+        "baseline": "manual escalation review",
+        "target": "all renewal-risk tickets routed with evidence"
+      }
+    ],
+    "dataLayers": {
+      "systemOfRecord": [
+        "customer-api tickets",
+        "customer subscription records",
+        "issue tracker"
+      ],
+      "businessRules": [
+        "./agents/support-triage.md",
+        "governance policies",
+        "eval assertions"
+      ],
+      "rawIntake": [
+        "ticket.body",
+        "ticket.priority",
+        "customer.tier",
+        "subscription.status"
+      ],
+      "feedback": [
+        ".fdekit/approvals",
+        ".fdekit/audit",
+        ".fdekit/evals"
+      ]
+    },
+    "rollout": {
+      "stage": "local",
+      "stages": [
+        "local",
+        "sandbox",
+        "customer-sample",
+        "shadow",
+        "approved-write",
+        "production-allowlist"
+      ],
+      "next": "Point CUSTOMER_API_URL at a customer-owned support API sample and keep external writes approval-gated"
+    },
+    "harness": {
+      "name": "support-triage-governed-loop",
+      "description": "Context, decision, governed action, and review phases for support escalation",
+      "maxSteps": 8,
+      "phases": [
+        {
+          "name": "context",
+          "description": "Gather ticket, customer, and subscription evidence",
+          "toolRefs": [
+            "ticket.get",
+            "customer.get"
+          ],
+          "artifactRefs": [
+            "trace"
+          ],
+          "maxSteps": 2
+        },
+        {
+          "name": "decision",
+          "description": "Classify escalation risk against business rules and policy",
+          "policyRefs": [
+            "deny-pii-leak",
+            "redact-secrets",
+            "limit-cost"
+          ],
+          "evalRefs": [
+            "support-triage-dataset"
+          ],
+          "maxSteps": 2
+        },
+        {
+          "name": "action",
+          "description": "Create the issue, send Slack, and escalate through existing policy and scope checks",
+          "toolRefs": [
+            "issue.create",
+            "slack.message",
+            "ticket.escalate"
+          ],
+          "policyRefs": [
+            "limit-tool-scopes",
+            "restrict-environments",
+            "limit-tool-use"
+          ],
+          "artifactRefs": [
+            "audit"
+          ],
+          "maxSteps": 3
+        },
+        {
+          "name": "review",
+          "description": "Run evals and produce report/dashboard evidence for handoff",
+          "evalRefs": [
+            "support-triage-dataset"
+          ],
+          "artifactRefs": [
+            "eval",
+            "report",
+            "dashboard"
+          ],
+          "maxSteps": 1
+        }
+      ],
+      "toolRefs": [
+        "ticket.get",
+        "customer.get",
+        "issue.create",
+        "slack.message",
+        "ticket.escalate"
+      ],
+      "policyRefs": [
+        "deny-pii-leak",
+        "redact-secrets",
+        "limit-tool-scopes",
+        "restrict-environments",
+        "limit-cost",
+        "limit-tool-use"
+      ],
+      "evalRefs": [
+        "support-triage-dataset"
+      ],
+      "artifactRefs": [
+        "trace",
+        "audit",
+        "eval",
+        "report",
+        "dashboard"
+      ],
+      "review": {
+        "evalRefs": [
+          "support-triage-dataset"
+        ],
+        "artifactRefs": [
+          "report",
+          "dashboard"
+        ]
+      },
+      "steer": {
+        "enabled": true,
+        "maxAttempts": 1,
+        "triggerRefs": [
+          "support-triage-dataset",
+          "deny-pii-leak",
+          "limit-cost"
+        ]
+      }
+    },
+    "migrationNotes": [
+      {
+        "from": "0.0.x",
+        "to": "0.1.0",
+        "summary": "Initial support-triage recipe version",
+        "steps": [
+          "Review .env.example before enabling live Slack or GitHub connector mode",
+          "Run fdekit validate after customizing customer API routes, policies, or eval datasets"
+        ]
+      }
+    ],
+    "metadata": {
+      "businessImpact": {
+        "workflow": "Support triage escalation",
+        "estimatedMinutesSaved": 30
+      }
+    }
+  }
+}

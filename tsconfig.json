@@ -1,0 +1,40 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "NodeNext",
+    "lib": ["ES2022", "DOM"],
+    "moduleResolution": "NodeNext",
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "strict": true,
+    "skipLibCheck": true,
+    "noImplicitAny": true,
+    "resolveJsonModule": true,
+    "rootDir": "packages",
+    "outDir": "dist"
+  },
+  "include": ["packages/**/*"],
+  "references": [
+    { "path": "packages/core" },
+    { "path": "packages/providers/anthropic" },
+    { "path": "packages/providers/google" },
+    { "path": "packages/providers/mock" },
+    { "path": "packages/providers/ollama" },
+    { "path": "packages/providers/openai" },
+    { "path": "packages/connectors/codebase" },
+    { "path": "packages/connectors/customer-api" },
+    { "path": "packages/connectors/github" },
+    { "path": "packages/connectors/hubspot" },
+    { "path": "packages/connectors/jira" },
+    { "path": "packages/connectors/k6" },
+    { "path": "packages/connectors/linear" },
+    { "path": "packages/connectors/postgres" },
+    { "path": "packages/connectors/salesforce" },
+    { "path": "packages/connectors/slack" },
+    { "path": "packages/environments/docker" },
+    { "path": "packages/environments/floci" },
+    { "path": "packages/runtime" },
+    { "path": "packages/console" },
+    { "path": "packages/cli" }
+  ]
+}

@@ -1,0 +1,61 @@
+{
+  "customers": [
+    {
+      "id": "cus_company",
+      "name": "company Corp",
+      "tier": "enterprise",
+      "renewalDate": "2026-06-30",
+      "health": "at-risk",
+      "accountOwner": "Maya Chen"
+    },
+    {
+      "id": "cus_globex",
+      "name": "Globex",
+      "tier": "growth",
+      "renewalDate": "2026-09-15",
+      "health": "healthy",
+      "accountOwner": "Jon Bell"
+    }
+  ],
+  "subscriptions": [
+    {
+      "customerId": "cus_company",
+      "plan": "Enterprise",
+      "seats": 850,
+      "status": "active",
+      "annualValueUsd": 240000
+    },
+    {
+      "customerId": "cus_globex",
+      "plan": "Growth",
+      "seats": 120,
+      "status": "active",
+      "annualValueUsd": 36000
+    }
+  ],
+  "tickets": [
+    {
+      "id": "tick_1001",
+      "customerId": "cus_company",
+      "title": "Billing page is unavailable before renewal",
+      "body": "company Corp cannot access billing settings and says this blocks their renewal workflow.",
+      "status": "open",
+      "priority": "high",
+      "tags": ["billing", "renewal"],
+      "createdAt": "2026-05-21T14:20:00.000Z"
+    },
+    {
+      "id": "tick_1002",
+      "customerId": "cus_globex",
+      "title": "Question about exporting usage data",
+      "body": "Globex wants to export monthly usage data for internal reporting.",
+      "status": "open",
+      "priority": "normal",
+      "tags": ["analytics"],
+      "createdAt": "2026-05-21T17:45:00.000Z"
+    }
+  ],
+  "issues": [],
+  "messages": [],
+  "escalations": []
+}

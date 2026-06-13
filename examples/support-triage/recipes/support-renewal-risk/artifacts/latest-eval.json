@@ -1,0 +1,237 @@
+{
+  "id": "eval_1781303188848_1",
+  "createdAt": "2026-06-12T22:26:28.848Z",
+  "deployment": "support-triage-example",
+  "status": "passed",
+  "results": [
+    {
+      "scope": "deployment",
+      "name": "support-triage-dataset",
+      "status": "passed",
+      "cases": [
+        {
+          "name": "enterprise-billing-renewal-escalation",
+          "status": "passed",
+          "input": {
+            "ticketId": "tick_1001"
+          },
+          "expected": {
+            "customerId": "cus_company",
+            "issueType": "billing",
+            "escalation": true,
+            "priority": "high"
+          },
+          "finalAnswer": "company Corp ticket tick_1001 was escalated as high priority because enterprise customer, billing impact, renewal risk, availability impact, high-priority ticket.",
+          "toolCalls": [
+            "ticket.get",
+            "customer.get",
+            "issue.create",
+            "slack.message",
+            "ticket.escalate"
+          ],
+          "traceId": "run_1781303188241_1",
+          "assertions": [
+            {
+              "passed": true,
+              "message": "Observed 1 call(s) to ticket.get",
+              "score": 1,
+              "metadata": {
+                "count": 1,
+                "minCalls": 1
+              }
+            },
+            {
+              "passed": true,
+              "message": "Observed 1 call(s) to customer.get",
+              "score": 1,
+              "metadata": {
+                "count": 1,
+                "minCalls": 1
+              }
+            },
+            {
+              "passed": true,
+              "message": "No policy violations observed",
+              "score": 1,
+              "metadata": {
+                "violations": []
+              }
+            },
+            {
+              "passed": true,
+              "message": "396ms / 10000ms",
+              "score": 1,
+              "metadata": {
+                "latencyMs": 396,
+                "maxMs": 10000
+              }
+            },
+            {
+              "passed": true,
+              "message": "$0.0000 / $0.2500",
+              "score": 1,
+              "metadata": {
+                "costUsd": 0,
+                "maxUsd": 0.25
+              }
+            },
+            {
+              "passed": true,
+              "message": "Expected escalation tools to be called",
+              "score": 1,
+              "metadata": {
+                "expected": true,
+                "requiredTools": [
+                  "issue.create",
+                  "slack.message",
+                  "ticket.escalate"
+                ],
+                "forbiddenTools": [],
+                "observedTools": [
+                  "ticket.get",
+                  "customer.get",
+                  "issue.create",
+                  "slack.message",
+                  "ticket.escalate"
+                ],
+                "observedEscalationTools": [
+                  "issue.create",
+                  "slack.message",
+                  "ticket.escalate"
+                ]
+              }
+            },
+            {
+              "passed": true,
+              "message": "Expected run evidence to include customerId: cus_company",
+              "score": 1,
+              "metadata": {
+                "key": "customerId",
+                "expected": "cus_company"
+              }
+            },
+            {
+              "passed": true,
+              "message": "Expected run evidence to include priority: high",
+              "score": 1,
+              "metadata": {
+                "key": "priority",
+                "expected": "high"
+              }
+            },
+            {
+              "passed": true,
+              "message": "Expected run evidence to include issueType: billing",
+              "score": 1,
+              "metadata": {
+                "key": "issueType",
+                "expected": "billing"
+              }
+            }
+          ]
+        },
+        {
+          "name": "analytics-question-standard-triage",
+          "status": "passed",
+          "input": {
+            "ticketId": "tick_1002"
+          },
+          "expected": {
+            "customerId": "cus_globex",
+            "escalation": false,
+            "priority": "normal"
+          },
+          "finalAnswer": "Globex ticket tick_1002 can stay in standard support triage. Reason: standard support request.",
+          "toolCalls": [
+            "ticket.get",
+            "customer.get"
+          ],
+          "traceId": "run_1781303188638_2",
+          "assertions": [
+            {
+              "passed": true,
+              "message": "Observed 1 call(s) to ticket.get",
+              "score": 1,
+              "metadata": {
+                "count": 1,
+                "minCalls": 1
+              }
+            },
+            {
+              "passed": true,
+              "message": "Observed 1 call(s) to customer.get",
+              "score": 1,
+              "metadata": {
+                "count": 1,
+                "minCalls": 1
+              }
+            },
+            {
+              "passed": true,
+              "message": "No policy violations observed",
+              "score": 1,
+              "metadata": {
+                "violations": []
+              }
+            },
+            {
+              "passed": true,
+              "message": "183ms / 10000ms",
+              "score": 1,
+              "metadata": {
+                "latencyMs": 183,
+                "maxMs": 10000
+              }
+            },
+            {
+              "passed": true,
+              "message": "$0.0000 / $0.2500",
+              "score": 1,
+              "metadata": {
+                "costUsd": 0,
+                "maxUsd": 0.25
+              }
+            },
+            {
+              "passed": true,
+              "message": "Expected escalation tools not to be called",
+              "score": 1,
+              "metadata": {
+                "expected": false,
+                "requiredTools": [],
+                "forbiddenTools": [
+                  "issue.create",
+                  "slack.message",
+                  "ticket.escalate"
+                ],
+                "observedTools": [
+                  "ticket.get",
+                  "customer.get"
+                ],
+                "observedEscalationTools": []
+              }
+            },
+            {
+              "passed": true,
+              "message": "Expected run evidence to include customerId: cus_globex",
+              "score": 1,
+              "metadata": {
+                "key": "customerId",
+                "expected": "cus_globex"
+              }
+            },
+            {
+              "passed": true,
+              "message": "Expected run evidence to include priority: normal",
+              "score": 1,
+              "metadata": {
+                "key": "priority",
+                "expected": "normal"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

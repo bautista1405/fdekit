@@ -1,0 +1,85 @@
+# fdekit
+
+## Purpose
+
+`fdekit` is the command-line interface for the FDEKit deployment loop. It scaffolds projects, installs and captures recipes, adds providers/connectors/policies/evals, validates configs, runs agents, manages approvals, exports feedback, runs evals, renders reports, opens traces, generates the console, and manages local runtime environments.
+
+Use the CLI when you want the standard workflow from a terminal. Use `@fdekit/runtime` when you need to script the same behavior inside another Node process.
+
+## Who should use this package
+
+- Deployment authors starting or operating an FDEKit project.
+- Forward-deployed engineers running validation, demos, evals, approvals, reports, and console output.
+- Contributors adding or changing command behavior.
+
+Choose `@fdekit/core` for config authoring helpers and `@fdekit/runtime` for programmatic execution.
+
+## 5-minute quick example
+
+From the repository root, the launch demo is:
+
+```bash
+npm install
+npm run demo
+```
+
+For an installed project, the CLI primitives look like:
+
+```bash
+mkdir support-demo
+cd support-demo
+npm install -D fdekit@latest
+npx fdekit init
+npx fdekit recipe install support-triage
+npm install
+npm run demo
+```
+
+The installed support-triage recipe starts the local customer API on `127.0.0.1:8787`, waits for `/health`, runs the governed loop, generates the console, captures `support-renewal-risk`, and shuts the API down.
+
+To step through the same loop manually:
+
+```bash
+npm run api
+```
+
+In another terminal:
+
+```bash
+npm run fdekit:doctor
+npm run fdekit:validate
+npm run fdekit:run
+npm run fdekit:eval
+npm run fdekit:console
+```
+
+Open `.fdekit/console.html` after the console command to inspect traces, eval status, approvals, policy posture, reports, and exports.
+
+## Public API surface
+
+The public surface is the `fdekit` binary, not a stable TypeScript import API:
+
+```bash
+fdekit init
+fdekit recipe install support-triage
+fdekit validate --strict
+fdekit run supportTriage --strict
+fdekit console
+```
+
+The CLI command reference documents the command surface and where each command is implemented: [CLI API Reference](../../docs/api/cli.md).
+
+## Stability/backward-compat notes
+
+`fdekit` is public but pre-1.0. Command names, documented flags, and scaffolded project structure are the compatibility boundary. Internal command modules are implementation details even though the CLI API reference links them for contributors.
+
+The package root currently exports 0 TypeScript symbols. Use `@fdekit/runtime` for programmatic APIs.
+
+## See also
+
+- Authoring contracts: [@fdekit/core](../core/README.md)
+- Runtime APIs used by commands: [@fdekit/runtime](../runtime/README.md)
+- Dashboard renderer used by `fdekit console`: [@fdekit/console](../console/README.md)
+- Full command reference: [CLI Reference](../../docs/cli-reference.md)
+- Recipe catalog: [Recipes](../../docs/recipes.md)
+- Local environments: [Local Environment Cookbook](../../docs/cookbook/local-environments.md)

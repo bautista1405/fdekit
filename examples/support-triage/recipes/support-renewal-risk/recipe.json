@@ -1,0 +1,249 @@
+{
+  "schemaVersion": 1,
+  "name": "support-renewal-risk",
+  "version": "0.1.0",
+  "capturedAt": "2026-06-12T22:26:38.696Z",
+  "sourceDeployment": "support-triage-example",
+  "sourceEnvironment": "local",
+  "workflow": {
+    "name": "Support triage escalation",
+    "owner": "support-ops",
+    "currentState": {
+      "summary": "Support manually gathers customer, subscription, and ticket context before escalating renewal-risk issues",
+      "handoffs": [
+        "support",
+        "engineering",
+        "customer-success"
+      ],
+      "baseline": {
+        "cycleTime": "4h median triage for high-priority enterprise tickets",
+        "manualSteps": 7
+      }
+    },
+    "targetState": {
+      "summary": "The agent gathers context, creates the engineering issue, notifies Slack, and moves the ticket into escalation with approval evidence",
+      "target": "<30m triage for P1/P2 enterprise renewal-risk tickets",
+      "evidence": [
+        "ticket summary",
+        "customer context",
+        "issue link",
+        "Slack handoff",
+        "approval/audit record"
+      ]
+    },
+    "scorecard": {
+      "volume": "high",
+      "manualEffort": "high",
+      "fragmentedSystems": [
+        "customer-api",
+        "ticketing",
+        "github",
+        "slack"
+      ],
+      "repeatableDecisions": "high",
+      "measurablePain": [
+        "triage-cycle-time",
+        "sla-breach-risk",
+        "handoff-quality"
+      ],
+      "riskBoundary": "Issue creation, Slack notifications, and ticket escalation remain approval-gated before production"
+    }
+  },
+  "outcomeMetrics": [
+    {
+      "name": "triage-cycle-time",
+      "baseline": "4h median",
+      "target": "<30m for P1/P2"
+    },
+    {
+      "name": "sla-breach-risk",
+      "baseline": "manual escalation review",
+      "target": "all renewal-risk tickets routed with evidence"
+    }
+  ],
+  "dataLayers": {
+    "systemOfRecord": [
+      "customer-api tickets",
+      "customer subscription records",
+      "issue tracker"
+    ],
+    "businessRules": [
+      "./agents/support-triage.md",
+      "governance policies",
+      "eval assertions"
+    ],
+    "rawIntake": [
+      "ticket.body",
+      "ticket.priority",
+      "customer.tier",
+      "subscription.status"
+    ],
+    "feedback": [
+      ".fdekit/approvals",
+      ".fdekit/audit",
+      ".fdekit/evals"
+    ]
+  },
+  "rollout": {
+    "stage": "local",
+    "stages": [
+      "local",
+      "sandbox",
+      "customer-sample",
+      "shadow",
+      "approved-write",
+      "production-allowlist"
+    ],
+    "next": "Point CUSTOMER_API_URL at a customer-owned support API sample and keep external writes approval-gated"
+  },
+  "harness": {
+    "name": "support-triage-governed-loop",
+    "description": "Context, decision, governed action, and review phases for support escalation",
+    "maxSteps": 8,
+    "phases": [
+      {
+        "name": "context",
+        "description": "Gather ticket, customer, and subscription evidence",
+        "toolRefs": [
+          "ticket.get",
+          "customer.get"
+        ],
+        "artifactRefs": [
+          "trace"
+        ],
+        "maxSteps": 2
+      },
+      {
+        "name": "decision",
+        "description": "Classify escalation risk against business rules and policy",
+        "policyRefs": [
+          "deny-pii-leak",
+          "redact-secrets",
+          "limit-cost"
+        ],
+        "evalRefs": [
+          "support-triage-dataset"
+        ],
+        "maxSteps": 2
+      },
+      {
+        "name": "action",
+        "description": "Create the issue, send Slack, and escalate through existing policy and scope checks",
+        "toolRefs": [
+          "issue.create",
+          "slack.message",
+          "ticket.escalate"
+        ],
+        "policyRefs": [
+          "limit-tool-scopes",
+          "restrict-environments",
+          "limit-tool-use"
+        ],
+        "artifactRefs": [
+          "audit"
+        ],
+        "maxSteps": 3
+      },
+      {
+        "name": "review",
+        "description": "Run evals and produce report/dashboard evidence for handoff",
+        "evalRefs": [
+          "support-triage-dataset"
+        ],
+        "artifactRefs": [
+          "eval",
+          "report",
+          "dashboard"
+        ],
+        "maxSteps": 1
+      }
+    ],
+    "toolRefs": [
+      "ticket.get",
+      "customer.get",
+      "issue.create",
+      "slack.message",
+      "ticket.escalate"
+    ],
+    "policyRefs": [
+      "deny-pii-leak",
+      "redact-secrets",
+      "limit-tool-scopes",
+      "restrict-environments",
+      "limit-cost",
+      "limit-tool-use"
+    ],
+    "evalRefs": [
+      "support-triage-dataset"
+    ],
+    "artifactRefs": [
+      "trace",
+      "audit",
+      "eval",
+      "report",
+      "dashboard"
+    ],
+    "review": {
+      "evalRefs": [
+        "support-triage-dataset"
+      ],
+      "artifactRefs": [
+        "report",
+        "dashboard"
+      ]
+    },
+    "steer": {
+      "enabled": true,
+      "maxAttempts": 1,
+      "triggerRefs": [
+        "support-triage-dataset",
+        "deny-pii-leak",
+        "limit-cost"
+      ]
+    }
+  },
+  "install": {
+    "files": [
+      "fde.config.ts",
+      "workflow.md",
+      "mock-planner.mjs",
+      "agents",
+      "evals",
+      "customer-api"
+    ]
+  },
+  "package": {
+    "scripts": {
+      "api": "node customer-api/server.js",
+      "demo": "node scripts/demo.mjs",
+      "fdekit:approvals": "fdekit approvals list",
+      "fdekit:audit": "fdekit audit",
+      "fdekit:console": "fdekit console",
+      "fdekit:dev": "fdekit dev",
+      "fdekit:diff": "fdekit diff",
+      "fdekit:doctor": "fdekit doctor",
+      "fdekit:eval": "fdekit eval run",
+      "fdekit:feedback": "fdekit feedback export",
+      "fdekit:macro": "fdekit eval macro",
+      "fdekit:report": "fdekit report",
+      "fdekit:run": "fdekit run supportTriage --ticket tick_1001",
+      "fdekit:trace": "fdekit trace",
+      "fdekit:validate": "fdekit validate",
+      "fdekit:validate:strict": "fdekit validate --strict"
+    },
+    "dependencies": {
+      "@fdekit/connector-customer-api": "0.1.0",
+      "@fdekit/connector-github": "0.1.0",
+      "@fdekit/connector-slack": "0.1.0",
+      "@fdekit/core": "0.1.0"
+    },
+    "devDependencies": {
+      "fdekit": "0.1.0"
+    }
+  },
+  "evidence": {
+    "deploymentSnapshot": "artifacts/deployment-snapshot.json",
+    "latestEval": "artifacts/latest-eval.json",
+    "deploymentReport": "artifacts/deployment-report.md"
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "name": "@fdekit/example-sales-research-agent",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Sales research agent example deployment for FDEKit",
+  "type": "module",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "demo": "node scripts/demo.mjs",
+    "fdekit:dev": "fdekit dev",
+    "fdekit:doctor": "fdekit doctor",
+    "fdekit:eval": "fdekit eval run",
+    "fdekit:macro": "fdekit eval macro",
+    "fdekit:run": "fdekit run salesResearchAgent --input '{\"accountId\":\"acct_company\",\"persona\":\"CRO\"}'",
+    "fdekit:approvals": "fdekit approvals list",
+    "fdekit:audit": "fdekit audit",
+    "fdekit:feedback": "fdekit feedback export",
+    "fdekit:validate": "fdekit validate",
+    "fdekit:validate:strict": "fdekit validate --strict",
+    "fdekit:diff": "fdekit diff",
+    "fdekit:trace": "fdekit trace",
+    "fdekit:console": "fdekit console",
+    "fdekit:report": "fdekit report"
+  },
+  "dependencies": {
+    "@fdekit/connector-hubspot": "0.1.0",
+    "@fdekit/connector-salesforce": "0.1.0",
+    "@fdekit/core": "0.1.0",
+    "@fdekit/provider-google": "0.1.0"
+  },
+  "devDependencies": {
+    "fdekit": "0.1.0"
+  }
+}

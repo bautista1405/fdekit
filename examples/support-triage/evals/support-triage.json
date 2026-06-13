@@ -1,0 +1,25 @@
+[
+  {
+    "name": "enterprise-billing-renewal-escalation",
+    "input": {
+      "ticketId": "tick_1001"
+    },
+    "expected": {
+      "customerId": "cus_company",
+      "issueType": "billing",
+      "escalation": true,
+      "priority": "high"
+    }
+  },
+  {
+    "name": "analytics-question-standard-triage",
+    "input": {
+      "ticketId": "tick_1002"
+    },
+    "expected": {
+      "customerId": "cus_globex",
+      "escalation": false,
+      "priority": "normal"
+    }
+  }
+]

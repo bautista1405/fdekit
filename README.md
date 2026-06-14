@@ -122,7 +122,7 @@ See [CLI Reference](./docs/cli-reference.md) for the full command map.
 
 FDEKit does not replace observability or eval platforms. It is the local deployment workbench around them: connector scaffolds, governance defaults, approval evidence, reports, and the captured recipe that turns one customer deployment into the next reusable pattern.
 
-| Buyer question | Strong alternatives | What they are best at | FDEKit answer |
+| Scenario | Strong alternatives | What they are best at | FDEKit answer |
 | --- | --- | --- | --- |
 | "Do we already get traces and evals from our AI observability platform?" | [LangSmith](https://docs.langchain.com/langsmith/home), [Langfuse](https://langfuse.com/docs), [Braintrust](https://www.braintrust.dev/docs) | Tracing, dashboards, prompt iteration, datasets, evals, production monitoring, and team review workflows | Keep using them for observability. Use FDEKit to scaffold the customer deployment, enforce local governance, generate stakeholder evidence, and capture the working workflow as an installable recipe. |
 | "Can our agent platform handle governance?" | [OpenAI Agents SDK](https://openai.github.io/openai-agents-python/) and hosted agent platforms | Agent loops, tools, handoffs, guardrails, tracing, hosted runtime controls, and platform-native deployment paths | Use those runtimes where they fit. FDEKit owns the field-deployment contract around the runtime: providers, connectors, policies, approvals, eval refs, artifact paths, and repeatable recipe handoff. |

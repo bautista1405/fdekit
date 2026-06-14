@@ -64,12 +64,11 @@ The installed recipe's `npm run demo` script starts the local customer API on `1
 
 ## What To Do Next
 
-1. Understand the method: [Field Deployment Method](./docs/field-deployment-method.md).
-2. Try another recipe: [Recipes](./docs/recipes.md).
-3. Add customer systems: [Connector Cookbook](./docs/cookbook/connectors.md).
-4. Run customer-like local systems: [Local Environment Cookbook](./docs/cookbook/local-environments.md).
-5. Validate and diff deployment changes: [Versioning And Migration Notes](./docs/cookbook/versioning-and-migrations.md).
-6. Prepare a pilot or production path: [Production Hardening Guide](./docs/production-hardening.md).
+1. Try another recipe: [Recipes](./docs/recipes.md).
+2. Add customer systems: [Connector Cookbook](./docs/cookbook/connectors.md).
+3. Run customer-like local systems: [Local Environment Cookbook](./docs/cookbook/local-environments.md).
+4. Validate and diff deployment changes: [Versioning And Migration Notes](./docs/cookbook/versioning-and-migrations.md).
+5. Prepare a pilot or production path: [Production Hardening Guide](./docs/production-hardening.md).
 
 The full docs index is [docs/README.md](./docs/README.md). For symbol lookup, use the API references for [`@fdekit/core`](./docs/api/core.md), [`@fdekit/runtime`](./docs/api/runtime.md), and the [`fdekit` CLI](./docs/api/cli.md).
 

@@ -232,13 +232,13 @@
       "fdekit:validate:strict": "fdekit validate --strict"
     },
     "dependencies": {
-      "@fdekit/connector-customer-api": "0.1.0",
-      "@fdekit/connector-github": "0.1.0",
-      "@fdekit/connector-slack": "0.1.0",
-      "@fdekit/core": "0.1.0"
+      "@fdekit/connector-customer-api": "0.2.0",
+      "@fdekit/connector-github": "0.2.0",
+      "@fdekit/connector-slack": "0.2.0",
+      "@fdekit/core": "0.2.0"
     },
     "devDependencies": {
-      "@fdekit/cli": "0.1.0"
+      "@fdekit/cli": "0.2.0"
     }
   },
   "evidence": {

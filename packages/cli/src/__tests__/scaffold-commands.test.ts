@@ -56,6 +56,7 @@ describe('cli scaffold and setup commands', () => {
     expect(packageJson.scripts?.diff).toBe('fdekit diff');
     expect(packageJson.scripts?.eval).toBe('fdekit eval run');
     expect(packageJson.dependencies?.['@fdekit/core']).toBe(fdekitCaretDependencyVersion);
+    expect(packageJson.devDependencies?.['@fdekit/cli']).toBe(fdekitCaretDependencyVersion);
     expect(packageJson.dependencies?.['@fdekit/provider-openai']).toBeUndefined();
     expect(packageJson.dependencies?.['@fdekit/provider-anthropic']).toBeUndefined();
     expect(packageJson.dependencies?.['@fdekit/provider-google']).toBeUndefined();

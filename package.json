@@ -16,7 +16,7 @@
   ],
   "scripts": {
     "build": "turbo run build",
-    "dev": "turbo run dev --filter=fdekit",
+    "dev": "turbo run dev --filter=@fdekit/cli",
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
     "test:watch": "turbo run test -- --watch",

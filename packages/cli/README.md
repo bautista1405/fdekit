@@ -1,8 +1,8 @@
-# fdekit
+# @fdekit/cli
 
 ## Purpose
 
-`fdekit` is the command-line interface for the FDEKit deployment loop. It scaffolds projects, installs and captures recipes, adds providers/connectors/policies/evals, validates configs, runs agents, manages approvals, exports feedback, runs evals, renders reports, opens traces, generates the console, and manages local runtime environments.
+`@fdekit/cli` is the npm package for the `fdekit` command-line interface. It scaffolds projects, installs and captures recipes, adds providers/connectors/policies/evals, validates configs, runs agents, manages approvals, exports feedback, runs evals, renders reports, opens traces, generates the console, and manages local runtime environments.
 
 Use the CLI when you want the standard workflow from a terminal. Use `@fdekit/runtime` when you need to script the same behavior inside another Node process.
 
@@ -28,12 +28,14 @@ For an installed project, the CLI primitives look like:
 ```bash
 mkdir support-demo
 cd support-demo
-npm install -D fdekit@latest
+npm install -D @fdekit/cli@latest
 npx fdekit init
 npx fdekit recipe install support-triage
 npm install
 npm run demo
 ```
+
+The installed package is `@fdekit/cli`; the executable remains `fdekit`.
 
 The installed support-triage recipe starts the local customer API on `127.0.0.1:8787`, waits for `/health`, runs the governed loop, generates the console, captures `support-renewal-risk`, and shuts the API down.
 
@@ -71,7 +73,7 @@ The CLI command reference documents the command surface and where each command i
 
 ## Stability/backward-compat notes
 
-`fdekit` is public but pre-1.0. Command names, documented flags, and scaffolded project structure are the compatibility boundary. Internal command modules are implementation details even though the CLI API reference links them for contributors.
+`@fdekit/cli` is public but pre-1.0. Command names, documented flags, and scaffolded project structure are the compatibility boundary. Internal command modules are implementation details even though the CLI API reference links them for contributors.
 
 The package root currently exports 0 TypeScript symbols. Use `@fdekit/runtime` for programmatic APIs.
 

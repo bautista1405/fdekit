@@ -8,7 +8,7 @@ For "where is this function/type defined?" lookup, use the per-package reference
 | --- | --- | --- | --- |
 | `@fdekit/core` | [Core API](./api/core.md) | v0.1.0 | Public, pre-1.0 package-root API for deployment authors, connector authors, provider authors, and contributors editing config contracts. |
 | `@fdekit/runtime` | [Runtime API](./api/runtime.md) | v0.1.0 | Public, pre-1.0 runtime API for CLI maintainers, automation authors, runtime integrators, and artifact/execution contributors. |
-| `fdekit` | [CLI API](./api/cli.md) | v0.1.0 | Public, pre-1.0 command surface. The package root has no stable TypeScript import API. |
+| `@fdekit/cli` | [CLI API](./api/cli.md) | v0.1.0 | Public, pre-1.0 command surface. The package root has no stable TypeScript import API. |
 
 Refresh the package pages with:
 
@@ -35,7 +35,7 @@ import { githubConnector } from '@fdekit/connector-github';
 | `@fdekit/provider-*` | Provider config helpers and runtime provider adapters. | Provider factory, runtime adapter, option types. |
 | `@fdekit/connector-*` | Connector factory and connector-specific config/tool types. | Connector factory, options, args, result types. |
 | `@fdekit/environment-*` | Optional runtime environment packages for local/customer-like stacks. | Environment factory, config, lifecycle commands, health checks, evidence. |
-| `fdekit` | CLI binary. | Command interface, not a stable TypeScript import API. |
+| `@fdekit/cli` | CLI package that installs the `fdekit` binary. | Command interface, not a stable TypeScript import API. |
 
 The practical rule:
 
@@ -395,7 +395,7 @@ Package: `@fdekit/console`
 
 ## CLI
 
-Package: `fdekit`
+Package: `@fdekit/cli`
 
 The CLI is the user-facing command surface. It is intentionally not documented as a TypeScript import API.
 
@@ -448,4 +448,4 @@ As the project approaches 1.0, this page should become the contract checklist fo
 
 ## Next Step
 
-If you just found the symbol or package boundary you needed, use the package onboarding README for the layer you are changing: [`@fdekit/core`](../packages/core/README.md), [`@fdekit/runtime`](../packages/runtime/README.md), [`fdekit`](../packages/cli/README.md), providers, connectors, environments, or console. For implementation boundaries, continue to [Maintainer Architecture](./architecture.md).
+If you just found the symbol or package boundary you needed, use the package onboarding README for the layer you are changing: [`@fdekit/core`](../packages/core/README.md), [`@fdekit/runtime`](../packages/runtime/README.md), [`@fdekit/cli`](../packages/cli/README.md), providers, connectors, environments, or console. For implementation boundaries, continue to [Maintainer Architecture](./architecture.md).

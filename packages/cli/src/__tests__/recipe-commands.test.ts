@@ -83,7 +83,7 @@ describe('cli recipe commands', () => {
     expect(packageJson.dependencies?.['@fdekit/connector-customer-api']).toBe(fdekitDependencyVersion);
     expect(packageJson.dependencies?.['@fdekit/connector-github']).toBe(fdekitDependencyVersion);
     expect(packageJson.dependencies?.['@fdekit/connector-slack']).toBe(fdekitDependencyVersion);
-    expect(packageJson.devDependencies?.fdekit).toBe(fdekitDependencyVersion);
+    expect(packageJson.devDependencies?.['@fdekit/cli']).toBe(fdekitDependencyVersion);
   });
 
 
@@ -174,7 +174,7 @@ describe('cli recipe commands', () => {
     expect(packageJson.dependencies?.['@fdekit/provider-anthropic']).toBe(fdekitDependencyVersion);
     expect(packageJson.dependencies?.['@fdekit/provider-google']).toBe(fdekitDependencyVersion);
     expect(packageJson.dependencies?.['@fdekit/provider-ollama']).toBe(fdekitDependencyVersion);
-    expect(packageJson.devDependencies?.fdekit).toBe(fdekitDependencyVersion);
+    expect(packageJson.devDependencies?.['@fdekit/cli']).toBe(fdekitDependencyVersion);
   });
 
 
@@ -258,7 +258,7 @@ describe('cli recipe commands', () => {
     expect(packageJson.dependencies?.['@fdekit/connector-hubspot']).toBe(fdekitDependencyVersion);
     expect(packageJson.dependencies?.['@fdekit/connector-salesforce']).toBe(fdekitDependencyVersion);
     expect(packageJson.dependencies?.['@fdekit/provider-google']).toBe(fdekitDependencyVersion);
-    expect(packageJson.devDependencies?.fdekit).toBe(fdekitDependencyVersion);
+    expect(packageJson.devDependencies?.['@fdekit/cli']).toBe(fdekitDependencyVersion);
 
     const doctorOutput = await captureCommand(() => cmdDoctor({ cwd: projectDir, args: [] }));
     expect(doctorOutput.exitCode).toBeUndefined();
@@ -339,7 +339,7 @@ describe('cli recipe commands', () => {
     expect(packageJson.scripts?.['fdekit:loadtest:feedback']).toBe('fdekit feedback export');
     expect(packageJson.dependencies?.['@fdekit/connector-k6']).toBe(fdekitDependencyVersion);
     expect(packageJson.dependencies?.['@fdekit/core']).toBe(fdekitDependencyVersion);
-    expect(packageJson.devDependencies?.fdekit).toBe(fdekitDependencyVersion);
+    expect(packageJson.devDependencies?.['@fdekit/cli']).toBe(fdekitDependencyVersion);
 
     const validateOutput = await captureCommand(() => cmdValidate({
       cwd: projectDir,

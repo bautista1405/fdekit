@@ -7,6 +7,7 @@ Start with a recipe when you want a complete runnable deployment. Use `fdekit ad
 ## Install A Recipe
 
 ```bash
+npm install -D @fdekit/cli
 npx fdekit init
 npx fdekit recipe install <name>
 cp .env.example .env

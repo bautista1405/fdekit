@@ -60,7 +60,7 @@ function starterPackageJson(name: string): string {
       '@fdekit/core': fdekitCaretDependencyVersion,
     },
     devDependencies: {
-      fdekit: fdekitCaretDependencyVersion,
+      '@fdekit/cli': fdekitCaretDependencyVersion,
     },
   }, null, 2)}\n`;
 }

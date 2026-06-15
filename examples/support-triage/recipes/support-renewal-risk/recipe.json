@@ -238,7 +238,7 @@
       "@fdekit/core": "0.1.0"
     },
     "devDependencies": {
-      "fdekit": "0.1.0"
+      "@fdekit/cli": "0.1.0"
     }
   },
   "evidence": {

@@ -59,7 +59,7 @@ export const loadTestRecipe: RecipeSpec = {
       '@fdekit/core',
     ]),
     devDependencies: {
-      fdekit: fdekitDependencyVersion,
+      '@fdekit/cli': fdekitDependencyVersion,
     },
   },
   env: [

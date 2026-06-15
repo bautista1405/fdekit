@@ -55,7 +55,7 @@ export const salesResearchRecipe: RecipeSpec = {
       '@fdekit/provider-google',
     ]),
     devDependencies: {
-      fdekit: fdekitDependencyVersion,
+      '@fdekit/cli': fdekitDependencyVersion,
     },
   },
   env: [

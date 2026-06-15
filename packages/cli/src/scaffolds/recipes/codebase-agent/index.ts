@@ -66,7 +66,7 @@ export const codebaseAgentRecipe: RecipeSpec = {
       '@fdekit/provider-openai',
     ]),
     devDependencies: {
-      fdekit: fdekitDependencyVersion,
+      '@fdekit/cli': fdekitDependencyVersion,
     },
   },
   env: [

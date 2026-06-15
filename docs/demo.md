@@ -18,6 +18,7 @@ npm run demo
 For a project created from the published package, install the support-triage recipe first, then use the recipe's one-command runner:
 
 ```bash
+npm install -D @fdekit/cli
 npx fdekit recipe install support-triage
 npm install
 npm run demo

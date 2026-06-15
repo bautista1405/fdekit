@@ -36,6 +36,6 @@
     "@fdekit/provider-openai": "0.2.0"
   },
   "devDependencies": {
-    "fdekit": "0.2.0"
+    "@fdekit/cli": "0.2.0"
   }
 }

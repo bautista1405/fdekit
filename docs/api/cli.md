@@ -3,7 +3,7 @@
 <!-- Maintained via scripts/generate-api-docs.mjs. -->
 Run `npm run docs:api` to refresh this page after changing public exports.
 
-Applies to `fdekit` v0.1.0.
+Applies to `@fdekit/cli` v0.1.0. The installed binary remains `fdekit`.
 
 Declaration source: `packages/cli/dist/index.d.ts`; command map source: `scripts/generate-api-docs.mjs`.
 

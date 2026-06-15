@@ -12,7 +12,7 @@ Use core when you are describing what a deployment is. Do not put runtime file I
 - Connector and provider authors who need shared FDEKit contracts.
 - Contributors changing public config shapes, policy helpers, eval assertions, or tool schema helpers.
 
-Choose `@fdekit/runtime` instead when you need to load configs, run agents, write artifacts, or inspect traces. Choose `fdekit` when you only need the command-line workflow.
+Choose `@fdekit/runtime` instead when you need to load configs, run agents, write artifacts, or inspect traces. Choose `@fdekit/cli` when you only need the command-line workflow.
 
 ## 5-minute quick example
 

@@ -2,6 +2,8 @@
 
 The `fdekit` CLI is organized around a deployment loop: scaffold, configure, validate, run, review evidence, then capture the work as a recipe.
 
+Install the CLI package with `npm install -D @fdekit/cli`; it provides the `fdekit` binary used below.
+
 ## Common Loop
 
 For the launch demo from this repository, prefer the one-command runner:

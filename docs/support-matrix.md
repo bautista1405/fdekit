@@ -68,7 +68,7 @@ This repository uses npm workspaces and Turborepo.
 | --- | --- |
 | `@fdekit/core` | Public TypeScript primitives for deployments, agents, tools, connector schemas, governance, policies, evals, and recipes. |
 | `@fdekit/runtime` | Config loading, agent loop execution, traces, approvals, audit logs, evals, reports, and artifact store IO. |
-| `fdekit` | CLI package and binary. |
+| `@fdekit/cli` | CLI package that installs the `fdekit` binary. |
 | `@fdekit/console` | Static local dashboard renderer. |
 
 ### Provider Packages

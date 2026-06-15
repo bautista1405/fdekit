@@ -53,12 +53,14 @@ For a fresh project using the npm package:
 ```bash
 mkdir support-demo
 cd support-demo
-npm install -D fdekit
+npm install -D @fdekit/cli
 npx fdekit init
 npx fdekit recipe install support-triage
 npm install
 npm run demo
 ```
+
+The npm package is `@fdekit/cli`; it installs the `fdekit` binary used by the commands below.
 
 The installed recipe's `npm run demo` script starts the local customer API on `127.0.0.1:8787`, waits for `/health`, runs the same governed loop, captures `recipes/support-renewal-risk/`, and shuts the API down when it finishes.
 

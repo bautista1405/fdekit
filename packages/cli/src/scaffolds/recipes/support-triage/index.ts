@@ -54,7 +54,7 @@ export const supportTriageRecipe: RecipeSpec = {
       '@fdekit/core',
     ]),
     devDependencies: {
-      fdekit: fdekitDependencyVersion,
+      '@fdekit/cli': fdekitDependencyVersion,
     },
   },
   gitignore: recipeGitignore,

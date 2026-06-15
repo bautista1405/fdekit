@@ -302,4 +302,4 @@ Lightweight architecture decisions live in [docs/adrs](./adrs/README.md):
 
 ## Next Step
 
-If you just used the architecture guide to locate a change, read the relevant package README before editing: [`@fdekit/core`](../packages/core/README.md), [`@fdekit/runtime`](../packages/runtime/README.md), [`fdekit`](../packages/cli/README.md), [`@fdekit/console`](../packages/console/README.md), provider packages, connector packages, or environment packages. If the change affects a boundary decision, add or update an [ADR](./adrs/README.md).
+If you just used the architecture guide to locate a change, read the relevant package README before editing: [`@fdekit/core`](../packages/core/README.md), [`@fdekit/runtime`](../packages/runtime/README.md), [`@fdekit/cli`](../packages/cli/README.md), [`@fdekit/console`](../packages/console/README.md), provider packages, connector packages, or environment packages. If the change affects a boundary decision, add or update an [ADR](./adrs/README.md).

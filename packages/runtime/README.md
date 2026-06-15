@@ -12,7 +12,7 @@ Use runtime when you are operating a deployment programmatically. Keep deploymen
 - Automation authors who want to call FDEKit without shelling out to the CLI.
 - Runtime integrators wiring provider registries, artifact stores, evals, approvals, traces, reports, or deployment diffs.
 
-Choose `@fdekit/core` when you are writing config helpers or public deployment types. Choose `fdekit` when the packaged commands already do what you need.
+Choose `@fdekit/core` when you are writing config helpers or public deployment types. Choose `@fdekit/cli` when the packaged commands already do what you need.
 
 ## 5-minute quick example
 

@@ -70,7 +70,7 @@ const publicPackages = [
 ];
 
 const cliPackage = {
-  packageName: 'fdekit',
+  packageName: '@fdekit/cli',
   slug: 'cli',
   packageDir: 'packages/cli',
   stability: 'Public, pre-1.0 command surface; no stable TypeScript import API',
@@ -286,7 +286,7 @@ function renderCliPage() {
     '',
     maintenanceNote(),
     '',
-    `Applies to \`fdekit\` v${version}.`,
+    `Applies to \`@fdekit/cli\` v${version}. The installed binary remains \`fdekit\`.`,
     '',
     `Declaration source: \`${relative(dtsEntrypoint(cliPackage))}\`; command map source: \`scripts/generate-api-docs.mjs\`.`,
     '',

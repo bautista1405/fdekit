@@ -1,6 +1,6 @@
 {
   "name": "@fdekit/provider-google",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Google Gemini provider adapter for FDEKit",
   "main": "dist/index.js",
   "module": "dist/index.js",
@@ -25,7 +25,7 @@
   ],
   "license": "MIT",
   "dependencies": {
-    "@fdekit/core": "0.1.0"
+    "@fdekit/core": "0.2.0"
   },
   "type": "module",
   "peerDependencies": {

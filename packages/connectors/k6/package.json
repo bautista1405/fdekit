@@ -1,6 +1,6 @@
 {
   "name": "@fdekit/connector-k6",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "k6 load-testing connector for FDEKit",
   "main": "dist/index.js",
   "module": "dist/index.js",
@@ -20,10 +20,12 @@
       "types": "./dist/index.d.ts"
     }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "license": "MIT",
   "dependencies": {
-    "@fdekit/core": "0.1.0"
+    "@fdekit/core": "0.2.0"
   },
   "type": "module"
 }

@@ -1,6 +1,6 @@
 {
   "name": "@fdekit/runtime",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Runtime utilities for loading and evaluating FDEKit deployments",
   "main": "dist/index.js",
   "module": "dist/index.js",
@@ -52,10 +52,12 @@
       "types": "./dist/traces/index.d.ts"
     }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "license": "MIT",
   "dependencies": {
-    "@fdekit/core": "0.1.0",
+    "@fdekit/core": "0.2.0",
     "typescript": "^5.4.5"
   },
   "type": "module"

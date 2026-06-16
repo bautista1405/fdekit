@@ -6,6 +6,23 @@
 
 Use the CLI when you want the standard workflow from a terminal. Use `@fdekit/runtime` when you need to script the same behavior inside another Node process.
 
+## npm Package
+
+Package page: [@fdekit/cli](https://www.npmjs.com/package/@fdekit/cli)
+
+Install the package in a deployment project:
+
+```bash
+npm install -D @fdekit/cli
+```
+
+The package installs the `fdekit` binary, so commands stay unscoped:
+
+```bash
+npx fdekit init
+npx fdekit recipe install support-triage
+```
+
 ## Who should use this package
 
 - Deployment authors starting or operating an FDEKit project.

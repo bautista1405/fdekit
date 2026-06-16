@@ -21,6 +21,14 @@ FDEKit is designed around this operating loop:
 discover workflow -> score ROI/risk -> split deterministic/agent/human work -> connect existing systems -> run staged rollout -> capture feedback/evidence
 ```
 
+## Install
+
+```bash
+npm install -D @fdekit/cli
+```
+
+The package installs the `fdekit` command. See [@fdekit/cli on npm](https://www.npmjs.com/package/@fdekit/cli).
+
 ## Quickstart
 
 This path runs the launch demo: the credential-free `mock` provider, the bundled support-triage workflow, governance, evals, report, console, and recipe capture.

@@ -1,5 +1,10 @@
 # FDEKit
 
+> [!WARNING]
+> FDEKit is still in a experimental phase. APIs, recipes, CLI behavior, config files, and generated artifacts may change without notice, including breaking changes. Avoid using it for production or customer-critical workloads unless you have reviewed, pinned, and tested the exact version you are running.
+>
+> Each user is responsible for the results of installing, configuring, and running this package in their own environments. FDEKit and its author are not responsible or liable for any issues, damages, data loss, security incidents, outages, costs, or other consequences that result from using it.
+
 FDEKit is a field-deployment operating layer for forward-deployed engineers. It helps you scaffold agent deployments, connect customer systems, enforce governance, run evals, inspect traces, and package repeatable customer work into reusable recipes.
 
 The goal is to make governed, evaluated, observable AI deployments accessible.

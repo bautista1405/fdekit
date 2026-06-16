@@ -13,7 +13,9 @@ import {
   maxCost,
   maxLatency,
   noPolicyViolation,
+  pick,
   type ConnectorDefinition,
+  type ProviderConfig,
 } from '@fdekit/core';
 import { customerApiConnector } from '@fdekit/connector-customer-api';
 import { githubConnector } from '@fdekit/connector-github';
@@ -22,6 +24,110 @@ import { slackConnector } from '@fdekit/connector-slack';
 import { createSupportTriageMockPlanner } from './mock-planner.mjs';
 
 const supportTriageMockPlanner = createSupportTriageMockPlanner();
+
+type ProviderChoice = 'mock' | 'localOllama' | 'openai' | 'anthropic' | 'google';
+const defaultModels = {
+  mock: 'support-triage-local',
+  localOllama: 'llama3.1:8b',
+  openai: 'gpt-5.5',
+  anthropic: 'claude-opus-4-8',
+  google: 'gemini-3.5-flash',
+} satisfies Record<ProviderChoice, string>;
+
+const provider = pick(process.env.FDEKIT_PROVIDER, ['mock', 'localOllama', 'openai', 'anthropic', 'google'], 'mock');
+const settings = {
+  provider,
+  model: process.env.FDEKIT_MODEL || defaultModels[provider],
+} satisfies {
+  provider: ProviderChoice;
+  model: string;
+};
+
+const providerFactories = {
+  mock: () => ({
+    name: 'mock',
+    model: settings.model,
+    options: {
+      planner: supportTriageMockPlanner,
+    },
+  }),
+  localOllama: () => ({
+    name: 'localOllama',
+    model: settings.model,
+    env: [
+      {
+        name: 'OLLAMA_BASE_URL',
+        required: false,
+        description: 'Optional Ollama server URL; defaults to http://127.0.0.1:11434',
+      },
+      {
+        name: 'FDEKIT_MODEL',
+        required: false,
+        description: 'Optional model override for the selected provider',
+      },
+    ],
+    options: {
+      apiBaseUrl: process.env.OLLAMA_BASE_URL || 'http://127.0.0.1:11434',
+      format: 'json',
+      keepAlive: '5m',
+      numPredict: 900,
+      temperature: 0,
+    },
+  }),
+  openai: () => ({
+    name: 'openai',
+    model: settings.model,
+    apiKeyEnv: 'OPENAI_API_KEY',
+    env: [
+      {
+        name: 'OPENAI_API_KEY',
+        required: true,
+        description: 'OpenAI API key used by the runtime provider adapter',
+      },
+    ],
+    options: {
+      maxOutputTokens: 900,
+    },
+  }),
+  anthropic: () => ({
+    name: 'anthropic',
+    model: settings.model,
+    apiKeyEnv: 'ANTHROPIC_API_KEY',
+    env: [
+      {
+        name: 'ANTHROPIC_API_KEY',
+        required: true,
+        description: 'Anthropic API key used by the runtime provider adapter',
+      },
+    ],
+    options: {
+      anthropicVersion: '2023-06-01',
+      maxTokens: 900,
+    },
+  }),
+  google: () => ({
+    name: 'google',
+    model: settings.model,
+    apiKeyEnv: 'GEMINI_API_KEY',
+    env: [
+      {
+        name: 'GEMINI_API_KEY',
+        required: true,
+        description: 'Google Gemini API key used by the runtime provider adapter',
+      },
+    ],
+    options: {
+      apiBaseUrl: 'https://generativelanguage.googleapis.com/v1beta',
+      maxOutputTokens: 900,
+      responseMimeType: 'application/json',
+      temperature: 1,
+    },
+  }),
+} satisfies Record<ProviderChoice, () => ProviderConfig>;
+
+const providers = {
+  [settings.provider]: providerFactories[settings.provider](),
+};
 
 const supportTriageToolEnvironments = ['local', 'development', 'staging'];
 
@@ -190,15 +296,7 @@ export default defineDeployment({
       estimatedMinutesSaved: 30,
     },
   },
-  providers: {
-    mock: {
-      name: 'mock',
-      model: 'support-triage-local',
-      options: {
-        planner: supportTriageMockPlanner,
-      },
-    },
-  },
+  providers,
   connectors: {
     customerApi,
     github,
@@ -231,7 +329,7 @@ export default defineDeployment({
   }),
   agents: {
     supportTriage: defineAgent({
-      provider: 'mock',
+      provider: settings.provider,
       instructions: './agents/support-triage.md',
       policies: [
         supportTriageToolLimit,

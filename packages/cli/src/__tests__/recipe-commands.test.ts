@@ -54,7 +54,11 @@ describe('cli recipe commands', () => {
       '@fdekit/connector-github',
       '@fdekit/connector-slack',
       './recipes/support-triage/mock-planner.mjs',
-      "provider: 'mock'",
+      "const provider = pick(process.env.FDEKIT_PROVIDER, ['mock', 'localOllama', 'openai', 'anthropic', 'google'], 'mock')",
+      'const providerFactories = {',
+      'const providers = {',
+      '[settings.provider]: providerFactories[settings.provider]()',
+      'provider: settings.provider',
       'defineGovernance',
       'withSupportTriageToolEnvironments',
       "environments: tool.environments ?? supportTriageToolEnvironments",
@@ -87,6 +91,20 @@ describe('cli recipe commands', () => {
     expect(packageJson.dependencies?.['@fdekit/connector-slack']).toBe(fdekitDependencyVersion);
     expect(packageJson.devDependencies?.['@fdekit/cli']).toBe(fdekitDependencyVersion);
 
+    const envExample = await readEnvExample(projectDir);
+    expectTextIncludes(envExample, [
+      'FDEKIT_PROVIDER=mock',
+      'FDEKIT_MODEL=',
+      'OPENAI_API_KEY=',
+      'ANTHROPIC_API_KEY=',
+      'GEMINI_API_KEY=',
+      'OLLAMA_BASE_URL=',
+      'FDEKIT_CONNECTOR_MODE=local',
+      'CUSTOMER_API_URL=http://127.0.0.1:8787',
+      'GITHUB_REPOSITORY=owner/repo',
+      'SLACK_CHANNEL_ID=#support-escalations',
+    ]);
+
     const validateOutput = await captureCommand(() => cmdValidate({
       cwd: projectDir,
       args: ['--strict'],
@@ -95,6 +113,18 @@ describe('cli recipe commands', () => {
     expect(validateOutput.exitCode).toBeUndefined();
     expect(validateOutput.stdout).toContain('No validation issues found');
     expect(validateOutput.stdout).not.toContain('Tool does not declare allowed environments');
+
+    await writeFile(path.join(projectDir, '.env'), 'FDEKIT_PROVIDER=anthropic\nANTHROPIC_API_KEY=test-key\n', 'utf8');
+    try {
+      const doctorOutput = await captureCommand(() => cmdDoctor({ cwd: projectDir, args: [] }));
+      expect(doctorOutput.exitCode).toBeUndefined();
+      expect(doctorOutput.stdout).toContain('  anthropic');
+      expect(doctorOutput.stdout).toContain('ANTHROPIC_API_KEY');
+      expect(doctorOutput.stdout).not.toContain('OPENAI_API_KEY');
+    } finally {
+      delete process.env.FDEKIT_PROVIDER;
+      delete process.env.ANTHROPIC_API_KEY;
+    }
   });
 
 

@@ -13,6 +13,7 @@ const recipes = [
     exampleDir: 'support-triage',
     deploymentName: 'support-triage-example',
     paths: [
+      '.env.example',
       'fde.config.ts',
       'agents/support-triage.md',
       'evals/support-triage.json',

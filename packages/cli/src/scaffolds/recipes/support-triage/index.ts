@@ -1,3 +1,7 @@
+import {
+  env,
+  providerEnv,
+} from '../../registry.js';
 import { requireRecipeManifest } from '../../../catalog/recipes.js';
 import {
   fdekitDependencies,
@@ -57,6 +61,15 @@ export const supportTriageRecipe: RecipeSpec = {
       '@fdekit/cli': fdekitDependencyVersion,
     },
   },
+  env: [
+    ...providerEnv(),
+    env('FDEKIT_CONNECTOR_MODE', 'local', 'Set to api to create real GitHub issues and Slack messages'),
+    env('CUSTOMER_API_URL', 'http://127.0.0.1:8787', 'Customer API base URL for support tickets and account context'),
+    env('GITHUB_TOKEN', '', 'GitHub token for API mode issue creation'),
+    env('GITHUB_REPOSITORY', 'owner/repo', 'GitHub repository for support escalation issues'),
+    env('SLACK_BOT_TOKEN', '', 'Slack bot token for API mode escalation messages'),
+    env('SLACK_CHANNEL_ID', '#support-escalations', 'Slack channel used by support escalation messages'),
+  ],
   gitignore: recipeGitignore,
   config: (ctx) => renderSupportTriageConfig(ctx),
 };

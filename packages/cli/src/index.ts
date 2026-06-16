@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import * as path from 'path';
+import { realpathSync } from 'node:fs';
 import { fileURLToPath } from 'url';
 import { renderCliHelp } from './catalog/docs.js';
 import { cmdAdd } from './commands/add.js';
@@ -80,7 +80,16 @@ if (isDirectRun()) {
   runCli(process.argv.slice(2)).catch(handleCliError);
 }
 
-function isDirectRun(): boolean {
+export function isDirectRun(): boolean {
   const entrypoint = process.argv[1];
-  return Boolean(entrypoint) && path.resolve(entrypoint) === fileURLToPath(import.meta.url);
+
+  if (!entrypoint) {
+    return false;
+  }
+
+  try {
+    return realpathSync(entrypoint) === realpathSync(fileURLToPath(import.meta.url));
+  } catch {
+    return false;
+  }
 }

@@ -1,6 +1,9 @@
+import { symlink } from 'node:fs/promises';
+import { fileURLToPath } from 'node:url';
+import * as path from 'path';
 import { describe, expect, it } from 'vitest';
 import { CliUserError, formatCliError } from '../errors.js';
-import { handleCliError, runCli } from '../index.js';
+import { handleCliError, isDirectRun, runCli } from '../index.js';
 import {
   captureCommand,
   createCliProject,
@@ -65,6 +68,26 @@ describe('cli error UX', () => {
     expect(output.exitCode).toBe(1);
     expect(output.stderr).toContain('Error: No fde.config.ts found');
     expect(output.stderr).toContain('Next: run `fdekit init <name>`');
+  });
+});
+
+describe('cli entrypoint detection', () => {
+  it('treats npm-style symlinked bin paths as direct CLI runs', async () => {
+    const cwd = await mkProjectRoot('fdekit-cli-bin-');
+    const sourceEntrypoint = fileURLToPath(new URL('../index.ts', import.meta.url));
+    const binEntrypoint = path.join(cwd, 'fdekit');
+    const originalArgv = process.argv.slice();
+
+    await symlink(sourceEntrypoint, binEntrypoint, 'file');
+
+    try {
+      process.argv[1] = binEntrypoint;
+
+      expect(isDirectRun()).toBe(true);
+    } finally {
+      process.argv.length = 0;
+      process.argv.push(...originalArgv);
+    }
   });
 });
 

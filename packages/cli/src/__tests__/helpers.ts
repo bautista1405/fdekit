@@ -4,6 +4,7 @@ import * as path from 'path';
 import { expect } from 'vitest';
 
 export interface PackageJson {
+  type?: string;
   scripts?: Record<string, string>;
   dependencies?: Record<string, string>;
   devDependencies?: Record<string, string>;

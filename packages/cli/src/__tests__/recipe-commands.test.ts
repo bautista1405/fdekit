@@ -76,6 +76,7 @@ describe('cli recipe commands', () => {
     expect(evals).toHaveLength(2);
 
     const packageJson = await readPackageJson(projectDir);
+    expect(packageJson.type).toBe('module');
     expect(packageJson.scripts?.api).toBe('node customer-api/server.js');
     expect(packageJson.scripts?.demo).toBe('node scripts/demo.mjs');
     expect(packageJson.scripts?.['fdekit:run']).toBe('fdekit run supportTriage --ticket tick_1001');
@@ -372,6 +373,7 @@ describe('cli recipe commands', () => {
     ]);
 
     const packageJson = await readPackageJson(projectDir);
+    expect(packageJson.type).toBe('module');
     expect(packageJson.scripts?.['loadtest:api']).toBe('node customer-api/server.js');
     expect(packageJson.scripts?.demo).toBe('node scripts/demo.mjs');
     expect(packageJson.scripts?.['fdekit:loadtest:run']).toContain('fdekit run loadTestAgent');

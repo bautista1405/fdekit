@@ -34,6 +34,7 @@ export interface RecipeRunScriptsSpec {
 }
 
 export interface RecipePackageSpec {
+  type?: string;
   serviceScripts?: Record<string, string>;
   fdekitScripts?: RecipeRunScriptsSpec;
   scripts?: Record<string, string>;
@@ -90,6 +91,7 @@ function renderRecipeFile(ctx: RecipeContext, spec: RecipeFileSpec) {
 
 function renderPackagePatch(spec: RecipePackageSpec): PackagePatch {
   return {
+    type: spec.type,
     scripts: {
       ...spec.serviceScripts,
       ...(spec.fdekitScripts ? renderFdekitScripts(spec.fdekitScripts) : {}),

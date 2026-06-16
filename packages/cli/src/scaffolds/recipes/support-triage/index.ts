@@ -42,6 +42,7 @@ export const supportTriageRecipe: RecipeSpec = {
     { kind: 'json', path: 'customer-api/data/seed.json', value: customerApiSeed },
   ],
   package: {
+    type: 'module',
     serviceScripts: {
       api: 'node customer-api/server.js',
     },

@@ -25,6 +25,7 @@ export interface RecipeFile {
 }
 
 export interface PackagePatch {
+  type?: string;
   scripts?: Record<string, string>;
   scriptsIfMissing?: Record<string, string>;
   dependencies?: Record<string, string>;
@@ -249,6 +250,10 @@ async function upsertPackageJson(
   const scripts = asRecord(pkg.scripts);
   Object.assign(scripts, patch.scripts ?? {});
   setMissingValues(scripts, patch.scriptsIfMissing);
+
+  if (patch.type) {
+    pkg.type = patch.type;
+  }
 
   const dependencies = asRecord(pkg.dependencies);
   Object.assign(dependencies, patch.dependencies ?? {});

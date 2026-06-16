@@ -43,6 +43,7 @@ export const loadTestRecipe: RecipeSpec = {
     { path: 'customer-api/server.js', contents: customerApiServer },
   ],
   package: {
+    type: 'module',
     serviceScripts: {
       'loadtest:api': 'node customer-api/server.js',
     },

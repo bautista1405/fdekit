@@ -35,8 +35,6 @@ npm install
 npm run demo
 ```
 
-The installed package is `@fdekit/cli`; the executable remains `fdekit`.
-
 The installed support-triage recipe starts the local customer API on `127.0.0.1:8787`, waits for `/health`, runs the governed loop, generates the console, captures `support-renewal-risk`, and shuts the API down.
 
 To step through the same loop manually:
@@ -74,8 +72,6 @@ The CLI command reference documents the command surface and where each command i
 ## Stability/backward-compat notes
 
 `@fdekit/cli` is public but pre-1.0. Command names, documented flags, and scaffolded project structure are the compatibility boundary. Internal command modules are implementation details even though the CLI API reference links them for contributors.
-
-The package root currently exports 0 TypeScript symbols. Use `@fdekit/runtime` for programmatic APIs.
 
 ## See also
 

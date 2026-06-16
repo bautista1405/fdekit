@@ -1,5 +1,15 @@
 # @fdekit/runtime
 
+## 0.4.0
+
+### Minor Changes
+
+- 1e4afcc: command line fixes, improvements
+
+### Patch Changes
+
+- @fdekit/core@0.4.0
+
 ## 0.3.0
 
 ### Minor Changes

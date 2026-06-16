@@ -1,5 +1,22 @@
 # fdekit
 
+## 0.4.0
+
+### Minor Changes
+
+- 1e4afcc: command line fixes, improvements
+
+### Patch Changes
+
+- Updated dependencies [1e4afcc]
+  - @fdekit/runtime@0.4.0
+  - @fdekit/console@0.4.0
+  - @fdekit/core@0.4.0
+  - @fdekit/provider-anthropic@0.4.0
+  - @fdekit/provider-google@0.4.0
+  - @fdekit/provider-ollama@0.4.0
+  - @fdekit/provider-openai@0.4.0
+
 ## 0.3.0
 
 ### Minor Changes

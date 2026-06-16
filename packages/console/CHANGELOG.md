@@ -1,5 +1,13 @@
 # @fdekit/console
 
+## 0.4.0
+
+### Patch Changes
+
+- Updated dependencies [1e4afcc]
+  - @fdekit/runtime@0.4.0
+  - @fdekit/core@0.4.0
+
 ## 0.3.0
 
 ### Patch Changes

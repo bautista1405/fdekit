@@ -4,6 +4,7 @@ import * as path from 'path';
 import { describe, expect, it } from 'vitest';
 import { CliUserError, formatCliError } from '../errors.js';
 import { handleCliError, isDirectRun, runCli } from '../index.js';
+import { fdekitCliVersion } from '../package-versions.js';
 import {
   captureCommand,
   createCliProject,
@@ -96,6 +97,23 @@ describe('cli error UX', () => {
     expect(output.stderr).toContain('Error: Project name cannot start with "-": --not-a-project');
     expect(output.stderr).toContain('Usage: fdekit init [name]');
     await expect(access(path.join(cwd, '--not-a-project'))).rejects.toMatchObject({ code: 'ENOENT' });
+  });
+
+  it('prints the CLI version from every version alias', async () => {
+    const cwd = await mkProjectRoot('fdekit-cli-version-');
+
+    for (const args of [['version'], ['--version'], ['-v']]) {
+      const output = await captureCli(args, cwd);
+
+      expect(output.exitCode).toBeUndefined();
+      expect(output.stdout).toBe(fdekitCliVersion);
+      expect(output.stderr).toBe('');
+    }
+
+    const helpOutput = await captureCli(['version', '--help'], cwd);
+    expect(helpOutput.exitCode).toBeUndefined();
+    expect(helpOutput.stdout).toContain('Usage: fdekit version');
+    expect(helpOutput.stdout).toContain('fdekit --version');
   });
 });
 

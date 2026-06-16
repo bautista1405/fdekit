@@ -40,6 +40,7 @@ Commands:
   report                              Generate a deployment report
   run <agent> [--input <json>] [--strict]
                                       Run an agent loop and write a trace
+  version                             Print the CLI version
 `;
 }
 
@@ -211,6 +212,20 @@ Subcommands:
 
 Options:
   --force     Replace an existing captured recipe
+  -h, --help  Show this command help
+`;
+    case 'version':
+    case '--version':
+    case '-v':
+      return `Usage: fdekit version
+
+Print the CLI version.
+
+Aliases:
+  fdekit --version
+  fdekit -v
+
+Options:
   -h, --help  Show this command help
 `;
     default:

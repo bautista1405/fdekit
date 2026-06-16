@@ -8,8 +8,10 @@ interface PackageJson {
 
 const packageJson = require('../package.json') as PackageJson;
 
+export const fdekitCliVersion = packageJson.version ?? '0.0.0';
+
 export const fdekitDependencyVersion =
-  process.env.FDEKIT_SCAFFOLD_VERSION ?? packageJson.version ?? '0.0.0';
+  process.env.FDEKIT_SCAFFOLD_VERSION ?? fdekitCliVersion;
 
 export const fdekitCaretDependencyVersion = `^${fdekitDependencyVersion}`;
 

@@ -20,6 +20,7 @@ import { cmdTrace } from './commands/trace.js';
 import { cmdValidate } from './commands/validate.js';
 import type { CommandContext } from './context.js';
 import { printCliError } from './errors.js';
+import { fdekitCliVersion } from './package-versions.js';
 
 interface CommandStrategy {
   names: readonly string[];
@@ -43,6 +44,7 @@ const commandStrategies: CommandStrategy[] = [
   { names: ['report'], run: cmdReport },
   { names: ['run'], run: cmdRun },
   { names: ['recipe'], run: cmdRecipe },
+  { names: ['version', '--version', '-v'], run: printVersion },
   { names: ['help', '--help', '-h'], run: printHelp },
 ];
 
@@ -79,6 +81,10 @@ export function handleCliError(err: unknown): void {
 
 function printHelp(): void {
   console.log(renderCliHelp());
+}
+
+function printVersion(): void {
+  console.log(fdekitCliVersion);
 }
 
 function printCommandHelp(command: string): void {

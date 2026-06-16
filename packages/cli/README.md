@@ -84,7 +84,7 @@ fdekit run supportTriage --strict
 fdekit console
 ```
 
-The CLI command reference documents the command surface and where each command is implemented: [CLI API Reference](../../docs/api/cli.md).
+The CLI command reference documents the command surface and where each command is implemented: [CLI API Reference](https://github.com/bautista1405/fdekit/blob/main/docs/api/cli.md).
 
 ## Stability/backward-compat notes
 
@@ -92,9 +92,9 @@ The CLI command reference documents the command surface and where each command i
 
 ## See also
 
-- Authoring contracts: [@fdekit/core](../core/README.md)
-- Runtime APIs used by commands: [@fdekit/runtime](../runtime/README.md)
-- Dashboard renderer used by `fdekit console`: [@fdekit/console](../console/README.md)
-- Full command reference: [CLI Reference](../../docs/cli-reference.md)
-- Recipe catalog: [Recipes](../../docs/recipes.md)
-- Local environments: [Local Environment Cookbook](../../docs/cookbook/local-environments.md)
+- Authoring contracts: [@fdekit/core](https://github.com/bautista1405/fdekit/blob/main/packages/core/README.md)
+- Runtime APIs used by commands: [@fdekit/runtime](https://github.com/bautista1405/fdekit/blob/main/packages/runtime/README.md)
+- Dashboard renderer used by `fdekit console`: [@fdekit/console](https://github.com/bautista1405/fdekit/blob/main/packages/console/README.md)
+- Full command reference: [CLI Reference](https://github.com/bautista1405/fdekit/blob/main/docs/cli-reference.md)
+- Recipe catalog: [Recipes](https://github.com/bautista1405/fdekit/blob/main/docs/recipes.md)
+- Local environments: [Local Environment Cookbook](https://github.com/bautista1405/fdekit/blob/main/docs/cookbook/local-environments.md)

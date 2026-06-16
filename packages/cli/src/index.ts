@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { realpathSync } from 'node:fs';
 import { fileURLToPath } from 'url';
-import { renderCliHelp } from './catalog/docs.js';
+import { renderCliHelp, renderCommandHelp } from './catalog/docs.js';
 import { cmdAdd } from './commands/add.js';
 import { cmdApprovals } from './commands/approvals.js';
 import { cmdAudit } from './commands/audit.js';
@@ -64,6 +64,11 @@ export async function runCli(argv: string[], cwd = process.cwd()): Promise<void>
     return;
   }
 
+  if (isHelpRequest(args)) {
+    printCommandHelp(command);
+    return;
+  }
+
   await strategy.run(ctx);
 }
 
@@ -74,6 +79,14 @@ export function handleCliError(err: unknown): void {
 
 function printHelp(): void {
   console.log(renderCliHelp());
+}
+
+function printCommandHelp(command: string): void {
+  console.log(renderCommandHelp(command) ?? renderCliHelp());
+}
+
+function isHelpRequest(args: string[]): boolean {
+  return args.includes('--help') || args.includes('-h');
 }
 
 if (isDirectRun()) {

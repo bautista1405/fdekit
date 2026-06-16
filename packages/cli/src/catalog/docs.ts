@@ -43,6 +43,181 @@ Commands:
 `;
 }
 
+export function renderCommandHelp(command: string): string | undefined {
+  const providers = providerNames().join(', ');
+  const connectors = connectorNames().join(', ');
+  const recipes = recipeNames().join(', ');
+
+  switch (command) {
+    case 'init':
+      return `Usage: fdekit init [name]
+
+Scaffold a new FDEKit deployment in [name], or in the current directory when omitted.
+
+Options:
+  -h, --help  Show this command help
+`;
+    case 'add':
+      return `Usage: fdekit add <provider|connector|eval|policy> <name>
+
+Add a provider, connector, eval, or policy helper to the current deployment.
+
+Targets:
+  provider   ${providers}
+  connector  ${connectors}
+  eval       Add a simple eval definition
+  policy     Add a policy helper
+
+Options:
+  -h, --help  Show this command help
+`;
+    case 'approvals':
+      return `Usage: fdekit approvals [list|approve <id>|reject <id>] [--by <actor>] [--reason <text>]
+
+Review approval requests or record approval decisions.
+
+Options:
+  --by <actor>      Record who made an approval decision
+  --reason <text>   Record why the decision was made
+  -h, --help        Show this command help
+`;
+    case 'audit':
+      return `Usage: fdekit audit [--limit <n>]
+
+Show recent audit log entries.
+
+Options:
+  --limit <n>  Number of audit entries to show
+  -h, --help   Show this command help
+`;
+    case 'console':
+      return `Usage: fdekit console
+
+Generate a local HTML dashboard from deployment artifacts.
+
+Options:
+  -h, --help  Show this command help
+`;
+    case 'dev':
+      return `Usage: fdekit dev
+
+Load the deployment and write a local trace.
+
+Options:
+  -h, --help  Show this command help
+`;
+    case 'diff':
+      return `Usage: fdekit diff [--from <snapshot-or-config>] [--to <snapshot-or-config>] [--json]
+
+Compare deployment snapshots or config files.
+
+Options:
+  --from <snapshot-or-config>  Compare from this snapshot or config
+  --to <snapshot-or-config>    Compare to this snapshot or config
+  --json                       Print the diff as JSON
+  -h, --help                   Show this command help
+`;
+    case 'doctor':
+      return `Usage: fdekit doctor [--live]
+
+Check deployment environment setup.
+
+Options:
+  --live      Run connector health checks
+  -h, --help  Show this command help
+`;
+    case 'env':
+      return `Usage: fdekit env <start|seed|doctor|stop|describe>
+
+Manage a configured runtime environment.
+
+Actions:
+  start     Start configured services
+  seed      Seed local data
+  doctor    Check environment health
+  stop      Stop configured services
+  describe  Print environment details
+
+Options:
+  -h, --help  Show this command help
+`;
+    case 'trace':
+      return `Usage: fdekit trace
+
+Generate a local HTML trace viewer.
+
+Options:
+  -h, --help  Show this command help
+`;
+    case 'validate':
+      return `Usage: fdekit validate [--json] [--strict]
+
+Validate config and write a deployment snapshot.
+
+Options:
+  --json      Print validation output as JSON
+  --strict    Treat warnings as validation failures
+  -h, --help  Show this command help
+`;
+    case 'eval':
+      return `Usage: fdekit eval <run|macro> [--min-frequency <n>]
+
+Run configured evals or discover recurring behavior patterns across traces.
+
+Subcommands:
+  run                         Run configured lower-level evals
+  macro [--min-frequency <n>] Discover recurring behavior patterns
+
+Options:
+  -h, --help  Show this command help
+`;
+    case 'feedback':
+      return `Usage: fdekit feedback export [--json]
+
+Export approval and audit feedback into eval candidates.
+
+Options:
+  --json      Print export metadata as JSON
+  -h, --help  Show this command help
+`;
+    case 'report':
+      return `Usage: fdekit report
+
+Generate a deployment report.
+
+Options:
+  -h, --help  Show this command help
+`;
+    case 'run':
+      return `Usage: fdekit run <agent> [--ticket <id>] [--input <json-object>] [--max-steps <n>] [--strict]
+
+Run an agent loop and write a trace.
+
+Options:
+  --ticket <id>           Pass a support ticket id as input.ticketId
+  --input <json-object>   Merge a JSON object into the agent input
+  --max-steps <n>         Limit the number of agent loop steps
+  --strict                Run with strict policy enforcement
+  -h, --help              Show this command help
+`;
+    case 'recipe':
+      return `Usage: fdekit recipe <install|capture> <name-or-path>
+
+Install a built-in recipe or capture the current deployment as a reusable local recipe.
+
+Subcommands:
+  install <name-or-path>       Install a recipe: ${recipes}
+  capture <name> [--force]     Capture the current deployment as a recipe
+
+Options:
+  --force     Replace an existing captured recipe
+  -h, --help  Show this command help
+`;
+    default:
+      return undefined;
+  }
+}
+
 export function renderProviderSupportRows(): string {
   return providerManifests.map((manifest) => [
     manifest.displayName,

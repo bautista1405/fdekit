@@ -1,4 +1,4 @@
-import { symlink } from 'node:fs/promises';
+import { access, symlink } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import * as path from 'path';
 import { describe, expect, it } from 'vitest';
@@ -68,6 +68,34 @@ describe('cli error UX', () => {
     expect(output.exitCode).toBe(1);
     expect(output.stderr).toContain('Error: No fde.config.ts found');
     expect(output.stderr).toContain('Next: run `fdekit init <name>`');
+  });
+
+  it('prints command help before positional parsing', async () => {
+    const cwd = await mkProjectRoot('fdekit-cli-help-');
+
+    const initHelp = await captureCli(['init', '--help'], cwd);
+    expect(initHelp.exitCode).toBeUndefined();
+    expect(initHelp.stdout).toContain('Usage: fdekit init [name]');
+    expect(initHelp.stdout).toContain('Scaffold a new FDEKit deployment');
+    expect(initHelp.stderr).toBe('');
+    await expect(access(path.join(cwd, '--help'))).rejects.toMatchObject({ code: 'ENOENT' });
+
+    const runHelp = await captureCli(['run', '--help'], cwd);
+    expect(runHelp.exitCode).toBeUndefined();
+    expect(runHelp.stdout).toContain('Usage: fdekit run <agent>');
+    expect(runHelp.stdout).toContain('--ticket <id>');
+    expect(runHelp.stdout).toContain('--max-steps <n>');
+    expect(runHelp.stderr).not.toContain('No fde.config.ts');
+  });
+
+  it('rejects option-looking init project names', async () => {
+    const cwd = await mkProjectRoot('fdekit-cli-init-option-');
+    const output = await captureCli(['init', '--not-a-project'], cwd);
+
+    expect(output.exitCode).toBe(1);
+    expect(output.stderr).toContain('Error: Project name cannot start with "-": --not-a-project');
+    expect(output.stderr).toContain('Usage: fdekit init [name]');
+    await expect(access(path.join(cwd, '--not-a-project'))).rejects.toMatchObject({ code: 'ENOENT' });
   });
 });
 

@@ -56,6 +56,8 @@ describe('cli recipe commands', () => {
       './recipes/support-triage/mock-planner.mjs',
       "provider: 'mock'",
       'defineGovernance',
+      'withSupportTriageToolEnvironments',
+      "environments: tool.environments ?? supportTriageToolEnvironments",
       "workflow: defineWorkflow({",
       "harness: defineHarness({",
       "defineOutcomeMetric({",
@@ -84,6 +86,15 @@ describe('cli recipe commands', () => {
     expect(packageJson.dependencies?.['@fdekit/connector-github']).toBe(fdekitDependencyVersion);
     expect(packageJson.dependencies?.['@fdekit/connector-slack']).toBe(fdekitDependencyVersion);
     expect(packageJson.devDependencies?.['@fdekit/cli']).toBe(fdekitDependencyVersion);
+
+    const validateOutput = await captureCommand(() => cmdValidate({
+      cwd: projectDir,
+      args: ['--strict'],
+    }));
+
+    expect(validateOutput.exitCode).toBeUndefined();
+    expect(validateOutput.stdout).toContain('No validation issues found');
+    expect(validateOutput.stdout).not.toContain('Tool does not declare allowed environments');
   });
 
 

@@ -13,6 +13,7 @@ import {
   maxCost,
   maxLatency,
   noPolicyViolation,
+  type ConnectorDefinition,
 } from '@fdekit/core';
 import { customerApiConnector } from '@fdekit/connector-customer-api';
 import { githubConnector } from '@fdekit/connector-github';
@@ -22,21 +23,33 @@ import { createSupportTriageMockPlanner } from './mock-planner.mjs';
 
 const supportTriageMockPlanner = createSupportTriageMockPlanner();
 
+const supportTriageToolEnvironments = ['local', 'development', 'staging'];
+
+function withSupportTriageToolEnvironments<Connector extends ConnectorDefinition>(connector: Connector): Connector {
+  return {
+    ...connector,
+    tools: (connector.tools ?? []).map((tool) => ({
+      ...tool,
+      environments: tool.environments ?? supportTriageToolEnvironments,
+    })),
+  };
+}
+
 const externalConnectorMode = process.env.FDEKIT_CONNECTOR_MODE === 'api' ? 'api' : 'local';
 // Resolves CUSTOMER_API_URL at call time; defaults to http://127.0.0.1:8787
-const customerApi = customerApiConnector();
-const github = githubConnector({
+const customerApi = withSupportTriageToolEnvironments(customerApiConnector());
+const github = withSupportTriageToolEnvironments(githubConnector({
   mode: externalConnectorMode,
   repository: process.env.GITHUB_REPOSITORY ?? 'company/support-triage',
   tokenEnv: 'GITHUB_TOKEN',
   repositoryEnv: 'GITHUB_REPOSITORY',
-});
-const slack = slackConnector({
+}));
+const slack = withSupportTriageToolEnvironments(slackConnector({
   mode: externalConnectorMode,
   defaultChannel: process.env.SLACK_CHANNEL_ID ?? '#support-escalations',
   tokenEnv: 'SLACK_BOT_TOKEN',
   channelEnv: 'SLACK_CHANNEL_ID',
-});
+}));
 
 const supportTriageToolLimit = limitToolUse({ maxCalls: 8 });
 const supportTriageEval = defineEval({

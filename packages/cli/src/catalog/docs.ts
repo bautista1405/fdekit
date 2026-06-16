@@ -8,39 +8,36 @@ import {
 } from './index.js';
 import type { CatalogScaffoldAlias, ConnectorManifest, ProviderManifest } from './types.js';
 
-export function renderCliHelp(): string {
-  const providers = providerNames().join(', ');
-  const connectors = connectorNames().join(', ');
-  const recipes = recipeNames().join(', ');
+const commandUsages = {
+  init: 'fdekit init [name]',
+  add: 'fdekit add <provider|connector|eval|policy> <name>',
+  approvals: 'fdekit approvals [list|approve <id>|reject <id>] [--by <actor>] [--reason <text>]',
+  audit: 'fdekit audit [--limit <n>]',
+  console: 'fdekit console',
+  dev: 'fdekit dev',
+  diff: 'fdekit diff [--from <snapshot-or-config>] [--to <snapshot-or-config>] [--json]',
+  doctor: 'fdekit doctor [--live]',
+  env: 'fdekit env <start|seed|doctor|stop|describe>',
+  trace: 'fdekit trace',
+  validate: 'fdekit validate [--json] [--strict]',
+  eval: 'fdekit eval <run|macro> [--min-frequency <n>]',
+  feedback: 'fdekit feedback export [--json]',
+  report: 'fdekit report',
+  run: 'fdekit run <agent> [--ticket <id>] [--input <json-object>] [--max-steps <n>] [--strict]',
+  recipe: 'fdekit recipe <install|capture> <name-or-path>',
+  version: 'fdekit version',
+} as const;
 
+interface CommandSummary {
+  usage: string;
+  summary: string;
+}
+
+export function renderCliHelp(): string {
   return `Usage: fdekit <command> [options]
 
 Commands:
-  init [name]                         Scaffold a new FDEKit deployment
-  add provider <name>                 Add a model provider: ${providers}
-  add connector <name>                Add a connector: ${connectors}
-  add eval <name>                     Add a simple eval to the current deployment
-  add policy <name>                   Add a policy helper to the current deployment
-  recipe install <name>               Install a recipe: ${recipes}
-  recipe capture <name> [--force]     Capture the current deployment as a reusable local recipe
-  approvals [list|approve|reject]     Review or decide approval requests
-  audit [--limit <n>]                 Show recent audit log entries
-  console                             Generate a local HTML dashboard
-  dev                                 Load the deployment and write a local trace
-  diff [--from <snapshot>] [--to <config-or-snapshot>]
-                                      Compare deployment snapshots/configs
-  doctor [--live]                     Check env setup; --live runs connector health checks
-  env <start|seed|doctor|stop|describe>
-                                      Manage a configured runtime environment
-  trace                               Generate a local HTML trace viewer
-  validate [--json] [--strict]        Validate config and write a deployment snapshot
-  eval run                            Run configured lower-level evals
-  eval macro [--min-frequency <n>]    Discover recurring behavior patterns across traces
-  feedback export [--json]            Export approval/audit feedback into eval candidates
-  report                              Generate a deployment report
-  run <agent> [--input <json>] [--strict]
-                                      Run an agent loop and write a trace
-  version                             Print the CLI version
+${renderCommandSummaries()}
 `;
 }
 
@@ -51,7 +48,7 @@ export function renderCommandHelp(command: string): string | undefined {
 
   switch (command) {
     case 'init':
-      return `Usage: fdekit init [name]
+      return `Usage: ${commandUsages.init}
 
 Scaffold a new FDEKit deployment in [name], or in the current directory when omitted.
 
@@ -59,7 +56,7 @@ Options:
   -h, --help  Show this command help
 `;
     case 'add':
-      return `Usage: fdekit add <provider|connector|eval|policy> <name>
+      return `Usage: ${commandUsages.add}
 
 Add a provider, connector, eval, or policy helper to the current deployment.
 
@@ -73,7 +70,7 @@ Options:
   -h, --help  Show this command help
 `;
     case 'approvals':
-      return `Usage: fdekit approvals [list|approve <id>|reject <id>] [--by <actor>] [--reason <text>]
+      return `Usage: ${commandUsages.approvals}
 
 Review approval requests or record approval decisions.
 
@@ -83,7 +80,7 @@ Options:
   -h, --help        Show this command help
 `;
     case 'audit':
-      return `Usage: fdekit audit [--limit <n>]
+      return `Usage: ${commandUsages.audit}
 
 Show recent audit log entries.
 
@@ -92,7 +89,7 @@ Options:
   -h, --help   Show this command help
 `;
     case 'console':
-      return `Usage: fdekit console
+      return `Usage: ${commandUsages.console}
 
 Generate a local HTML dashboard from deployment artifacts.
 
@@ -100,7 +97,7 @@ Options:
   -h, --help  Show this command help
 `;
     case 'dev':
-      return `Usage: fdekit dev
+      return `Usage: ${commandUsages.dev}
 
 Load the deployment and write a local trace.
 
@@ -108,7 +105,7 @@ Options:
   -h, --help  Show this command help
 `;
     case 'diff':
-      return `Usage: fdekit diff [--from <snapshot-or-config>] [--to <snapshot-or-config>] [--json]
+      return `Usage: ${commandUsages.diff}
 
 Compare deployment snapshots or config files.
 
@@ -119,7 +116,7 @@ Options:
   -h, --help                   Show this command help
 `;
     case 'doctor':
-      return `Usage: fdekit doctor [--live]
+      return `Usage: ${commandUsages.doctor}
 
 Check deployment environment setup.
 
@@ -128,7 +125,7 @@ Options:
   -h, --help  Show this command help
 `;
     case 'env':
-      return `Usage: fdekit env <start|seed|doctor|stop|describe>
+      return `Usage: ${commandUsages.env}
 
 Manage a configured runtime environment.
 
@@ -143,7 +140,7 @@ Options:
   -h, --help  Show this command help
 `;
     case 'trace':
-      return `Usage: fdekit trace
+      return `Usage: ${commandUsages.trace}
 
 Generate a local HTML trace viewer.
 
@@ -151,7 +148,7 @@ Options:
   -h, --help  Show this command help
 `;
     case 'validate':
-      return `Usage: fdekit validate [--json] [--strict]
+      return `Usage: ${commandUsages.validate}
 
 Validate config and write a deployment snapshot.
 
@@ -161,7 +158,7 @@ Options:
   -h, --help  Show this command help
 `;
     case 'eval':
-      return `Usage: fdekit eval <run|macro> [--min-frequency <n>]
+      return `Usage: ${commandUsages.eval}
 
 Run configured evals or discover recurring behavior patterns across traces.
 
@@ -173,7 +170,7 @@ Options:
   -h, --help  Show this command help
 `;
     case 'feedback':
-      return `Usage: fdekit feedback export [--json]
+      return `Usage: ${commandUsages.feedback}
 
 Export approval and audit feedback into eval candidates.
 
@@ -182,7 +179,7 @@ Options:
   -h, --help  Show this command help
 `;
     case 'report':
-      return `Usage: fdekit report
+      return `Usage: ${commandUsages.report}
 
 Generate a deployment report.
 
@@ -190,7 +187,7 @@ Options:
   -h, --help  Show this command help
 `;
     case 'run':
-      return `Usage: fdekit run <agent> [--ticket <id>] [--input <json-object>] [--max-steps <n>] [--strict]
+      return `Usage: ${commandUsages.run}
 
 Run an agent loop and write a trace.
 
@@ -202,7 +199,7 @@ Options:
   -h, --help              Show this command help
 `;
     case 'recipe':
-      return `Usage: fdekit recipe <install|capture> <name-or-path>
+      return `Usage: ${commandUsages.recipe}
 
 Install a built-in recipe or capture the current deployment as a reusable local recipe.
 
@@ -217,7 +214,7 @@ Options:
     case 'version':
     case '--version':
     case '-v':
-      return `Usage: fdekit version
+      return `Usage: ${commandUsages.version}
 
 Print the CLI version.
 
@@ -231,6 +228,41 @@ Options:
     default:
       return undefined;
   }
+}
+
+function renderCommandSummaries(): string {
+  const summaries: CommandSummary[] = [
+    { usage: commandUsages.init, summary: 'Scaffold a new FDEKit deployment' },
+    { usage: commandUsages.add, summary: 'Add a provider, connector, eval, or policy helper' },
+    { usage: commandUsages.recipe, summary: 'Install or capture reusable recipes' },
+    { usage: commandUsages.approvals, summary: 'Review or decide approval requests' },
+    { usage: commandUsages.audit, summary: 'Show recent audit log entries' },
+    { usage: commandUsages.console, summary: 'Generate a local HTML dashboard' },
+    { usage: commandUsages.dev, summary: 'Load the deployment and write a local trace' },
+    { usage: commandUsages.diff, summary: 'Compare deployment snapshots/configs' },
+    { usage: commandUsages.doctor, summary: 'Check env setup; --live runs connector health checks' },
+    { usage: commandUsages.env, summary: 'Manage a configured runtime environment' },
+    { usage: commandUsages.trace, summary: 'Generate a local HTML trace viewer' },
+    { usage: commandUsages.validate, summary: 'Validate config and write a deployment snapshot' },
+    { usage: commandUsages.eval, summary: 'Run evals or discover recurring behavior patterns' },
+    { usage: commandUsages.feedback, summary: 'Export approval/audit feedback into eval candidates' },
+    { usage: commandUsages.report, summary: 'Generate a deployment report' },
+    { usage: commandUsages.run, summary: 'Run an agent loop and write a trace' },
+    { usage: commandUsages.version, summary: 'Print the CLI version' },
+  ];
+
+  return summaries.map(renderCommandSummary).join('\n');
+}
+
+function renderCommandSummary(command: CommandSummary): string {
+  const label = command.usage.replace(/^fdekit\s+/, '');
+  const columnWidth = 38;
+
+  if (label.length <= columnWidth) {
+    return `  ${label.padEnd(columnWidth)} ${command.summary}`;
+  }
+
+  return `  ${label}\n  ${''.padEnd(columnWidth)} ${command.summary}`;
 }
 
 export function renderProviderSupportRows(): string {

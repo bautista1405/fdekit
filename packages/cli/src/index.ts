@@ -61,6 +61,12 @@ export async function runCli(argv: string[], cwd = process.cwd()): Promise<void>
 
   if (!strategy) {
     console.error(`Unknown command: ${command}`);
+    const suggestion = suggestCommand(command);
+
+    if (suggestion) {
+      console.error(`Did you mean \`${suggestion}\`?`);
+    }
+
     printHelp();
     process.exitCode = 1;
     return;
@@ -93,6 +99,70 @@ function printCommandHelp(command: string): void {
 
 function isHelpRequest(args: string[]): boolean {
   return args.includes('--help') || args.includes('-h');
+}
+
+function suggestCommand(command: string): string | undefined {
+  const normalizedCommand = normalizeSuggestionInput(command);
+  let best: { command: string; distance: number; startsSame: boolean } | undefined;
+
+  for (const candidate of canonicalCommandNames()) {
+    const normalizedCandidate = normalizeSuggestionInput(candidate);
+    const distance = levenshteinDistance(normalizedCommand, normalizedCandidate);
+    const startsSame = normalizedCommand[0] === normalizedCandidate[0];
+
+    if (!best || distance < best.distance || (distance === best.distance && startsSame && !best.startsSame)) {
+      best = { command: candidate, distance, startsSame };
+    }
+  }
+
+  if (!best || best.distance > maxSuggestionDistance(normalizedCommand)) {
+    return undefined;
+  }
+
+  return best.command;
+}
+
+function canonicalCommandNames(): string[] {
+  return commandStrategies.map((strategy) => strategy.names[0]);
+}
+
+function normalizeSuggestionInput(value: string): string {
+  return value.replace(/^-+/, '').toLowerCase();
+}
+
+function maxSuggestionDistance(value: string): number {
+  if (value.length <= 3) {
+    return 2;
+  }
+
+  if (value.length <= 8) {
+    return 2;
+  }
+
+  return 3;
+}
+
+function levenshteinDistance(left: string, right: string): number {
+  const previous = Array.from({ length: right.length + 1 }, (_, index) => index);
+  const current = Array.from({ length: right.length + 1 }, () => 0);
+
+  for (let leftIndex = 1; leftIndex <= left.length; leftIndex += 1) {
+    current[0] = leftIndex;
+
+    for (let rightIndex = 1; rightIndex <= right.length; rightIndex += 1) {
+      const substitutionCost = left[leftIndex - 1] === right[rightIndex - 1] ? 0 : 1;
+
+      current[rightIndex] = Math.min(
+        current[rightIndex - 1] + 1,
+        previous[rightIndex] + 1,
+        previous[rightIndex - 1] + substitutionCost,
+      );
+    }
+
+    previous.splice(0, previous.length, ...current);
+  }
+
+  return previous[right.length];
 }
 
 if (isDirectRun()) {

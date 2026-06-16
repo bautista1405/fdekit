@@ -71,6 +71,25 @@ describe('cli error UX', () => {
     expect(output.stderr).toContain('Next: run `fdekit init <name>`');
   });
 
+  it('suggests the nearest command for unknown commands', async () => {
+    const cwd = await mkProjectRoot('fdekit-cli-unknown-command-');
+    const output = await captureCli(['rnu'], cwd);
+
+    expect(output.exitCode).toBe(1);
+    expect(output.stderr).toContain('Unknown command: rnu');
+    expect(output.stderr).toContain('Did you mean `run`?');
+    expect(output.stdout).toContain('Usage: fdekit <command> [options]');
+  });
+
+  it('shows full command usages in top-level help', async () => {
+    const cwd = await mkProjectRoot('fdekit-cli-top-help-');
+    const output = await captureCli(['--help'], cwd);
+
+    expect(output.exitCode).toBeUndefined();
+    expect(output.stdout).toContain('run <agent> [--ticket <id>] [--input <json-object>] [--max-steps <n>] [--strict]');
+    expect(output.stdout).toContain('diff [--from <snapshot-or-config>] [--to <snapshot-or-config>] [--json]');
+  });
+
   it('prints command help before positional parsing', async () => {
     const cwd = await mkProjectRoot('fdekit-cli-help-');
 

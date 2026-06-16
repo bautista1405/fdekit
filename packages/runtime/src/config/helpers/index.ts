@@ -195,7 +195,7 @@ async function transpileLocalModule(source: string, fileName: string): Promise<s
   }).outputText;
 }
 
-function cachedModuleFileName(modulePath: string, source: string): string {
+export function cachedModuleFileName(modulePath: string, source: string): string {
   const baseName = path.basename(modulePath).replace(/[^A-Za-z0-9._-]/g, '_');
   const hash = createHash('sha256').update(modulePath).update(source).digest('hex').slice(0, 12);
 

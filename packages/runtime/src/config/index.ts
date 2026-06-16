@@ -2,7 +2,12 @@ import { promises as fs } from 'fs';
 import * as path from 'path';
 import { pathToFileURL } from 'url';
 import type { DeploymentDefinition } from '@fdekit/core';
-import { loadProjectEnv, rewriteConfigRelativeImports, rewriteFdekitImports } from './helpers/index.js';
+import {
+  cachedModuleFileName,
+  loadProjectEnv,
+  rewriteConfigRelativeImports,
+  rewriteFdekitImports,
+} from './helpers/index.js';
 
 export class ConfigNotFoundError extends Error {
   constructor(startDir: string) {
@@ -47,6 +52,8 @@ export async function findProjectDir(startDir: string): Promise<string> {
   return configPath ? path.dirname(configPath) : startDir;
 }
 
+let configImportCounter = 0;
+
 export async function loadDeployment(configPath: string): Promise<DeploymentDefinition> {
   await loadProjectEnv(path.dirname(configPath));
 
@@ -70,10 +77,11 @@ export async function loadDeployment(configPath: string): Promise<DeploymentDefi
     cacheDir,
   );
 
-  const compiledPath = path.join(cacheDir, `fde.config${Date.now()}.mjs`);
-  await fs.writeFile(compiledPath, executableConfig, 'utf8');
+  const compiledPath = path.join(cacheDir, cachedModuleFileName(configPath, executableConfig));
+  await writeConfigCacheFile(compiledPath, executableConfig);
+  await pruneLegacyConfigCacheEntries(cacheDir);
 
-  const moduleUrl = `${pathToFileURL(compiledPath).href}?t=${Date.now()}`;
+  const moduleUrl = `${pathToFileURL(compiledPath).href}?load=${++configImportCounter}`;
   const imported = await import(moduleUrl);
   const deployment = imported.default ?? imported.deployment ?? imported;
 
@@ -82,4 +90,43 @@ export async function loadDeployment(configPath: string): Promise<DeploymentDefi
   }
 
   return deployment as DeploymentDefinition;
+}
+
+async function writeConfigCacheFile(filePath: string, source: string): Promise<void> {
+  try {
+    await fs.writeFile(filePath, source, { encoding: 'utf8', flag: 'wx' });
+  } catch (err) {
+    if (errorCode(err) !== 'EEXIST') {
+      throw err;
+    }
+  }
+}
+
+async function pruneLegacyConfigCacheEntries(cacheDir: string): Promise<void> {
+  const entries = await fs.readdir(cacheDir);
+
+  await Promise.all(entries.map(async (entry) => {
+    if (!isLegacyConfigCacheEntry(entry)) {
+      return;
+    }
+
+    try {
+      await fs.unlink(path.join(cacheDir, entry));
+    } catch {
+      // Another process may have pruned it first.
+    }
+  }));
+}
+
+function isLegacyConfigCacheEntry(fileName: string): boolean {
+  return /^fde\.config\d+\.mjs$/.test(fileName);
+}
+
+function errorCode(err: unknown): string | undefined {
+  if (!err || typeof err !== 'object' || !('code' in err)) {
+    return undefined;
+  }
+
+  const code = (err as { code?: unknown }).code;
+  return typeof code === 'string' ? code : undefined;
 }

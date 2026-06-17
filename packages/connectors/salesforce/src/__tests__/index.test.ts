@@ -2,6 +2,14 @@ import { describe, expect, it } from 'vitest';
 import { salesforceConnector } from '../index.js';
 
 describe('salesforceConnector', () => {
+  it('declares allowed environments on every tool', () => {
+    const connector = salesforceConnector();
+
+    for (const tool of connector.tools ?? []) {
+      expect(tool.environments).toEqual(['local', 'development', 'staging']);
+    }
+  });
+
   it('creates deterministic local Salesforce tasks through native and common tools', async () => {
     const connector = salesforceConnector({ defaultWhatId: '001LOCAL' });
     const tool = connector.tools?.find((candidate) => candidate.name === 'salesforce.task.create');

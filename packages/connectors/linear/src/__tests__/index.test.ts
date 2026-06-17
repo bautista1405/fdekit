@@ -2,6 +2,14 @@ import { describe, expect, it } from 'vitest';
 import { linearConnector } from '../index.js';
 
 describe('linearConnector', () => {
+  it('declares allowed environments on every tool', () => {
+    const connector = linearConnector();
+
+    for (const tool of connector.tools ?? []) {
+      expect(tool.environments).toEqual(['local', 'development', 'staging']);
+    }
+  });
+
   it('creates deterministic local Linear issues', async () => {
     const connector = linearConnector({ teamId: 'team_123' });
     const tool = connector.tools?.find((candidate) => candidate.name === 'linear.issue.create');

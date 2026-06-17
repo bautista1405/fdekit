@@ -13,6 +13,8 @@ import {
 import type { CreateHubSpotNoteArgs, CreateHubSpotNoteResult, HubSpotAssociation, HubSpotAssociationType, HubSpotConnectorConfig, HubSpotConnectorMode, HubSpotConnectorOptions } from './interfaces/index.js';
 export type { CreateHubSpotNoteArgs, CreateHubSpotNoteResult, HubSpotAssociation, HubSpotAssociationType, HubSpotConnectorConfig, HubSpotConnectorMode, HubSpotConnectorOptions } from './interfaces/index.js';
 
+const defaultToolEnvironments = ['local', 'development', 'staging'];
+
 const createHubSpotNoteArgsSchema = {
   type: 'object',
   properties: {
@@ -160,6 +162,7 @@ export function hubspotConnector(options: HubSpotConnectorOptions = {}): Connect
         name: 'hubspot.note.create',
         description: 'Create a HubSpot CRM note from an agent handoff',
         scopes: ['crm:write'],
+        environments: defaultToolEnvironments,
         category: 'crm',
         tags: ['action', 'crm-handoff', 'crm'],
         argsSchema: createHubSpotNoteArgsSchema,
@@ -169,6 +172,7 @@ export function hubspotConnector(options: HubSpotConnectorOptions = {}): Connect
         name: 'crm.note.create',
         description: 'Create a CRM note in HubSpot using the common crm.note.create capability',
         scopes: ['crm:write'],
+        environments: defaultToolEnvironments,
         category: 'crm',
         tags: ['action', 'crm-handoff', 'crm'],
         argsSchema: createHubSpotNoteArgsSchema,

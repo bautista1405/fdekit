@@ -3,6 +3,8 @@ import { asRecord, getString, normalizeBaseUrl, postSlackMessage, requireToken }
 import type { SlackConnectorConfig, SlackConnectorMode, SlackConnectorOptions, SlackMessageArgs, SlackMessageResult } from './interfaces/index.js';
 export type { SlackConnectorConfig, SlackConnectorMode, SlackConnectorOptions, SlackMessageArgs, SlackMessageResult } from './interfaces/index.js';
 
+const defaultToolEnvironments = ['local', 'development', 'staging'];
+
 const slackMessageArgsSchema = {
   type: 'object',
   required: ['text'],
@@ -60,6 +62,7 @@ export function slackConnector(options: SlackConnectorOptions = {}): ConnectorDe
         name: 'slack.message',
         description: 'Send a Slack message to an escalation channel',
         scopes: ['slack:write'],
+        environments: defaultToolEnvironments,
         category: 'messaging',
         tags: ['action', 'escalation', 'message'],
         argsSchema: slackMessageArgsSchema,

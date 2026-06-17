@@ -2,6 +2,14 @@ import { describe, expect, it } from 'vitest';
 import { githubConnector } from '../index.js';
 
 describe('githubConnector', () => {
+  it('declares allowed environments on every tool', () => {
+    const connector = githubConnector();
+
+    for (const tool of connector.tools ?? []) {
+      expect(tool.environments).toEqual(['local', 'development', 'staging']);
+    }
+  });
+
   it('returns a local issue.create tool with deterministic issue numbers', async () => {
     const connector = githubConnector({ repository: 'company/app' });
     const tool = connector.tools?.find((candidate) => candidate.name === 'issue.create');

@@ -2,6 +2,14 @@ import { describe, expect, it } from 'vitest';
 import { jiraConnector } from '../index.js';
 
 describe('jiraConnector', () => {
+  it('declares allowed environments on every tool', () => {
+    const connector = jiraConnector();
+
+    for (const tool of connector.tools ?? []) {
+      expect(tool.environments).toEqual(['local', 'development', 'staging']);
+    }
+  });
+
   it('creates deterministic local Jira issues', async () => {
     const connector = jiraConnector({ projectKey: 'SUP' });
     const tool = connector.tools?.find((candidate) => candidate.name === 'jira.issue.create');

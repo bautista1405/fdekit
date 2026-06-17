@@ -2,6 +2,14 @@ import { describe, expect, it } from 'vitest';
 import { hubspotConnector } from '../index.js';
 
 describe('hubspotConnector', () => {
+  it('declares allowed environments on every tool', () => {
+    const connector = hubspotConnector();
+
+    for (const tool of connector.tools ?? []) {
+      expect(tool.environments).toEqual(['local', 'development', 'staging']);
+    }
+  });
+
   it('creates deterministic local HubSpot notes through native and common tools', async () => {
     const connector = hubspotConnector();
     const tool = connector.tools?.find((candidate) => candidate.name === 'hubspot.note.create');

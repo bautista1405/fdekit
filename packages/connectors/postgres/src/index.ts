@@ -19,6 +19,83 @@ import {
 import type { PostgresColumnSummary, PostgresConnectorConfig, PostgresConnectorMode, PostgresConnectorOptions, PostgresDescribeTableArgs, PostgresDescribeTableResult, PostgresDriverResult, PostgresHealthCheckArgs, PostgresHealthCheckResult, PostgresListTablesArgs, PostgresListTablesResult, PostgresPoolOptions, PostgresQueryArgs, PostgresQueryClient, PostgresQueryInput, PostgresQueryResult, PostgresTableSummary, SqlStatementKind } from './interfaces/index.js';
 export type { PostgresColumnSummary, PostgresConnectorConfig, PostgresConnectorMode, PostgresConnectorOptions, PostgresDescribeTableArgs, PostgresDescribeTableResult, PostgresDriverResult, PostgresHealthCheckArgs, PostgresHealthCheckResult, PostgresListTablesArgs, PostgresListTablesResult, PostgresPoolOptions, PostgresQueryArgs, PostgresQueryClient, PostgresQueryInput, PostgresQueryResult, PostgresTableSummary, SqlStatementKind } from './interfaces/index.js';
 
+const defaultToolEnvironments = ['local', 'development', 'staging'];
+
+const healthCheckArgsSchema = {
+  type: 'object',
+  properties: {
+    timeoutMs: {
+      type: 'number',
+      description: 'Optional query timeout override in milliseconds',
+    },
+  },
+};
+
+const listTablesArgsSchema = {
+  type: 'object',
+  properties: {
+    schemas: {
+      type: 'array',
+      items: { type: 'string' },
+      description: 'Optional schemas to inspect',
+    },
+    includeViews: {
+      type: 'boolean',
+      description: 'Whether to include views as well as base tables',
+    },
+    limit: {
+      type: 'number',
+      description: 'Maximum number of tables to return',
+    },
+    timeoutMs: {
+      type: 'number',
+      description: 'Optional query timeout override in milliseconds',
+    },
+  },
+};
+
+const describeTableArgsSchema = {
+  type: 'object',
+  required: ['table'],
+  properties: {
+    table: {
+      type: 'string',
+      description: 'Table name or schema-qualified table reference',
+    },
+    schema: {
+      type: 'string',
+      description: 'Optional schema when table is not schema-qualified',
+    },
+    timeoutMs: {
+      type: 'number',
+      description: 'Optional query timeout override in milliseconds',
+    },
+  },
+};
+
+const queryArgsSchema = {
+  type: 'object',
+  required: ['sql'],
+  properties: {
+    sql: {
+      type: 'string',
+      description: 'Governed SQL statement to execute',
+    },
+    values: {
+      type: 'array',
+      description: 'Optional parameter values for the SQL statement',
+    },
+    name: {
+      type: 'string',
+      description: 'Optional prepared statement name',
+    },
+    timeoutMs: {
+      type: 'number',
+      description: 'Optional query timeout override in milliseconds',
+    },
+  },
+};
+
 export function postgresConnector(options: PostgresConnectorOptions = {}): ConnectorDefinition<PostgresConnectorConfig> {
   const runtime = createRuntimeConfig(options);
   const executor = createQueryExecutor(options, runtime);
@@ -41,8 +118,10 @@ export function postgresConnector(options: PostgresConnectorOptions = {}): Conne
         name: 'postgres.healthCheck',
         description: 'Verify that the Postgres connector can execute a minimal query',
         scopes: ['database:read'],
+        environments: defaultToolEnvironments,
         category: 'database',
         tags: ['context', 'database', 'read'],
+        argsSchema: healthCheckArgsSchema,
         async handler(args) {
           const startedAt = Date.now();
           await executor.query({
@@ -61,8 +140,10 @@ export function postgresConnector(options: PostgresConnectorOptions = {}): Conne
         name: 'postgres.listTables',
         description: 'List visible Postgres tables and views for schema discovery',
         scopes: ['database:schema'],
+        environments: defaultToolEnvironments,
         category: 'database',
         tags: ['context', 'database', 'schema'],
+        argsSchema: listTablesArgsSchema,
         async handler(args) {
           assertSchemaDiscoveryEnabled(runtime);
           const schemas = normalizeSchemaList(args.schemas ?? runtime.schemas);
@@ -99,8 +180,10 @@ export function postgresConnector(options: PostgresConnectorOptions = {}): Conne
         name: 'postgres.describeTable',
         description: 'Describe columns for one governed Postgres table',
         scopes: ['database:schema'],
+        environments: defaultToolEnvironments,
         category: 'database',
         tags: ['context', 'database', 'schema'],
+        argsSchema: describeTableArgsSchema,
         async handler(args) {
           assertSchemaDiscoveryEnabled(runtime);
           const tableRef = parseTableReference(args.table, args.schema, runtime.schemas[0] ?? 'public');
@@ -129,8 +212,10 @@ export function postgresConnector(options: PostgresConnectorOptions = {}): Conne
         name: 'postgres.query',
         description: 'Run a governed parameterized SQL query; defaults to SELECT/WITH only',
         scopes: ['database:read'],
+        environments: defaultToolEnvironments,
         category: 'database',
         tags: ['context', 'database', 'read'],
+        argsSchema: queryArgsSchema,
         async handler(args) {
           const validated = validateSql(args.sql, runtime);
           const result = await executor.query({

@@ -11,6 +11,8 @@ import {
 import type { CreateJiraIssueArgs, CreateJiraIssueResult, JiraConnectorConfig, JiraConnectorMode, JiraConnectorOptions } from './interfaces/index.js';
 export type { CreateJiraIssueArgs, CreateJiraIssueResult, JiraConnectorConfig, JiraConnectorMode, JiraConnectorOptions } from './interfaces/index.js';
 
+const defaultToolEnvironments = ['local', 'development', 'staging'];
+
 const createJiraIssueArgsSchema = {
   type: 'object',
   properties: {
@@ -172,6 +174,7 @@ export function jiraConnector(options: JiraConnectorOptions = {}): ConnectorDefi
         name: 'jira.issue.create',
         description: 'Create a Jira issue from an agent handoff',
         scopes: ['issues:write'],
+        environments: defaultToolEnvironments,
         category: 'issue',
         tags: ['action', 'escalation', 'issue'],
         argsSchema: createJiraIssueArgsSchema,
@@ -181,6 +184,7 @@ export function jiraConnector(options: JiraConnectorOptions = {}): ConnectorDefi
         name: 'issue.create',
         description: 'Create an engineering issue in Jira using the common issue.create capability',
         scopes: ['issues:write'],
+        environments: defaultToolEnvironments,
         category: 'issue',
         tags: ['action', 'escalation', 'issue'],
         argsSchema: createJiraIssueArgsSchema,

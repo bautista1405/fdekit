@@ -19,6 +19,8 @@ const healthCheckArgsSchema = {
   properties: {},
 };
 
+const defaultToolEnvironments = ['local', 'development', 'staging'];
+
 const getCustomerArgsSchema = {
   type: 'object',
   required: ['customerId'],
@@ -128,6 +130,7 @@ export function customerApiConnector<
         name: 'customerApi.healthCheck',
         description: 'Verify that the customer API health endpoint responds successfully',
         scopes: ['customer:read'],
+        environments: defaultToolEnvironments,
         category: 'health',
         tags: ['health', 'customer', 'read'],
         argsSchema: healthCheckArgsSchema,
@@ -146,6 +149,7 @@ export function customerApiConnector<
         name: 'customer.get',
         description: 'Look up customer profile, subscription, and account context',
         scopes: ['customer:read'],
+        environments: defaultToolEnvironments,
         category: 'context',
         tags: ['customer', 'read'],
         argsSchema: getCustomerArgsSchema,
@@ -158,6 +162,7 @@ export function customerApiConnector<
         name: 'ticket.get',
         description: 'Look up a support ticket with customer context',
         scopes: ['ticket:read'],
+        environments: defaultToolEnvironments,
         category: 'context',
         tags: ['ticket', 'read'],
         argsSchema: getTicketArgsSchema,
@@ -170,6 +175,7 @@ export function customerApiConnector<
         name: 'ticket.escalate',
         description: 'Escalate a support ticket into the customer API escalation queue',
         scopes: ['ticket:write'],
+        environments: defaultToolEnvironments,
         category: 'escalation',
         tags: ['action', 'escalation', 'ticket'],
         argsSchema: escalateTicketArgsSchema,

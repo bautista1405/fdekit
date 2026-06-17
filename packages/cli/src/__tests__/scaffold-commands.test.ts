@@ -1,4 +1,4 @@
-import { writeFile } from 'fs/promises';
+import { mkdir, writeFile } from 'fs/promises';
 import * as path from 'path';
 import { describe, expect, it, vi } from 'vitest';
 import { cmdAdd } from '../commands/add.js';
@@ -7,6 +7,7 @@ import { cmdEnv } from '../commands/env.js';
 import { cmdEval } from '../commands/eval.js';
 import { cmdInit } from '../commands/init.js';
 import { cmdRun } from '../commands/run.js';
+import { cmdValidate } from '../commands/validate.js';
 import { printCliError } from '../errors.js';
 import {
   fdekitCaretDependencyVersion,
@@ -368,6 +369,38 @@ describe('cli scaffold and setup commands', () => {
     expect(await readPackageJson(crmProjectDir)).toEqual(crmPackageBeforeCollision);
   });
 
+  it('validates directly added connector tools without environment warnings', async () => {
+    const connectorNames = [
+      'customer-api',
+      'codebase',
+      'slack',
+      'github',
+      'jira',
+      'linear',
+      'postgres',
+      'k6',
+      'hubspot',
+      'salesforce',
+    ];
+
+    for (const connectorName of connectorNames) {
+      const projectDir = await createMinimalAddProject();
+
+      await captureCommand(() => cmdAdd({
+        cwd: projectDir,
+        args: ['connector', connectorName],
+      }));
+      const validateOutput = await captureCommand(() => cmdValidate({
+        cwd: projectDir,
+        args: [],
+      }));
+
+      expect(validateOutput.exitCode).toBeUndefined();
+      expect(validateOutput.stdout).toContain('No validation issues found');
+      expect(validateOutput.stdout).not.toContain('Tool does not declare allowed environments');
+    }
+  });
+
   it('does not duplicate connectors that are already configured', async () => {
     const projectDir = await createCliProject();
 
@@ -493,4 +526,33 @@ async function captureAddCommand(projectDir: string, args: string[]): Promise<{
       process.exitCode = 1;
     }
   });
+}
+
+async function createMinimalAddProject(): Promise<string> {
+  const projectDir = await mkProjectRoot('fdekit-cli-add-validate-');
+
+  await mkdir(path.join(projectDir, 'agents'), { recursive: true });
+  await writeFile(path.join(projectDir, 'agents', 'agent.md'), 'Connector metadata smoke test', 'utf8');
+  await writeFile(path.join(projectDir, 'fde.config.ts'), `import {
+  defineAgent,
+  defineDeployment,
+} from '@fdekit/core';
+
+export default defineDeployment({
+  name: 'add-connector-validation',
+  environment: 'local',
+  providers: {
+    mock: { name: 'mock' },
+  },
+  connectors: {},
+  agents: {
+    worker: defineAgent({
+      provider: 'mock',
+      instructions: './agents/agent.md',
+    }),
+  },
+});
+`, 'utf8');
+
+  return projectDir;
 }

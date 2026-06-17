@@ -2,6 +2,15 @@ import { describe, expect, it } from 'vitest';
 import { postgresConnector } from '../index.js';
 
 describe('postgresConnector', () => {
+  it('declares validation metadata on every tool', () => {
+    const connector = postgresConnector();
+
+    for (const tool of connector.tools ?? []) {
+      expect(tool.environments).toEqual(['local', 'development', 'staging']);
+      expect(tool.argsSchema).toBeDefined();
+    }
+  });
+
   it('runs SELECT queries through a provided query client', async () => {
     const queries: unknown[] = [];
     const connector = postgresConnector({

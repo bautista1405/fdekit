@@ -12,6 +12,8 @@ import {
 import type { CreateSalesforceTaskArgs, CreateSalesforceTaskResult, SalesforceConnectorConfig, SalesforceConnectorMode, SalesforceConnectorOptions } from './interfaces/index.js';
 export type { CreateSalesforceTaskArgs, CreateSalesforceTaskResult, SalesforceConnectorConfig, SalesforceConnectorMode, SalesforceConnectorOptions } from './interfaces/index.js';
 
+const defaultToolEnvironments = ['local', 'development', 'staging'];
+
 const createSalesforceTaskArgsSchema = {
   type: 'object',
   properties: {
@@ -191,6 +193,7 @@ export function salesforceConnector(options: SalesforceConnectorOptions = {}): C
         name: 'salesforce.task.create',
         description: 'Create a Salesforce Task activity from an agent handoff',
         scopes: ['crm:write'],
+        environments: defaultToolEnvironments,
         category: 'crm',
         tags: ['action', 'crm-handoff', 'crm'],
         argsSchema: createSalesforceTaskArgsSchema,
@@ -200,6 +203,7 @@ export function salesforceConnector(options: SalesforceConnectorOptions = {}): C
         name: 'crm.note.create',
         description: 'Create a CRM note in Salesforce using the common crm.note.create capability',
         scopes: ['crm:write'],
+        environments: defaultToolEnvironments,
         category: 'crm',
         tags: ['action', 'crm-handoff', 'crm'],
         argsSchema: createSalesforceTaskArgsSchema,

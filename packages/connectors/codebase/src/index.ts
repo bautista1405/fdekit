@@ -20,6 +20,8 @@ const defaultIgnore = [
   'package-lock.json',
 ];
 
+const defaultToolEnvironments = ['local', 'development', 'staging'];
+
 const listFilesArgsSchema = {
   type: 'object',
   properties: {
@@ -95,6 +97,7 @@ export function codebaseConnector(options: CodebaseConnectorOptions = {}): Conne
         name: 'codebase.listFiles',
         description: 'List files under the configured codebase root',
         scopes: ['codebase:read'],
+        environments: defaultToolEnvironments,
         category: 'codebase',
         tags: ['context', 'codebase', 'read'],
         argsSchema: listFilesArgsSchema,
@@ -116,6 +119,7 @@ export function codebaseConnector(options: CodebaseConnectorOptions = {}): Conne
         name: 'codebase.search',
         description: 'Search text files under the configured codebase root',
         scopes: ['codebase:read'],
+        environments: defaultToolEnvironments,
         category: 'codebase',
         tags: ['context', 'codebase', 'read', 'search'],
         argsSchema: searchArgsSchema,
@@ -140,6 +144,7 @@ export function codebaseConnector(options: CodebaseConnectorOptions = {}): Conne
         name: 'codebase.readFile',
         description: 'Read a file from the configured codebase root',
         scopes: ['codebase:read'],
+        environments: defaultToolEnvironments,
         category: 'codebase',
         tags: ['context', 'codebase', 'read'],
         argsSchema: readFileArgsSchema,

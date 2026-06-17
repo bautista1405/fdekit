@@ -3,6 +3,8 @@ import { asRecord, createLinearIssue, getString, normalizeBaseUrl, readEnvValue,
 import type { CreateLinearIssueArgs, CreateLinearIssueResult, LinearConnectorConfig, LinearConnectorMode, LinearConnectorOptions } from './interfaces/index.js';
 export type { CreateLinearIssueArgs, CreateLinearIssueResult, LinearConnectorConfig, LinearConnectorMode, LinearConnectorOptions } from './interfaces/index.js';
 
+const defaultToolEnvironments = ['local', 'development', 'staging'];
+
 const createLinearIssueArgsSchema = {
   type: 'object',
   required: ['title'],
@@ -128,6 +130,7 @@ export function linearConnector(options: LinearConnectorOptions = {}): Connector
         name: 'linear.issue.create',
         description: 'Create a Linear issue from an agent handoff',
         scopes: ['issues:write'],
+        environments: defaultToolEnvironments,
         category: 'issue',
         tags: ['action', 'escalation', 'issue'],
         argsSchema: createLinearIssueArgsSchema,
@@ -137,6 +140,7 @@ export function linearConnector(options: LinearConnectorOptions = {}): Connector
         name: 'issue.create',
         description: 'Create an engineering issue in Linear using the common issue.create capability',
         scopes: ['issues:write'],
+        environments: defaultToolEnvironments,
         category: 'issue',
         tags: ['action', 'escalation', 'issue'],
         argsSchema: createLinearIssueArgsSchema,

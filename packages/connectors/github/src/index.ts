@@ -3,6 +3,8 @@ import { asRecord, createGitHubIssue, getNumber, getString, normalizeBaseUrl, re
 import type { CreateIssueArgs, CreateIssueResult, GitHubConnectorConfig, GitHubConnectorMode, GitHubConnectorOptions } from './interfaces/index.js';
 export type { CreateIssueArgs, CreateIssueResult, GitHubConnectorConfig, GitHubConnectorMode, GitHubConnectorOptions } from './interfaces/index.js';
 
+const defaultToolEnvironments = ['local', 'development', 'staging'];
+
 const createIssueArgsSchema = {
   type: 'object',
   required: ['title', 'body'],
@@ -70,6 +72,7 @@ export function githubConnector(options: GitHubConnectorOptions = {}): Connector
         name: 'issue.create',
         description: 'Create an engineering issue from an escalated support case',
         scopes: ['issues:write'],
+        environments: defaultToolEnvironments,
         category: 'issue',
         tags: ['action', 'escalation', 'issue'],
         argsSchema: createIssueArgsSchema,

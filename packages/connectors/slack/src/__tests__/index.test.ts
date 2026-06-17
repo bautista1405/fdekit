@@ -2,6 +2,14 @@ import { describe, expect, it } from 'vitest';
 import { slackConnector } from '../index.js';
 
 describe('slackConnector', () => {
+  it('declares allowed environments on every tool', () => {
+    const connector = slackConnector();
+
+    for (const tool of connector.tools ?? []) {
+      expect(tool.environments).toEqual(['local', 'development', 'staging']);
+    }
+  });
+
   it('returns a local slack.message tool', async () => {
     const connector = slackConnector({
       defaultChannel: '#triage',

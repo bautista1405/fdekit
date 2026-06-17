@@ -5,6 +5,14 @@ import { describe, expect, it } from 'vitest';
 import { codebaseConnector } from '../index.js';
 
 describe('codebaseConnector', () => {
+  it('declares allowed environments on every tool', () => {
+    const connector = codebaseConnector();
+
+    for (const tool of connector.tools ?? []) {
+      expect(tool.environments).toEqual(['local', 'development', 'staging']);
+    }
+  });
+
   it('lists, searches, and reads files within the configured root', async () => {
     const rootDir = await mkdtemp(path.join(tmpdir(), 'fdekit-codebase-'));
     await mkdir(path.join(rootDir, 'src'), { recursive: true });

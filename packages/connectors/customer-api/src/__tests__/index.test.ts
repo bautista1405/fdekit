@@ -3,6 +3,14 @@ import { environmentEndpoint } from '@fdekit/core';
 import { customerApiConnector } from '../index.js';
 
 describe('customerApiConnector', () => {
+  it('declares allowed environments on every tool', () => {
+    const connector = customerApiConnector();
+
+    for (const tool of connector.tools ?? []) {
+      expect(tool.environments).toEqual(['local', 'development', 'staging']);
+    }
+  });
+
   it('exposes a live health check tool backed by /health', async () => {
     const calls: Array<{ input: RequestInfo | URL; init?: RequestInit }> = [];
     const connector = customerApiConnector({

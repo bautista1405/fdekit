@@ -33,6 +33,7 @@
   "updateInternalDependencies": "patch",
   "ignore": [
     "@fdekit/example-codebase-agent",
+    "@fdekit/example-environments",
     "@fdekit/example-load-test-agent",
     "@fdekit/example-sales-research-agent",
     "@fdekit/example-support-triage"

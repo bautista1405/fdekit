@@ -3,7 +3,6 @@ import { escapeSingleQuoted } from '../../utils/strings.js';
 export function renderStarterConfig(name: string): string {
   return `import {
   defineAgent,
-  defineConnector,
   defineDataLayers,
   defineDeployment,
   defineEval,
@@ -257,27 +256,7 @@ export default defineDeployment({
       },
     ],
   }),
-  connectors: {
-    github: defineConnector({
-      name: 'github',
-      config: {
-        tokenEnv: 'GITHUB_TOKEN',
-      },
-    }),
-    slack: defineConnector({
-      name: 'slack',
-      config: {
-        tokenEnv: 'SLACK_BOT_TOKEN',
-      },
-    }),
-    postgres: defineConnector({
-      name: 'postgres',
-      config: {
-        urlEnv: 'DATABASE_URL',
-        allowedTables: ['customers', 'subscriptions', 'tickets'],
-      },
-    }),
-  },
+  connectors: {},
   agents: {
     supportTriage: defineAgent({
       provider: settings.provider,

@@ -75,6 +75,7 @@ describe('cli scaffold and setup commands', () => {
       'governance: defineGovernance({',
       'workflow: defineWorkflow({',
       'harness: defineHarness({',
+      'connectors: {},',
       'defineOutcomeMetric({',
       'scorecard: {',
       'dataLayers: defineDataLayers({',
@@ -83,6 +84,12 @@ describe('cli scaffold and setup commands', () => {
       "apiKeyEnv: 'OPENAI_API_KEY'",
       "apiKeyEnv: 'ANTHROPIC_API_KEY'",
       "apiKeyEnv: 'GEMINI_API_KEY'",
+    ]);
+    expectTextExcludes(config, [
+      'defineConnector',
+      'github: defineConnector',
+      'slack: defineConnector',
+      'postgres: defineConnector',
     ]);
 
     const envExample = await readEnvExample(projectDir);
@@ -98,7 +105,21 @@ describe('cli scaffold and setup commands', () => {
       'OPENAI_MODEL=',
       'ANTHROPIC_MODEL=',
       'OLLAMA_MODEL=',
+      'GITHUB_TOKEN=',
+      'SLACK_BOT_TOKEN=',
+      'DATABASE_URL=',
     ]);
+
+    const validateOutput = await captureCommand(() => cmdValidate({
+      cwd: projectDir,
+      args: [],
+    }));
+
+    expect(validateOutput.exitCode).toBeUndefined();
+    expect(validateOutput.stdout).not.toContain('Connector does not expose any tools yet');
+    expect(validateOutput.stdout).not.toContain('connectors.github.tools');
+    expect(validateOutput.stdout).not.toContain('connectors.slack.tools');
+    expect(validateOutput.stdout).not.toContain('connectors.postgres.tools');
   });
 
 

@@ -83,11 +83,6 @@ GEMINI_API_KEY=
 
 # Advanced Ollama override used when FDEKIT_PROVIDER=localOllama.
 OLLAMA_BASE_URL=
-
-# Connector placeholders for the starter config.
-GITHUB_TOKEN=
-SLACK_BOT_TOKEN=
-DATABASE_URL=
 `;
 }
 
@@ -138,7 +133,7 @@ Use this file before changing agent logic; the goal is to decide whether this wo
 
 ## Rollout
 
-1; local demo with mock/local connectors.
+1; local demo with the mock provider.
 2; sandbox with customer-shaped data.
 3; customer sample with writes disabled.
 4; shadow mode against real systems.

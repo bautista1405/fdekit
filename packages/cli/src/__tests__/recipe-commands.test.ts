@@ -75,6 +75,13 @@ describe('cli recipe commands', () => {
     const evals = JSON.parse(await readFile(path.join(projectDir, 'evals', 'support-triage.json'), 'utf8')) as unknown[];
     expect(evals).toHaveLength(2);
 
+    const instructions = await readFile(path.join(projectDir, 'agents', 'support-triage.md'), 'utf8');
+    expectTextIncludes(instructions, [
+      'Always start with `ticket.get`',
+      'returns the canonical `customerId`',
+      'Never pass a ticket id to `customer.get`',
+    ]);
+
     const packageJson = await readPackageJson(projectDir);
     expect(packageJson.type).toBe('module');
     expect(packageJson.scripts?.api).toBe('node customer-api/server.js');

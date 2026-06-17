@@ -4,7 +4,7 @@ import { asRecord, escapeRegExp } from '@fdekit/core';
 import { requireConfigFile } from '@fdekit/runtime';
 import type { CommandContext } from '../context.js';
 import { connectorScaffold, providerScaffold, type AddScaffold, type EnvExample } from '../config/catalog.js';
-import { ensureCoreImports, ensurePackageImports, insertArrayItem, insertObjectEntry } from '../config/edit.js';
+import { ensureCoreImports, ensurePackageImports, hasObjectEntry, insertArrayItem, insertObjectEntry } from '../config/edit.js';
 import { policyExpressionFor } from '../config/policies.js';
 import { escapeSingleQuoted, objectKey } from '../utils/strings.js';
 
@@ -22,29 +22,39 @@ export async function cmdAdd(ctx: CommandContext): Promise<void> {
 
   if (subcommand === 'provider') {
     const scaffold = providerScaffold(name);
+    const key = scaffold?.key ?? name;
 
-    config = scaffold
-      ? applyKnownScaffold(config, 'providers', scaffold)
-      : insertObjectEntry(config, 'providers', `${objectKey(name)}: { name: '${escapeSingleQuoted(name)}' }`);
-    console.log(`Added provider ${name}`);
-    await applyProjectScaffold(ctx.cwd, scaffold);
+    if (hasObjectEntry(config, 'providers', key)) {
+      console.log(`Provider ${key} is already configured`);
+    } else {
+      config = scaffold
+        ? applyKnownScaffold(config, 'providers', scaffold)
+        : insertObjectEntry(config, 'providers', `${objectKey(name)}: { name: '${escapeSingleQuoted(name)}' }`);
+      console.log(`Added provider ${key}`);
+      await applyProjectScaffold(ctx.cwd, scaffold);
+    }
   } else if (subcommand === 'connector') {
     const scaffold = connectorScaffold(name);
+    const key = scaffold?.key ?? name;
 
-    if (scaffold) {
-      config = applyKnownScaffold(config, 'connectors', scaffold, 'agents');
+    if (hasObjectEntry(config, 'connectors', key)) {
+      console.log(`Connector ${key} is already configured`);
     } else {
-      config = ensureCoreImports(config, ['defineConnector']);
-      config = insertObjectEntry(
-        config,
-        'connectors',
-        `${objectKey(name)}: defineConnector({ name: '${escapeSingleQuoted(name)}' })`,
-        'agents',
-      );
-    }
+      if (scaffold) {
+        config = applyKnownScaffold(config, 'connectors', scaffold, 'agents');
+      } else {
+        config = ensureCoreImports(config, ['defineConnector']);
+        config = insertObjectEntry(
+          config,
+          'connectors',
+          `${objectKey(name)}: defineConnector({ name: '${escapeSingleQuoted(name)}' })`,
+          'agents',
+        );
+      }
 
-    console.log(`Added connector ${name}`);
-    await applyProjectScaffold(ctx.cwd, scaffold);
+      console.log(`Added connector ${key}`);
+      await applyProjectScaffold(ctx.cwd, scaffold);
+    }
   } else if (subcommand === 'eval') {
     config = ensureCoreImports(config, ['defineEval', 'noPolicyViolation']);
     config = insertArrayItem(

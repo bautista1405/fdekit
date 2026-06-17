@@ -320,6 +320,39 @@ describe('cli scaffold and setup commands', () => {
     expect(envExample.match(/^FDEKIT_CONNECTOR_MODE=/gm)).toHaveLength(1);
   });
 
+  it('does not duplicate connectors that are already configured', async () => {
+    const projectDir = await createCliProject();
+
+    const firstPostgres = await captureCommand(() => cmdAdd({
+      cwd: projectDir,
+      args: ['connector', 'postgres'],
+    }));
+    const duplicatePostgres = await captureCommand(() => cmdAdd({
+      cwd: projectDir,
+      args: ['connector', 'postgres'],
+    }));
+    const firstCustom = await captureCommand(() => cmdAdd({
+      cwd: projectDir,
+      args: ['connector', 'internal-crm'],
+    }));
+    const duplicateCustom = await captureCommand(() => cmdAdd({
+      cwd: projectDir,
+      args: ['connector', 'internal-crm'],
+    }));
+
+    expect(firstPostgres.stdout).toContain('Added connector postgres');
+    expect(duplicatePostgres.stdout).toContain('Connector postgres is already configured');
+    expect(firstCustom.stdout).toContain('Added connector internal-crm');
+    expect(duplicateCustom.stdout).toContain('Connector internal-crm is already configured');
+
+    const config = await readConfig(projectDir);
+    expect(config.match(/^    postgres:/gm)).toHaveLength(1);
+    expect(config.match(/^    "internal-crm":/gm)).toHaveLength(1);
+
+    const packageJson = await readPackageJson(projectDir);
+    expect(packageJson.dependencies?.['@fdekit/connector-postgres']).toBe(fdekitDependencyVersion);
+  });
+
 
   it('sets a non-zero exit code for invalid command usage', async () => {
     const runOutput = await captureCommand(() => cmdRun({ cwd: process.cwd(), args: [] }));

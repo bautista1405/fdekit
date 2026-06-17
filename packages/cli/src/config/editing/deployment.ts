@@ -28,6 +28,13 @@ export function insertObjectEntry(
   return insertTopLevelProperty(config, sourceFile, property, formatContainerValue('{', '}', entry), beforeProperty);
 }
 
+export function hasObjectEntry(config: string, property: string, key: string): boolean {
+  const sourceFile = parseConfig(config);
+  const container = findDeploymentContainer(sourceFile, property, ts.isObjectLiteralExpression);
+
+  return container ? findObjectElement(container, key) !== null : false;
+}
+
 export function insertArrayItem(config: string, property: string, item: string): string {
   const sourceFile = parseConfig(config);
   const container = findDeploymentContainer(sourceFile, property, ts.isArrayLiteralExpression);

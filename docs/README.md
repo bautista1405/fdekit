@@ -50,7 +50,7 @@ Use this track when customer systems do not fit the built-in connector packages.
 | Find recurring behavior patterns | `fdekit eval macro` | [Production Hardening Guide](./production-hardening.md), [Reference Architectures](./reference-architectures.md#production-shaped-governance-heavy-setup) |
 | Review deployment changes | `fdekit diff`, `fdekit validate` | [Versioning And Migration Notes](./cookbook/versioning-and-migrations.md) |
 | Produce customer-facing evidence | `fdekit report`, `fdekit console`, `fdekit trace` | [Demo Script](./demo.md), [CLI Reference](./cli-reference.md#runtime-and-evidence) |
-| Capture repeatable work | `fdekit recipe capture <name>` | [Recipes](./recipes.md), [Field Deployment Method](./field-deployment-method.md) |
+| Capture repeatable work | `fdekit recipe capture <name>` | [Recipes](./recipes.md) |
 
 ## Reference Architectures
 
@@ -69,7 +69,6 @@ Use this track when customer systems do not fit the built-in connector packages.
 
 ### 2. Design The Deployment
 
-- [Field Deployment Method](./field-deployment-method.md): workflow discovery, scorecards, data layers, rollout stages, and the deployment operating model.
 - [Connector Cookbook](./cookbook/connectors.md): bring your own customer system with `defineConnector()` and `defineTool()`.
 - [Local Environment Cookbook](./cookbook/local-environments.md): run Docker or Floci-backed customer-like systems around the agent loop.
 
@@ -84,13 +83,9 @@ Use this track when customer systems do not fit the built-in connector packages.
 - [Public API Reference](./api-reference.md): API index, package boundaries, and import rules.
 - Package references: [`@fdekit/core`](./api/core.md), [`@fdekit/runtime`](./api/runtime.md), and [`fdekit` CLI](./api/cli.md).
 - Package onboarding READMEs: start with [`@fdekit/core`](../packages/core/README.md), then follow the package graph to runtime, CLI, console, providers, connectors, and environments.
-- [Maintainer Architecture](./architecture.md): package graph, runtime flow, ArtifactStore lifecycle, extension paths, and ADR links.
-- [Architecture Decision Records](./adrs/README.md): lightweight records for major boundary decisions.
+- [Maintainer Architecture](./architecture.md): package graph, runtime flow, ArtifactStore lifecycle, extension paths.
 - [Provider Step And Tool Schema Spec](./specs/provider-steps-and-tool-schemas.md): provider step contracts, tool args schemas, and runtime edge strictness.
 
-### 5. Demo And Plan
+### 5. Demo
 
 - [Demo Script](./demo.md): short demo script and talk track.
-- [Roadmap](./roadmap.md): near-term OSS direction.
-- [Runtime-As-A-Service Roadmap](./runtime-as-a-service-roadmap.md): longer-term hosted/runtime-service product path.
-- [Startup Launch Playbook](./startup-launch-playbook.md): go-to-market notes and launch assets.

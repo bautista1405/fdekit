@@ -288,18 +288,6 @@ Keep console sections deterministic and static. Do not fetch live systems, run a
 - Keep recipe scaffolds recipe-owned. Shared recipe helpers should remove real duplication, not hide recipe-specific behavior.
 - Keep tests close to the package whose boundary changed, then run broader repo checks when package references or public types changed.
 
-## ADRs
-
-Lightweight architecture decisions live in [docs/adrs](./adrs/README.md):
-
-- [ADR 0001: Split core authoring from runtime execution](./adrs/0001-core-runtime-boundary.md)
-- [ADR 0002: Resolve providers through explicit runtime adapters](./adrs/0002-provider-runtime-adapters.md)
-- [ADR 0003: Use catalog manifests as the CLI/docs source of truth](./adrs/0003-catalog-manifest-layer.md)
-- [ADR 0004: Keep local artifacts file-backed and console static](./adrs/0004-file-backed-artifacts-static-console.md)
-- [ADR 0005: Compile deployments into inspectable execution plans](./adrs/0005-deployment-compiler.md)
-- [ADR 0006: Enforce runtime edge gates through explicit strict mode](./adrs/0006-runtime-edge-gates-and-explicit-strict-mode.md)
-- [ADR 0007: Use ArtifactStore adapters for runtime evidence](./adrs/0007-artifact-store-adapters.md)
-
 ## Next Step
 
-If you just used the architecture guide to locate a change, read the relevant package README before editing: [`@fdekit/core`](../packages/core/README.md), [`@fdekit/runtime`](../packages/runtime/README.md), [`@fdekit/cli`](../packages/cli/README.md), [`@fdekit/console`](../packages/console/README.md), provider packages, connector packages, or environment packages. If the change affects a boundary decision, add or update an [ADR](./adrs/README.md).
+If you just used the architecture guide to locate a change, read the relevant package README before editing: [`@fdekit/core`](../packages/core/README.md), [`@fdekit/runtime`](../packages/runtime/README.md), [`@fdekit/cli`](../packages/cli/README.md), [`@fdekit/console`](../packages/console/README.md), provider packages, connector packages, or environment packages.

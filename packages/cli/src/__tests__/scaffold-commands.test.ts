@@ -7,6 +7,7 @@ import { cmdEnv } from '../commands/env.js';
 import { cmdEval } from '../commands/eval.js';
 import { cmdInit } from '../commands/init.js';
 import { cmdRun } from '../commands/run.js';
+import { printCliError } from '../errors.js';
 import {
   fdekitCaretDependencyVersion,
   fdekitDependencyVersion,
@@ -169,7 +170,6 @@ describe('cli scaffold and setup commands', () => {
     });
   });
 
-
   it('adds providers and policies to an existing config', async () => {
     const projectDir = await createCliProject();
 
@@ -246,10 +246,6 @@ describe('cli scaffold and setup commands', () => {
       cwd: projectDir,
       args: ['connector', 'hubspot'],
     }));
-    const salesforceOutput = await captureCommand(() => cmdAdd({
-      cwd: projectDir,
-      args: ['connector', 'salesforce'],
-    }));
     const codebaseOutput = await captureCommand(() => cmdAdd({
       cwd: projectDir,
       args: ['connector', 'codebase'],
@@ -261,6 +257,11 @@ describe('cli scaffold and setup commands', () => {
     const customOutput = await captureCommand(() => cmdAdd({
       cwd: projectDir,
       args: ['connector', 'internal-crm'],
+    }));
+    const salesforceProjectDir = await createCliProject();
+    const salesforceOutput = await captureCommand(() => cmdAdd({
+      cwd: salesforceProjectDir,
+      args: ['connector', 'salesforce'],
     }));
 
     expect(postgresOutput.stdout).toContain('Added connector postgres');
@@ -279,14 +280,12 @@ describe('cli scaffold and setup commands', () => {
       "import { postgresConnector } from '@fdekit/connector-postgres';",
       "import { linearConnector } from '@fdekit/connector-linear';",
       "import { hubspotConnector } from '@fdekit/connector-hubspot';",
-      "import { salesforceConnector } from '@fdekit/connector-salesforce';",
       "import { codebaseConnector } from '@fdekit/connector-codebase';",
       "import { k6Connector } from '@fdekit/connector-k6';",
       "postgres: postgresConnector({",
       "allowedStatements: ['select', 'with']",
       "linear: linearConnector({",
       "hubspot: hubspotConnector({",
-      "salesforce: salesforceConnector({",
       "codebase: codebaseConnector({",
       "k6: k6Connector({",
       "rootDir: process.env.CODEBASE_ROOT ?? '.'",
@@ -294,14 +293,23 @@ describe('cli scaffold and setup commands', () => {
       '"internal-crm": defineConnector({ name: \'internal-crm\' })',
     ]);
 
+    const salesforceConfig = await readConfig(salesforceProjectDir);
+    expectTextIncludes(salesforceConfig, [
+      "import { salesforceConnector } from '@fdekit/connector-salesforce';",
+      "salesforce: salesforceConnector({",
+      "mode: process.env.FDEKIT_CONNECTOR_MODE === 'api' ? 'api' : 'local'",
+    ]);
+
     const packageJson = await readPackageJson(projectDir);
     expect(packageJson.dependencies?.['@fdekit/connector-postgres']).toBe(fdekitDependencyVersion);
     expect(packageJson.dependencies?.['@fdekit/connector-linear']).toBe(fdekitDependencyVersion);
     expect(packageJson.dependencies?.['@fdekit/connector-hubspot']).toBe(fdekitDependencyVersion);
-    expect(packageJson.dependencies?.['@fdekit/connector-salesforce']).toBe(fdekitDependencyVersion);
     expect(packageJson.dependencies?.['@fdekit/connector-codebase']).toBe(fdekitDependencyVersion);
     expect(packageJson.dependencies?.['@fdekit/connector-k6']).toBe(fdekitDependencyVersion);
     expect(packageJson.dependencies?.pg).toBe('^8.13.0');
+
+    const salesforcePackageJson = await readPackageJson(salesforceProjectDir);
+    expect(salesforcePackageJson.dependencies?.['@fdekit/connector-salesforce']).toBe(fdekitDependencyVersion);
 
     const envExample = await readEnvExample(projectDir);
     expectTextIncludes(envExample, [
@@ -311,13 +319,53 @@ describe('cli scaffold and setup commands', () => {
       'LINEAR_API_KEY=',
       'LINEAR_TEAM_ID=',
       'HUBSPOT_ACCESS_TOKEN=',
-      'SALESFORCE_INSTANCE_URL=https://your-domain.my.salesforce.com',
-      'SALESFORCE_ACCESS_TOKEN=',
       'FDEKIT_LOAD_TEST_MODE=local',
       'LOAD_TEST_TARGET_URL=http://localhost:8000',
       'K6_SCRIPT=./load-tests/customer-api-smoke.js',
     ]);
     expect(envExample.match(/^FDEKIT_CONNECTOR_MODE=/gm)).toHaveLength(1);
+
+    const salesforceEnvExample = await readEnvExample(salesforceProjectDir);
+    expectTextIncludes(salesforceEnvExample, [
+      'SALESFORCE_INSTANCE_URL=https://your-domain.my.salesforce.com',
+      'SALESFORCE_ACCESS_TOKEN=',
+      'SALESFORCE_API_VERSION=v60.0',
+    ]);
+    expect(salesforceEnvExample.match(/^FDEKIT_CONNECTOR_MODE=/gm)).toHaveLength(1);
+  });
+
+  it('blocks known connector tool name collisions before mutating config', async () => {
+    const issueProjectDir = await createCliProject();
+    await captureCommand(() => cmdAdd({
+      cwd: issueProjectDir,
+      args: ['connector', 'github'],
+    }));
+    const issueConfigBeforeCollision = await readConfig(issueProjectDir);
+    const issuePackageBeforeCollision = await readPackageJson(issueProjectDir);
+
+    const jiraOutput = await captureAddCommand(issueProjectDir, ['connector', 'jira']);
+
+    expect(jiraOutput.exitCode).toBe(1);
+    expect(jiraOutput.stderr).toContain('Error: Connector jira would duplicate tool issue.create from connector github');
+    expect(jiraOutput.stderr).toContain('Next: For issue trackers, prefer one backend at a time');
+    expect(await readConfig(issueProjectDir)).toBe(issueConfigBeforeCollision);
+    expect(await readPackageJson(issueProjectDir)).toEqual(issuePackageBeforeCollision);
+
+    const crmProjectDir = await createCliProject();
+    await captureCommand(() => cmdAdd({
+      cwd: crmProjectDir,
+      args: ['connector', 'hubspot'],
+    }));
+    const crmConfigBeforeCollision = await readConfig(crmProjectDir);
+    const crmPackageBeforeCollision = await readPackageJson(crmProjectDir);
+
+    const salesforceOutput = await captureAddCommand(crmProjectDir, ['connector', 'salesforce']);
+
+    expect(salesforceOutput.exitCode).toBe(1);
+    expect(salesforceOutput.stderr).toContain('Error: Connector salesforce would duplicate tool crm.note.create from connector hubspot');
+    expect(salesforceOutput.stderr).toContain('Next: For CRM notes, prefer one backend at a time');
+    expect(await readConfig(crmProjectDir)).toBe(crmConfigBeforeCollision);
+    expect(await readPackageJson(crmProjectDir)).toEqual(crmPackageBeforeCollision);
   });
 
   it('does not duplicate connectors that are already configured', async () => {
@@ -430,3 +478,18 @@ describe('cli scaffold and setup commands', () => {
   });
 
 });
+
+async function captureAddCommand(projectDir: string, args: string[]): Promise<{
+  stdout: string;
+  stderr: string;
+  exitCode: string | number | undefined;
+}> {
+  return captureCommand(async () => {
+    try {
+      await cmdAdd({ cwd: projectDir, args });
+    } catch (err) {
+      printCliError(err);
+      process.exitCode = 1;
+    }
+  });
+}

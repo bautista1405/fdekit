@@ -2,11 +2,15 @@ import { promises as fs } from 'fs';
 import * as path from 'path';
 import { asRecord, escapeRegExp } from '@fdekit/core';
 import { requireConfigFile } from '@fdekit/runtime';
+import { connectorManifest, connectorManifests, type ConnectorManifest } from '../catalog/index.js';
 import type { CommandContext } from '../context.js';
 import { connectorScaffold, providerScaffold, type AddScaffold, type EnvExample } from '../config/catalog.js';
 import { ensureCoreImports, ensurePackageImports, hasObjectEntry, insertArrayItem, insertObjectEntry } from '../config/edit.js';
 import { policyExpressionFor } from '../config/policies.js';
+import { CliUserError } from '../errors.js';
 import { escapeSingleQuoted, objectKey } from '../utils/strings.js';
+
+const ADD_CONNECTOR_USAGE = 'fdekit add connector <name>';
 
 export async function cmdAdd(ctx: CommandContext): Promise<void> {
   const [subcommand, name] = ctx.args;
@@ -35,11 +39,26 @@ export async function cmdAdd(ctx: CommandContext): Promise<void> {
     }
   } else if (subcommand === 'connector') {
     const scaffold = connectorScaffold(name);
+    const manifest = connectorManifest(name);
     const key = scaffold?.key ?? name;
 
     if (hasObjectEntry(config, 'connectors', key)) {
       console.log(`Connector ${key} is already configured`);
     } else {
+      if (manifest) {
+        const collision = findConnectorToolCollision(config, manifest);
+
+        if (collision) {
+          throw new CliUserError(
+            `Connector ${manifest.id} would duplicate tool ${collision.toolName} from connector ${collision.existing.id}`,
+            {
+              usage: ADD_CONNECTOR_USAGE,
+              next: connectorCollisionNextSteps(manifest, collision),
+            },
+          );
+        }
+      }
+
       if (scaffold) {
         config = applyKnownScaffold(config, 'connectors', scaffold, 'agents');
       } else {
@@ -75,6 +94,66 @@ export async function cmdAdd(ctx: CommandContext): Promise<void> {
   }
 
   await fs.writeFile(configPath, config, 'utf8');
+}
+
+interface ConnectorToolCollision {
+  existing: ConnectorManifest;
+  toolName: string;
+}
+
+function findConnectorToolCollision(
+  config: string,
+  manifest: ConnectorManifest,
+): ConnectorToolCollision | undefined {
+  const targetTools = new Set(manifest.tools);
+
+  for (const existing of configuredKnownConnectorManifests(config)) {
+    if (existing.id === manifest.id) {
+      continue;
+    }
+
+    const toolName = existing.tools.find((tool) => targetTools.has(tool));
+
+    if (toolName) {
+      return { existing, toolName };
+    }
+  }
+
+  return undefined;
+}
+
+function configuredKnownConnectorManifests(config: string): ConnectorManifest[] {
+  return connectorManifests.filter((manifest) => connectorFactoryIsConfigured(config, manifest));
+}
+
+function connectorFactoryIsConfigured(config: string, manifest: ConnectorManifest): boolean {
+  if (!manifest.scaffold || !hasObjectEntry(config, 'connectors', manifest.scaffold.key)) {
+    return false;
+  }
+
+  const key = escapeRegExp(objectKey(manifest.scaffold.key));
+  const factory = escapeRegExp(manifest.configFactory.replace(/\(.*$/, ''));
+
+  return new RegExp(`(^|\\n)\\s*${key}\\s*:\\s*${factory}\\s*\\(`).test(config);
+}
+
+function connectorCollisionNextSteps(
+  manifest: ConnectorManifest,
+  collision: ConnectorToolCollision,
+): string[] {
+  const steps = [
+    `Keep only one connector that exposes \`${collision.toolName}\`, or remove connector \`${collision.existing.id}\` before adding \`${manifest.id}\`.`,
+  ];
+
+  if (collision.toolName === 'issue.create') {
+    steps.push('For issue trackers, prefer one backend at a time, or use a recipe with `FDEKIT_ISSUE_TRACKER=github|jira|linear`.');
+  } else if (collision.toolName === 'crm.note.create') {
+    steps.push('For CRM notes, prefer one backend at a time, or use the sales recipe with `FDEKIT_CRM=local|hubspot|salesforce`.');
+  }
+
+  steps.push('If you need both connectors in one deployment, wrap one in a custom connector with distinct namespaced tool names.');
+
+  return steps;
 }
 
 function applyKnownScaffold(

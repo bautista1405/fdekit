@@ -1,0 +1,25 @@
+{
+  "name": "@fdekit/example-environments",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Runtime-environment examples for FDEKit: dockerEnvironment + flociEnvironment",
+  "type": "module",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "fdekit:validate": "fdekit validate",
+    "fdekit:env:describe": "fdekit env describe",
+    "fdekit:env:start": "fdekit env start",
+    "fdekit:env:doctor": "fdekit env doctor",
+    "fdekit:env:stop": "fdekit env stop"
+  },
+  "dependencies": {
+    "@fdekit/core": "0.4.0",
+    "@fdekit/environment-docker": "0.4.0",
+    "@fdekit/environment-floci": "0.4.0"
+  },
+  "devDependencies": {
+    "@fdekit/cli": "0.4.0"
+  }
+}

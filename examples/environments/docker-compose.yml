@@ -1,0 +1,7 @@
+# Used by the `docker` backend (FDEKIT_ENV_BACKEND=docker, the default).
+# A stand-in customer-like service so `fdekit env start/doctor/stop` runs end-to-end with no extra setup.
+services:
+  web:
+    image: nginx:alpine
+    ports:
+      - "8080:80"

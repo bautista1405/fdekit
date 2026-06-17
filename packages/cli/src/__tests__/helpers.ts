@@ -80,9 +80,17 @@ export default defineDeployment({
     }),
     customerApi: defineConnector({
       name: 'customer-api',
-      config: { baseUrl: 'http://127.0.0.1:8787' },
+      config: { baseUrl: process.env.CUSTOMER_API_URL ?? 'http://127.0.0.1:8787' },
       env: [
         { name: 'CUSTOMER_API_URL', required: false, description: 'Override local API URL' },
+      ],
+      tools: [
+        defineTool({
+          name: 'customerApi.healthCheck',
+          handler() {
+            return { ok: true, latencyMs: 1 };
+          },
+        }),
       ],
     }),
     postgres: defineConnector({

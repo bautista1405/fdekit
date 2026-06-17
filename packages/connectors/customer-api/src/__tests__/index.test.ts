@@ -3,6 +3,36 @@ import { environmentEndpoint } from '@fdekit/core';
 import { customerApiConnector } from '../index.js';
 
 describe('customerApiConnector', () => {
+  it('exposes a live health check tool backed by /health', async () => {
+    const calls: Array<{ input: RequestInfo | URL; init?: RequestInit }> = [];
+    const connector = customerApiConnector({
+      baseUrl: 'http://customer-api.local/',
+      fetch: async (input, init) => {
+        calls.push({ input, init });
+        return Response.json({ ok: true, service: 'customer-api' });
+      },
+    });
+    const healthTool = findTool(connector, 'customerApi.healthCheck');
+
+    await expect(healthTool.handler({}, {})).resolves.toMatchObject({
+      ok: true,
+    });
+    expect(calls).toHaveLength(1);
+    expect(calls[0].input).toBe('http://customer-api.local/health');
+  });
+
+  it('reports unhealthy 200 responses as failed health checks', async () => {
+    const connector = customerApiConnector({
+      baseUrl: 'http://customer-api.local',
+      fetch: async () => Response.json({ ok: false }),
+    });
+    const healthTool = findTool(connector, 'customerApi.healthCheck');
+
+    await expect(healthTool.handler({}, {})).resolves.toMatchObject({
+      ok: false,
+    });
+  });
+
   it('creates customer and ticket tools backed by the configured base URL', async () => {
     const calls: Array<{ input: RequestInfo | URL; init?: RequestInit }> = [];
     const connector = customerApiConnector({
@@ -251,3 +281,16 @@ describe('customerApiConnector', () => {
     expect(calls[0].input).toBe('https://crm.example.com/accounts/cus_company');
   });
 });
+
+function findTool(
+  connector: ReturnType<typeof customerApiConnector>,
+  name: string,
+): NonNullable<ReturnType<typeof customerApiConnector>['tools']>[number] {
+  const tool = connector.tools?.find((candidate) => candidate.name === name);
+
+  if (!tool) {
+    throw new Error(`Missing tool ${name}`);
+  }
+
+  return tool;
+}

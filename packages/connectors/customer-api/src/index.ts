@@ -1,4 +1,5 @@
 import {
+  asRecord,
   createHttpReq,
   defineConnector,
   defineTool,
@@ -10,8 +11,13 @@ import {
   type ToolCallContext,
 } from '@fdekit/core';
 import { normalizeBaseUrl, requestJson } from './helpers/index.js';
-import type { CustomerApiConnectorConfig, CustomerApiConnectorOptions, CustomerApiMapper, CustomerApiRoutes, EscalateTicketArgs, GetCustomerArgs, GetTicketArgs } from './interfaces/index.js';
-export type { CustomerApiConnectorConfig, CustomerApiConnectorOptions, CustomerApiMapper, CustomerApiRoutes, EscalateTicketArgs, GetCustomerArgs, GetTicketArgs } from './interfaces/index.js';
+import type { CustomerApiConnectorConfig, CustomerApiConnectorOptions, CustomerApiHealthCheckArgs, CustomerApiHealthCheckResult, CustomerApiMapper, CustomerApiRoutes, EscalateTicketArgs, GetCustomerArgs, GetTicketArgs } from './interfaces/index.js';
+export type { CustomerApiConnectorConfig, CustomerApiConnectorOptions, CustomerApiHealthCheckArgs, CustomerApiHealthCheckResult, CustomerApiMapper, CustomerApiRoutes, EscalateTicketArgs, GetCustomerArgs, GetTicketArgs } from './interfaces/index.js';
+
+const healthCheckArgsSchema = {
+  type: 'object',
+  properties: {},
+};
 
 const getCustomerArgsSchema = {
   type: 'object',
@@ -87,6 +93,7 @@ export function customerApiConnector<
   const http = createHttpReq(options.resilience);
   const fetchImpl = ((input, init) => http.request(options.fetch ?? globalThis.fetch, input, init)) as typeof globalThis.fetch;
   const routes = {
+    healthCheck: () => '/health',
     getCustomer: ({ customerId }: GetCustomerArgs) => `/customers/${encodeURIComponent(customerId)}`,
     getTicket: ({ ticketId }: GetTicketArgs) => `/tickets/${encodeURIComponent(ticketId)}`,
     escalateTicket: ({ ticketId }: EscalateTicketArgs) => `/tickets/${encodeURIComponent(ticketId)}/escalate`,
@@ -117,6 +124,24 @@ export function customerApiConnector<
       },
     ],
     tools: [
+      defineTool<CustomerApiHealthCheckArgs, CustomerApiHealthCheckResult>({
+        name: 'customerApi.healthCheck',
+        description: 'Verify that the customer API health endpoint responds successfully',
+        scopes: ['customer:read'],
+        category: 'health',
+        tags: ['health', 'customer', 'read'],
+        argsSchema: healthCheckArgsSchema,
+        async handler(_args, context) {
+          const startedAt = Date.now();
+          const raw = await fetchJson(routes.healthCheck(), context);
+          const record = asRecord(raw);
+
+          return {
+            ok: record.ok === undefined ? true : record.ok === true,
+            latencyMs: Date.now() - startedAt,
+          };
+        },
+      }),
       defineTool<GetCustomerArgs, unknown>({
         name: 'customer.get',
         description: 'Look up customer profile, subscription, and account context',

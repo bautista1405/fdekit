@@ -8,10 +8,10 @@ export const workspaceConnectorManifests: ConnectorManifest[] = [
     displayName: 'Customer API',
     packageName: '@fdekit/connector-customer-api',
     configFactory: 'customerApiConnector()',
-    tools: ['ticket.get', 'customer.get', 'ticket.escalate'],
+    tools: ['customerApi.healthCheck', 'ticket.get', 'customer.get', 'ticket.escalate'],
     maturity: 'Ready',
     supportNote: 'Default support-triage connector for customer-owned HTTP APIs and custom adapter patterns',
-    packagePurpose: 'Customer, ticket, and escalation tools for support deployments',
+    packagePurpose: 'Customer API health, customer, ticket, and escalation tools for support deployments',
     systemDependency: 'Local mode is deterministic; API mode uses the configured customer API URL',
     scaffold: {
       key: 'customerApi',

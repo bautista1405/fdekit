@@ -7,7 +7,7 @@
 ## Who should use this package
 
 - Deployment authors wiring customer support systems into an FDEKit recipe.
-- Recipe authors who need stable `customer.get`, `ticket.get`, and `ticket.escalate` tools.
+- Recipe authors who need stable `customerApi.healthCheck`, `customer.get`, `ticket.get`, and `ticket.escalate` tools.
 - Connector contributors adapting the demo connector to real customer API shapes.
 
 Choose a custom `defineConnector()` implementation when the customer API is too different from customer/ticket/escalation semantics.
@@ -38,7 +38,7 @@ export default defineDeployment({
 });
 ```
 
-Tools exposed to agents: `customer.get`, `ticket.get`, and `ticket.escalate`.
+Tools exposed to agents and `fdekit doctor --live`: `customerApi.healthCheck`, `customer.get`, `ticket.get`, and `ticket.escalate`.
 
 ## Public API surface
 
@@ -49,7 +49,7 @@ import { customerApiConnector } from '@fdekit/connector-customer-api';
 import type { CustomerApiConnectorOptions, CustomerApiRoutes } from '@fdekit/connector-customer-api';
 ```
 
-Root exports include `customerApiConnector`, `CustomerApiConnectorConfig`, `CustomerApiConnectorOptions`, `CustomerApiMapper`, `CustomerApiRoutes`, `GetCustomerArgs`, `GetTicketArgs`, and `EscalateTicketArgs`. The connector family is summarized in the public API index: [Public API Reference](../../../docs/api-reference.md#connectors).
+Root exports include `customerApiConnector`, `CustomerApiConnectorConfig`, `CustomerApiConnectorOptions`, `CustomerApiHealthCheckArgs`, `CustomerApiHealthCheckResult`, `CustomerApiMapper`, `CustomerApiRoutes`, `GetCustomerArgs`, `GetTicketArgs`, and `EscalateTicketArgs`. The connector family is summarized in the public API index: [Public API Reference](../../../docs/api-reference.md#connectors).
 
 ## Stability/backward-compat notes
 

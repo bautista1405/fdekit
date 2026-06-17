@@ -7,6 +7,13 @@ export interface CustomerApiConnectorConfig {
   customMappers?: boolean;
 }
 
+export interface CustomerApiHealthCheckArgs {}
+
+export interface CustomerApiHealthCheckResult {
+  ok: boolean;
+  latencyMs: number;
+}
+
 export interface GetCustomerArgs {
   customerId: string;
 }
@@ -22,6 +29,7 @@ export interface EscalateTicketArgs {
 }
 
 export interface CustomerApiRoutes {
+  healthCheck?: () => string;
   getCustomer?: (args: GetCustomerArgs) => string;
   getTicket?: (args: GetTicketArgs) => string;
   escalateTicket?: (args: EscalateTicketArgs) => string;

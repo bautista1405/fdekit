@@ -454,6 +454,7 @@ describe('cli scaffold and setup commands', () => {
 
     expect(live.exitCode).toBeUndefined();
     expect(live.stdout).toContain('Live Checks');
+    expect(live.stdout).toContain('customerApi customerApi.healthCheck ok');
     expect(live.stdout).toContain('postgres postgres.healthCheck ok');
     expect(live.stdout).toContain('Summary: all required env vars are set');
   });

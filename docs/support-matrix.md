@@ -95,7 +95,7 @@ This repository uses npm workspaces and Turborepo.
 <!-- fdekit-catalog:connector-packages:start -->
 | Package | Purpose |
 | --- | --- |
-| `@fdekit/connector-customer-api` | Customer, ticket, and escalation tools for support deployments |
+| `@fdekit/connector-customer-api` | Customer API health, customer, ticket, and escalation tools for support deployments |
 | `@fdekit/connector-codebase` | Local repository listing, search, and file reads |
 | `@fdekit/connector-slack` | Local/API Slack-style messaging |
 | `@fdekit/connector-github` | Local/API GitHub-style issue creation with common `issue.create` |

@@ -1,5 +1,19 @@
 # fdekit
 
+## 0.4.1
+
+### Patch Changes
+
+- 558a126: patches for connectors, providers and environments: error handling, idempotency for tools and connectors, environments examples, tool error handling for providers
+- Updated dependencies [558a126]
+  - @fdekit/console@0.4.1
+  - @fdekit/core@0.4.1
+  - @fdekit/provider-anthropic@0.4.1
+  - @fdekit/provider-google@0.4.1
+  - @fdekit/provider-ollama@0.4.1
+  - @fdekit/provider-openai@0.4.1
+  - @fdekit/runtime@0.4.1
+
 ## 0.4.0
 
 ### Minor Changes

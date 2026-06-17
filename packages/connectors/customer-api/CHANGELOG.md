@@ -1,5 +1,13 @@
 # @fdekit/connector-customer-api
 
+## 0.4.1
+
+### Patch Changes
+
+- 558a126: patches for connectors, providers and environments: error handling, idempotency for tools and connectors, environments examples, tool error handling for providers
+- Updated dependencies [558a126]
+  - @fdekit/core@0.4.1
+
 ## 0.4.0
 
 ### Patch Changes

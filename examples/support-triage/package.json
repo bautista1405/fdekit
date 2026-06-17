@@ -26,12 +26,12 @@
     "fdekit:report": "fdekit report"
   },
   "dependencies": {
-    "@fdekit/connector-customer-api": "0.4.0",
-    "@fdekit/connector-github": "0.4.0",
-    "@fdekit/connector-slack": "0.4.0",
-    "@fdekit/core": "0.4.0"
+    "@fdekit/connector-customer-api": "0.4.1",
+    "@fdekit/connector-github": "0.4.1",
+    "@fdekit/connector-slack": "0.4.1",
+    "@fdekit/core": "0.4.1"
   },
   "devDependencies": {
-    "@fdekit/cli": "0.4.0"
+    "@fdekit/cli": "0.4.1"
   }
 }

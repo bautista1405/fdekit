@@ -151,6 +151,113 @@ describe('runAgent', () => {
     expect(result.finalAnswer).toBe('Registry runtime completed with registered-model');
   });
 
+  it('returns tool handler failures to the provider so the loop can recover', async () => {
+    const projectDir = await mkRunProjectDir();
+    const seenToolResults: ProviderToolResult[][] = [];
+    const deployment = defineDeployment({
+      name: 'recoverable-tool-error',
+      environment: 'local',
+      providers: {
+        recovering: {
+          name: 'recovering',
+          runtime: {
+            name: 'recovering',
+            planNextStep(context) {
+              seenToolResults.push([...context.toolResults]);
+
+              if (!findToolResult(context.toolResults, 'customer.get')) {
+                return {
+                  type: 'tool_call',
+                  toolName: 'customer.get',
+                  args: { customerId: 'tick_1001' },
+                };
+              }
+
+              if (!findToolResult(context.toolResults, 'ticket.get')) {
+                return {
+                  type: 'tool_call',
+                  toolName: 'ticket.get',
+                  args: { ticketId: 'tick_1001' },
+                };
+              }
+
+              return {
+                type: 'final',
+                message: 'Recovered after fetching the ticket first',
+              };
+            },
+          },
+        },
+      },
+      agents: {
+        supportTriage: defineAgent({
+          provider: 'recovering',
+          instructions: 'Recover from a bad customer lookup by fetching the ticket first',
+          tools: [
+            defineTool<{ customerId: string }>({
+              name: 'customer.get',
+              handler(args) {
+                throw new Error(`Customer API request failed: 404 Not Found (${args.customerId})`);
+              },
+            }),
+            defineTool<{ ticketId: string }>({
+              name: 'ticket.get',
+              handler(args) {
+                return { id: args.ticketId, customerId: 'cus_company' };
+              },
+            }),
+          ],
+        }),
+      },
+    });
+
+    const result = await runAgent({
+      deployment,
+      projectDir,
+      agentName: 'supportTriage',
+      input: { ticketId: 'tick_1001' },
+      maxSteps: 4,
+    });
+
+    expect(result.status).toBe('completed');
+    expect(result.finalAnswer).toBe('Recovered after fetching the ticket first');
+    expect(result.toolCalls.map((call) => call.name)).toEqual(['customer.get', 'ticket.get']);
+    expect(result.toolCalls[0]).toMatchObject({
+      name: 'customer.get',
+      is_error: true,
+      result: {
+        error: {
+          name: 'Error',
+          message: 'Customer API request failed: 404 Not Found (tick_1001)',
+        },
+      },
+    });
+    expect(result.toolCalls[1]).not.toHaveProperty('is_error');
+
+    const recoveredContext = seenToolResults.find((toolResults) => toolResults.length === 1);
+    expect(recoveredContext?.[0]).toMatchObject({
+      name: 'customer.get',
+      is_error: true,
+    });
+    expect(result.trace.events).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        type: 'tool.call.failed',
+        toolName: 'customer.get',
+        is_error: true,
+      }),
+      expect.objectContaining({
+        type: 'tool.call.completed',
+        toolName: 'ticket.get',
+      }),
+    ]));
+
+    const audit = await readAuditLog(projectDir);
+    expect(audit.find((entry) => entry.action === 'tool.call.failed')).toMatchObject({
+      outcome: 'failed',
+      toolName: 'customer.get',
+    });
+  });
+
   it('asks for an explicit adapter when a non-mock provider config has no runtime', async () => {
     const projectDir = await mkRunProjectDir();
     const deployment = defineDeployment({

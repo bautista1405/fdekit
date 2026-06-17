@@ -16,6 +16,7 @@ export interface ProviderToolResult {
   args: unknown;
   result?: unknown;
   latencyMs: number;
+  is_error?: boolean;
 }
 
 export interface ProviderPlanContext {

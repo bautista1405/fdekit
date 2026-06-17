@@ -37,6 +37,7 @@ export function buildProviderPlannerInstructions(context: ProviderPlanContext): 
     'Use only available tool names; prefer a final answer when enough tool results are present',
     'For tool_call steps, args must match the selected tool argsSchema and include every required property',
     'Use the input and previous toolResults to fill tool arguments; never send empty args unless the tool schema has no required fields',
+    'If a previous tool result has "is_error": true, treat it as recoverable feedback and adjust the next step instead of repeating the same failing call',
     '',
     'Agent instructions:',
     context.instructions,

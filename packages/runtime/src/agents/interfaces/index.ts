@@ -20,6 +20,7 @@ export interface AgentToolCall {
   args: unknown;
   result?: unknown;
   latencyMs: number;
+  is_error?: boolean;
   category?: string;
   tags: string[];
   scopes: string[];

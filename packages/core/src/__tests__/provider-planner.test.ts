@@ -15,6 +15,7 @@ describe('provider planner protocol helpers', () => {
     const context = planContext();
 
     expect(buildProviderPlannerInstructions(context)).toContain('Return only strict JSON');
+    expect(buildProviderPlannerInstructions(context)).toContain('"is_error": true');
     expect(buildProviderPlannerInstructions(context)).toContain('Find TODO markers');
 
     expect(buildProviderPlannerInputPayload(context)).toMatchObject({

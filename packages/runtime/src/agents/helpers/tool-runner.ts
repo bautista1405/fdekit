@@ -50,7 +50,59 @@ export async function callTool(
     },
   });
 
-  const result = await tool.handler(args, context);
+  let result: unknown;
+
+  try {
+    result = await tool.handler(args, context);
+  } catch (err) {
+    const latencyMs = Date.now() - startedAt;
+    const redactedResult = redactForGovernance(toolErrorResult(err));
+    const redactedMessage = redactErrorMessage(err);
+    const call = {
+      name: toolName,
+      args: redactedArgs,
+      result: redactedResult,
+      latencyMs,
+      is_error: true,
+      category: tool.category,
+      tags: [...(tool.tags ?? [])],
+      scopes: [...(tool.scopes ?? [])],
+      environments: [...(tool.environments ?? [])],
+    };
+
+    state.toolCalls.push(call);
+    state.events.push({
+      type: 'tool.call.failed',
+      toolName,
+      args: redactedArgs,
+      result: redactedResult,
+      is_error: true,
+      latencyMs,
+      toolScopes: tool.scopes ?? [],
+      toolAllowedEnvironments: tool.environments ?? [],
+      toolCategory: tool.category,
+      toolTags: tool.tags ?? [],
+    });
+    await appendAudit(state, {
+      action: 'tool.call.failed',
+      outcome: 'failed',
+      toolName,
+      message: redactedMessage,
+      metadata: {
+        latencyMs,
+        args: redactedArgs,
+        result: redactedResult,
+        is_error: true,
+        toolScopes: tool.scopes ?? [],
+        toolAllowedEnvironments: tool.environments ?? [],
+        toolCategory: tool.category,
+        toolTags: tool.tags ?? [],
+      },
+    });
+
+    return redactedResult;
+  }
+
   const latencyMs = Date.now() - startedAt;
 
   await enforcePolicies(state, 'afterToolCall', toolName, result, createToolContext(state, toolName, tool));
@@ -134,4 +186,22 @@ function createToolContext(
       input: state.input,
     },
   };
+}
+
+function toolErrorResult(err: unknown): Record<string, unknown> {
+  return {
+    error: {
+      name: err instanceof Error && err.name ? err.name : 'Error',
+      message: errorMessage(err),
+    },
+  };
+}
+
+function errorMessage(err: unknown): string {
+  return err instanceof Error ? err.message : String(err);
+}
+
+function redactErrorMessage(err: unknown): string {
+  const redacted = redactForGovernance(errorMessage(err));
+  return typeof redacted === 'string' ? redacted : errorMessage(err);
 }

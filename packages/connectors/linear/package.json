@@ -1,6 +1,6 @@
 {
   "name": "@fdekit/connector-linear",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "Linear connector for FDEKit",
   "main": "dist/index.js",
   "module": "dist/index.js",
@@ -25,7 +25,7 @@
   ],
   "license": "MIT",
   "dependencies": {
-    "@fdekit/core": "0.4.0"
+    "@fdekit/core": "0.4.1"
   },
   "type": "module"
 }

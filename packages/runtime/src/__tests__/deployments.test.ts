@@ -9,6 +9,7 @@ import {
   defineTool,
   defineWorkflow,
   expectedToolCall,
+  judgeRubric,
 } from '@fdekit/core';
 import {
   compileDeployment,
@@ -303,6 +304,42 @@ describe('deployment validation and diffing', () => {
     expect(result.issues.map((issue) => issue.path)).toContain('evals.missing-agent.agent');
     expect(result.issues.map((issue) => issue.path)).toContain('evals.missing-agent.maxSteps');
     expect(result.issues.some((issue) => issue.severity === 'warning')).toBe(true);
+  });
+
+  it('rejects rubric assertions without a configured judge', () => {
+    const deployment = defineDeployment({
+      name: 'missing-rubric-judge',
+      providers: {
+        mock: { name: 'mock' },
+      },
+      agents: {
+        reviewer: defineAgent({
+          provider: 'mock',
+          instructions: './agents/reviewer.md',
+        }),
+      },
+      evals: [
+        {
+          name: 'answer-quality',
+          agent: 'reviewer',
+          cases: [
+            { name: 'polite-answer', input: { message: 'Help me' } },
+          ],
+          assertions: [
+            judgeRubric({ rubric: 'Answer must be polite and complete.' }),
+          ],
+        },
+      ],
+    });
+
+    const result = validateDeployment(deployment);
+
+    expect(result.valid).toBe(false);
+    expect(result.issues).toContainEqual({
+      severity: 'error',
+      path: 'evals.answer-quality.assertions.judge-rubric.judge',
+      message: 'judgeRubric requires a judge function; FDEKit does not provide a built-in provider-backed judge',
+    });
   });
 
   it('warns when harness refs point at unknown tools, policies, evals, or triggers', () => {

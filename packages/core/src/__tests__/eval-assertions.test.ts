@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   expectedFinalAnswer,
   expectedToolCall,
+  judgeRubric,
   maxCost,
   maxLatency,
   noPolicyViolation,
@@ -63,5 +64,29 @@ describe('eval assertions', () => {
     expect(await noPolicyViolation().evaluate({
       policyViolations: [{ policy: 'deny-pii-leak', reason: 'Potential PII detected' }],
     })).toMatchObject({ passed: false });
+  });
+
+  it('declares when a rubric judge is missing', async () => {
+    const missingJudge = judgeRubric({
+      rubric: 'Answer must be polite and complete.',
+    });
+    const configuredJudge = judgeRubric({
+      rubric: 'Answer must be polite and complete.',
+      judge: () => ({ passed: true, score: 1 }),
+    });
+
+    expect(missingJudge.configurationIssues).toEqual([{
+      path: 'judge',
+      message: 'judgeRubric requires a judge function; FDEKit does not provide a built-in provider-backed judge',
+    }]);
+    expect(await missingJudge.evaluate({ finalAnswer: 'Happy to help.' })).toMatchObject({
+      passed: false,
+      message: 'No judge function configured for rubric eval',
+    });
+    expect(configuredJudge.configurationIssues).toBeUndefined();
+    expect(await configuredJudge.evaluate({ finalAnswer: 'Happy to help.' })).toMatchObject({
+      passed: true,
+      score: 1,
+    });
   });
 });

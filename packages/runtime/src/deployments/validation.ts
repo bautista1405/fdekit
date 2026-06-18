@@ -3,6 +3,8 @@ import type {
   AnyToolDefinition,
   DeploymentDefinition,
   DeploymentEnvironmentDefinition,
+  EvalAssertion,
+  EvalDefinition,
   HarnessDefinition,
 } from '@fdekit/core';
 
@@ -104,6 +106,14 @@ export function validateDeployment(
     if (agent.harness) {
       validateHarness(agent.harness, `agents.${agentKey}.harness`, toolNames, policyNames, evalNames, add);
     }
+
+    for (const [index, evalDefinition] of (agent.evals ?? []).entries()) {
+      validateEvalAssertionConfiguration(
+        evalDefinition,
+        `agents.${agentKey}.evals.${evalDefinition.name || index}`,
+        add,
+      );
+    }
   }
 
   if (deployment.harness) {
@@ -128,6 +138,8 @@ export function validateDeployment(
     if (!evalDefinition.dataset && !evalDefinition.cases && !evalDefinition.run) {
       add('warning', evalPath, 'Eval has no dataset, inline cases, or custom run function');
     }
+
+    validateEvalAssertionConfiguration(evalDefinition, evalPath, add);
   }
 
   for (const [index, budget] of (deployment.governance?.budgets ?? []).entries()) {
@@ -140,6 +152,36 @@ export function validateDeployment(
     valid: !issues.some((issue) => issue.severity === 'error'),
     issues,
   };
+}
+
+function validateEvalAssertionConfiguration(
+  evalDefinition: EvalDefinition,
+  evalPath: string,
+  add: (severity: DeploymentValidationSeverity, path: string, message: string) => void,
+): void {
+  validateEvalAssertions(evalDefinition.assertions ?? [], `${evalPath}.assertions`, add);
+
+  for (const [index, evalCase] of (evalDefinition.cases ?? []).entries()) {
+    validateEvalAssertions(
+      evalCase.assertions ?? [],
+      `${evalPath}.cases.${evalCase.name || index}.assertions`,
+      add,
+    );
+  }
+}
+
+function validateEvalAssertions(
+  assertions: EvalAssertion[],
+  path: string,
+  add: (severity: DeploymentValidationSeverity, path: string, message: string) => void,
+): void {
+  for (const [index, assertion] of assertions.entries()) {
+    const assertionPath = `${path}.${assertion.name || index}`;
+
+    for (const issue of assertion.configurationIssues ?? []) {
+      add('error', issue.path ? `${assertionPath}.${issue.path}` : assertionPath, issue.message);
+    }
+  }
 }
 
 function validateEnvironmentWiring(

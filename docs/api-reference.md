@@ -175,7 +175,7 @@ export const codeQuality = defineConnector({
 | `expectedToolCall()` | Require one or more calls to a tool. |
 | `notExpectedToolCall()` | Require zero calls to a tool. |
 | `expectedFinalAnswer()` | Match final answer text with a string, regex, or predicate. |
-| `judgeRubric()` | Run a custom judge function against a rubric. |
+| `judgeRubric()` | Run a required custom judge function against a rubric; validation fails when no judge is configured. |
 | `maxLatency()` | Require latency under a threshold. |
 | `maxCost()` | Require cost under a threshold. |
 | `noPolicyViolation()` | Require no policy violations. |

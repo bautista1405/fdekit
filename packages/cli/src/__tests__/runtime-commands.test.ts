@@ -22,6 +22,27 @@ import {
 vi.setConfig({ testTimeout: 30000 });
 
 describe('cli runtime commands', () => {
+  it('reports missing rubric judges during validation', async () => {
+    const projectDir = await createCliProject();
+    const configPath = path.join(projectDir, 'fde.config.ts');
+    const config = (await readFile(configPath, 'utf8'))
+      .replace('  noPolicyViolation,\n', '  judgeRubric,\n  noPolicyViolation,\n')
+      .replace(
+        '        noPolicyViolation(),\n',
+        "        judgeRubric({ rubric: 'Answer must be polite and complete.' }),\n        noPolicyViolation(),\n",
+      );
+    await writeFile(configPath, config, 'utf8');
+
+    const output = await captureCommand(() => cmdValidate({ cwd: projectDir, args: [] }));
+
+    expect(output.exitCode).toBe(1);
+    expect(output.stdout).toContain(
+      'ERROR evals.support-triage-dataset.assertions.judge-rubric.judge: '
+      + 'judgeRubric requires a judge function; FDEKit does not provide a built-in provider-backed judge',
+    );
+    expect(output.stdout).toContain('Summary: deployment config has validation errors');
+  });
+
   it('keeps config-free trace output inside the contained project directory', async () => {
     const customerRoot = await mkProjectRoot('fdekit-cli-contained-trace-');
     await writeFile(path.join(customerRoot, 'package.json'), '{"name":"customer-app","private":true}\n', 'utf8');

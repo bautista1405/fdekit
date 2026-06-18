@@ -54,6 +54,30 @@ export default defineDeployment({
 });
 ```
 
+## Rubric judges
+
+`judgeRubric` is a bring-your-own-judge assertion. FDEKit does not automatically call the
+deployment provider or ship a built-in LLM judge. Pass a `judge` function that returns an
+`EvalAssertionResult`; `fdekit validate` reports an error when the function is missing.
+
+```ts
+import { judgeRubric } from '@fdekit/core';
+
+const answerQuality = judgeRubric({
+  rubric: 'The answer is accurate, polite, and complete.',
+  async judge(context, rubric) {
+    // Call the model or deterministic judge selected for your eval environment.
+    const passed = Boolean(context.finalAnswer?.includes('please'));
+
+    return {
+      passed,
+      score: passed ? 1 : 0,
+      message: passed ? `Passed: ${rubric}` : `Failed: ${rubric}`,
+    };
+  },
+});
+```
+
 ## Public API surface
 
 Import from the package root:

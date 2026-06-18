@@ -80,6 +80,12 @@ export function judgeRubric(options: {
   return {
     name: options.name ?? 'judge-rubric',
     description: options.description ?? options.rubric,
+    configurationIssues: options.judge
+      ? undefined
+      : [{
+        path: 'judge',
+        message: 'judgeRubric requires a judge function; FDEKit does not provide a built-in provider-backed judge',
+      }],
     async evaluate(context) {
       if (!options.judge) {
         return {

@@ -8,6 +8,11 @@ export interface EvalAssertionResult {
   metadata?: Record<string, unknown>;
 }
 
+export interface EvalAssertionConfigurationIssue {
+  path?: string;
+  message: string;
+}
+
 export interface EvalRunContext {
   deploymentName?: string;
   agentName?: string;
@@ -25,6 +30,7 @@ export interface EvalRunContext {
 export interface EvalAssertion {
   name: string;
   description?: string;
+  configurationIssues?: EvalAssertionConfigurationIssue[];
   evaluate: (context: EvalRunContext) => MaybePromise<EvalAssertionResult>;
 }
 

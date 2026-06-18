@@ -18,6 +18,16 @@ import {
   type RunState,
 } from './helpers/index.js';
 
+export class AgentRunError extends Error {
+  readonly result: AgentRunResult;
+
+  constructor(message: string, result: AgentRunResult) {
+    super(message);
+    this.name = 'AgentRunError';
+    this.result = result;
+  }
+}
+
 export async function runAgent(options: AgentRunOptions): Promise<AgentRunResult> {
   const startedAt = Date.now();
   const id = createRunId();
@@ -68,7 +78,10 @@ export async function runAgent(options: AgentRunOptions): Promise<AgentRunResult
     type: 'governance.profile',
     ...governanceProfileEvent(options.deployment, options.agentName, agent, state.policies),
   });
-  await enforceToolCatalogEdge(state);
+
+  let finalAnswer = '';
+  let status: AgentRunStatus = 'completed';
+
   await appendAudit(state, {
     action: 'agent.run.started',
     outcome: 'requested',
@@ -76,33 +89,61 @@ export async function runAgent(options: AgentRunOptions): Promise<AgentRunResult
     metadata: { input: options.input, maxSteps },
   });
 
-  let finalAnswer = '';
-  let status: AgentRunStatus = 'completed';
-
   try {
+    await enforceToolCatalogEdge(state);
     finalAnswer = await runProviderLoop(state, maxSteps);
     status = state.policyViolations.length > 0 ? 'failed' : 'completed';
   } catch (err) {
     if (!(err instanceof ApprovalRequiredError)) {
+      const message = err instanceof Error ? err.message : String(err);
       await appendAudit(state, {
         action: 'agent.run.failed',
         outcome: 'failed',
-        message: err instanceof Error ? err.message : String(err),
+        message,
         metadata: {
           toolCalls: state.toolCalls.map((call) => call.name),
           policyViolations: state.policyViolations,
         },
       });
-      throw err;
+      throw new AgentRunError(
+        message,
+        createAgentRunResult(state, options, startedAt, provider.name, 'failed', message),
+      );
     }
 
     status = 'waiting_approval';
     finalAnswer = err.message;
   }
 
+  const result = createAgentRunResult(state, options, startedAt, provider.name, status, finalAnswer);
+  await appendAudit(state, {
+    action: 'agent.run.completed',
+    outcome: status === 'completed' ? 'succeeded' : status === 'waiting_approval' ? 'requested' : 'failed',
+    message: finalAnswer,
+    metadata: {
+      status,
+      latencyMs: result.latencyMs,
+      costUsd: state.costUsd,
+      toolCalls: state.toolCalls.map((call) => call.name),
+      policyViolations: state.policyViolations,
+      approvals: state.approvals.map((approval) => approval.id),
+    },
+  });
+
+  return result;
+}
+
+function createAgentRunResult(
+  state: RunState,
+  options: AgentRunOptions,
+  startedAt: number,
+  providerName: string,
+  status: AgentRunStatus,
+  finalAnswer: string,
+): AgentRunResult {
   const latencyMs = Date.now() - startedAt;
   const trace: TraceArtifact = {
-    id,
+    id: state.runId,
     createdAt: new Date().toISOString(),
     deployment: options.deployment.name,
     events: [
@@ -124,26 +165,13 @@ export async function runAgent(options: AgentRunOptions): Promise<AgentRunResult
       },
     ],
   };
-  await appendAudit(state, {
-    action: 'agent.run.completed',
-    outcome: status === 'completed' ? 'succeeded' : status === 'waiting_approval' ? 'requested' : 'failed',
-    message: finalAnswer,
-    metadata: {
-      status,
-      latencyMs,
-      costUsd: state.costUsd,
-      toolCalls: state.toolCalls.map((call) => call.name),
-      policyViolations: state.policyViolations,
-      approvals: state.approvals.map((approval) => approval.id),
-    },
-  });
 
   return {
-    id,
+    id: state.runId,
     status,
     deployment: options.deployment.name,
     agent: options.agentName,
-    provider: provider.name,
+    provider: providerName,
     input: options.input,
     finalAnswer,
     toolCalls: state.toolCalls,

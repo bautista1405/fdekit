@@ -21,7 +21,7 @@ import {
   type ProviderToolResult,
   type ToolDefinition,
 } from '@fdekit/core';
-import { runAgent } from '../agents/index.js';
+import { AgentRunError, runAgent } from '../agents/index.js';
 import { approveApproval, readAuditLog } from '../governance/index.js';
 
 describe('runAgent', () => {
@@ -298,12 +298,36 @@ describe('runAgent', () => {
     ]);
     const projectDir = await mkRunProjectDir();
 
-    await expect(runAgent({
-      deployment,
-      projectDir,
-      agentName: 'supportTriage',
-      input: { ticketId: 'tick_1001' },
-    })).rejects.toThrow('Policy "deny-escalation" blocked ticket.escalate');
+    let failure: AgentRunError | undefined;
+
+    try {
+      await runAgent({
+        deployment,
+        projectDir,
+        agentName: 'supportTriage',
+        input: { ticketId: 'tick_1001' },
+      });
+    } catch (err) {
+      expect(err).toBeInstanceOf(AgentRunError);
+      failure = err as AgentRunError;
+    }
+
+    expect(failure?.message).toBe('Policy "deny-escalation" blocked ticket.escalate: Escalation queue is frozen');
+    expect(failure?.result).toMatchObject({
+      status: 'failed',
+      agent: 'supportTriage',
+      policyViolations: [
+        expect.objectContaining({
+          policy: 'deny-escalation',
+          toolName: 'ticket.escalate',
+        }),
+      ],
+    });
+    expect(failure?.result.trace.events.at(-1)).toMatchObject({
+      type: 'agent.run.completed',
+      status: 'failed',
+      message: 'Policy "deny-escalation" blocked ticket.escalate: Escalation queue is frozen',
+    });
   });
 
   it('passes tool permission scopes into policy checks', async () => {

@@ -11,6 +11,7 @@ import { cmdReport } from '../commands/report.js';
 import { cmdRun } from '../commands/run.js';
 import { cmdTrace } from '../commands/trace.js';
 import { cmdValidate } from '../commands/validate.js';
+import { printCliError } from '../errors.js';
 import {
   captureCommand,
   createCliProject,
@@ -74,6 +75,90 @@ describe('cli runtime commands', () => {
     expect(traces[0]).toMatchObject({
       deployment: 'cli-test-deployment',
     });
+  });
+
+  it('persists policy-blocked runs for macro evals, traces, and console', async () => {
+    const projectDir = await createCliProject();
+    const configPath = path.join(projectDir, 'fde.config.ts');
+    const config = (await readFile(configPath, 'utf8'))
+      .replace('  noPolicyViolation,\n', '  limitToolScopes,\n  noPolicyViolation,\n')
+      .replace(
+        '  agents: {\n',
+        "  policies: [limitToolScopes({ allowed: [], requireScopes: true })],\n  agents: {\n",
+      );
+    await writeFile(configPath, config, 'utf8');
+
+    const runOutput = await captureCommand(async () => {
+      try {
+        await cmdRun({
+          cwd: projectDir,
+          args: ['supportTriage', '--ticket', 'tick_1001'],
+        });
+      } catch (err) {
+        printCliError(err);
+        process.exitCode = 1;
+      }
+    });
+
+    expect(runOutput.exitCode).toBe(1);
+    expect(runOutput.stdout).toContain('Trace written:');
+    expect(runOutput.stderr).toContain('Error: Policy "limit-tool-scopes" blocked ticket.get');
+
+    const traces = await readJsonDir(path.join(projectDir, 'artifacts', 'traces')) as Array<{
+      id: string;
+      events: Array<Record<string, unknown>>;
+    }>;
+    expect(traces).toHaveLength(1);
+    expect(traces[0].events.at(-1)).toMatchObject({
+      type: 'agent.run.completed',
+      status: 'failed',
+    });
+
+    const macroOutput = await captureCommand(() => cmdEval({
+      cwd: projectDir,
+      args: ['macro'],
+    }));
+    expect(macroOutput.stdout).toContain('Traces analyzed: 1');
+    const macroArtifact = JSON.parse(await readFile(
+      path.join(projectDir, 'artifacts', 'evals', 'macro', 'latest.json'),
+      'utf8',
+    )) as {
+      traceDocuments?: Array<{
+        traceId?: string;
+        runOutcome?: string;
+        behaviorSignals?: string[];
+      }>;
+      patterns?: Array<{ behaviorPattern?: string; affectedTraceIds?: string[] }>;
+    };
+    expect(macroArtifact.traceDocuments?.[0]).toMatchObject({
+      traceId: traces[0].id,
+      runOutcome: 'failed',
+      behaviorSignals: expect.arrayContaining(['run failure', 'policy or guardrail']),
+    });
+    expect(macroArtifact.patterns).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        behaviorPattern: 'Run Failure',
+        affectedTraceIds: [traces[0].id],
+      }),
+    ]));
+
+    const traceOutput = await captureCommand(() => cmdTrace({ cwd: projectDir, args: [] }));
+    expect(traceOutput.stdout).toContain('Traces loaded: 1');
+    const viewer = await readFile(path.join(projectDir, 'artifacts', 'trace-viewer.html'), 'utf8');
+    expect(viewer).toContain('"status": "failed"');
+
+    const consoleOutput = await captureCommand(() => cmdConsole({ cwd: projectDir, args: [] }));
+    expect(consoleOutput.stdout).toContain('Traces loaded: 1');
+    const dashboard = JSON.parse(await readFile(
+      path.join(projectDir, 'artifacts', 'exports', 'dashboard-data.json'),
+      'utf8',
+    )) as { runs?: Array<{ traceId?: string; status?: string }> };
+    expect(dashboard.runs).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        traceId: traces[0].id,
+        status: 'failed',
+      }),
+    ]));
   });
 
 

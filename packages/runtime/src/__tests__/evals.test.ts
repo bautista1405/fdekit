@@ -7,6 +7,7 @@ import {
   defineAgent,
   defineDeployment,
   defineEval,
+  definePolicy,
   defineTool,
   expectedToolCall,
   getString,
@@ -62,6 +63,46 @@ describe('runEvals', () => {
 
       expect(trace.id).toBe(evalCase.traceId);
       expect(trace.events?.length).toBeGreaterThan(0);
+    }
+  });
+
+  it('writes failed traces when a policy blocks an eval case', async () => {
+    const projectDir = await createEvalProject();
+    const deployment = createSupportTriageDeployment();
+    deployment.policies = [
+      definePolicy({
+        name: 'deny-ticket-read',
+        beforeToolCall(toolName) {
+          return toolName === 'ticket.get'
+            ? { allowed: false, reason: 'Ticket reads are disabled' }
+            : true;
+        },
+      }),
+    ];
+
+    const artifact = await runEvals({
+      deployment,
+      projectDir,
+      writeTraces: true,
+    });
+
+    expect(artifact.status).toBe('failed');
+    const cases = artifact.results[0].cases ?? [];
+    expect(cases).toHaveLength(2);
+
+    for (const evalCase of cases) {
+      expect(evalCase).toMatchObject({
+        status: 'failed',
+        traceId: expect.any(String),
+      });
+      const trace = JSON.parse(await readFile(
+        path.join(projectDir, 'artifacts', 'traces', `${evalCase.traceId}.json`),
+        'utf8',
+      )) as { events?: Array<Record<string, unknown>> };
+      expect(trace.events?.at(-1)).toMatchObject({
+        type: 'agent.run.completed',
+        status: 'failed',
+      });
     }
   });
 

@@ -1,9 +1,11 @@
 import * as path from 'path';
 import {
   createArtifactStore,
+  AgentRunError,
   loadDeployment,
   requireConfigFile,
   runAgent,
+  type AgentRunResult,
   writeJsonArtifact,
 } from '@fdekit/runtime';
 import type { CommandContext } from '../context.js';
@@ -26,16 +28,35 @@ export async function cmdRun(ctx: CommandContext): Promise<void> {
   const projectDir = path.dirname(configPath);
   const deployment = await loadDeployment(configPath);
   const artifactStore = createArtifactStore({ deployment, projectDir });
-  const result = await runAgent({
-    deployment,
-    projectDir,
-    agentName,
-    input: options.input,
-    maxSteps: options.maxSteps,
-    strict: options.strict,
-    providerRegistry: builtinProviderRegistry,
-    artifactStore,
-  });
+  let result: AgentRunResult;
+
+  try {
+    result = await runAgent({
+      deployment,
+      projectDir,
+      agentName,
+      input: options.input,
+      maxSteps: options.maxSteps,
+      strict: options.strict,
+      providerRegistry: builtinProviderRegistry,
+      artifactStore,
+    });
+  } catch (err) {
+    if (!(err instanceof AgentRunError)) {
+      throw err;
+    }
+
+    const tracePath = await writeJsonArtifact(
+      projectDir,
+      'traces',
+      `${err.result.trace.id}.json`,
+      err.result.trace,
+      artifactStore,
+    );
+    console.log(`Trace written: ${tracePath}`);
+    throw err;
+  }
+
   const tracePath = await writeJsonArtifact(projectDir, 'traces', `${result.trace.id}.json`, result.trace, artifactStore);
 
   console.log(`Agent: ${result.agent}`);

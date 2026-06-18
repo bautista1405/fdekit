@@ -9,7 +9,7 @@ import {
   type EvalDefinition,
 } from '@fdekit/core';
 import { writeJsonArtifact } from '../../artifact-store/index.js';
-import { runAgent, type AgentRunResult } from '../../agents/index.js';
+import { AgentRunError, runAgent, type AgentRunResult } from '../../agents/index.js';
 import {
   buildToolMetadataIndex,
   TOOL_SEMANTICS,
@@ -71,13 +71,26 @@ export async function runAgentEvalCase(
       assertions,
     };
   } catch (err) {
+    if (err instanceof AgentRunError && options.writeTraces) {
+      await writeJsonArtifact(
+        options.projectDir,
+        'traces',
+        `${err.result.trace.id}.json`,
+        err.result.trace,
+        options.artifactStore,
+      );
+    }
+
     return {
       name: evalCase.name,
       status: 'failed',
       input: evalCase.input,
       expected: evalCase.expected,
       metadata: evalCase.metadata,
-      toolCalls: [],
+      toolCalls: err instanceof AgentRunError
+        ? err.result.toolCalls.map((call) => call.name)
+        : [],
+      traceId: err instanceof AgentRunError ? err.result.trace.id : undefined,
       assertions: [
         {
           passed: false,

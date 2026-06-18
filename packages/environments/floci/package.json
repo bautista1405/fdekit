@@ -1,6 +1,6 @@
 {
   "name": "@fdekit/environment-floci",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "description": "Floci local cloud environment package for FDEKit",
   "main": "dist/index.js",
   "module": "dist/index.js",
@@ -25,7 +25,7 @@
   ],
   "license": "MIT",
   "dependencies": {
-    "@fdekit/core": "0.4.1"
+    "@fdekit/core": "0.4.2"
   },
   "type": "module"
 }

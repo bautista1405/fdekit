@@ -1,5 +1,15 @@
 # @fdekit/console
 
+## 0.4.2
+
+### Patch Changes
+
+- c77f318: fdekit init scaffolding, simpler starter config
+- Updated dependencies [dbe7868]
+- Updated dependencies [c77f318]
+  - @fdekit/core@0.4.2
+  - @fdekit/runtime@0.4.2
+
 ## 0.4.1
 
 ### Patch Changes

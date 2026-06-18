@@ -1,5 +1,12 @@
 # @fdekit/connector-jira
 
+## 0.4.3
+
+### Patch Changes
+
+- Updated dependencies [0f8e226]
+  - @fdekit/core@0.4.3
+
 ## 0.4.2
 
 ### Patch Changes

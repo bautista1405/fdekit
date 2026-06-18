@@ -1,6 +1,6 @@
 {
   "name": "@fdekit/connector-postgres",
-  "version": "0.4.2",
+  "version": "0.4.3",
   "description": "Postgres connector for FDEKit",
   "main": "dist/index.js",
   "module": "dist/index.js",
@@ -25,7 +25,7 @@
   ],
   "license": "MIT",
   "dependencies": {
-    "@fdekit/core": "0.4.2"
+    "@fdekit/core": "0.4.3"
   },
   "peerDependencies": {
     "pg": "^8.0.0"

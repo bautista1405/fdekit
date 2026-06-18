@@ -47,6 +47,33 @@ console.log(result.status, result.finalAnswer);
 
 Config discovery checks the current directory and its ancestors for `fde.config.ts`. At each level it also checks `./fdekit/fde.config.ts`; new file-creating workflows without a config use `fdekit/` under the nearest `package.json` or Git project root.
 
+## S3 artifact storage
+
+FDEKit keeps cloud SDKs optional. To select S3 in `fde.config.ts`, inject a client with
+`putObject`, `getObject`, and `listObjectsV2`; a bucket without a client is not a complete
+artifact-store definition.
+
+```ts
+import type { S3ArtifactClient } from '@fdekit/runtime';
+import {
+  GetObjectCommand,
+  ListObjectsV2Command,
+  PutObjectCommand,
+  S3Client,
+} from '@aws-sdk/client-s3';
+
+const s3 = new S3Client({ region: process.env.AWS_REGION });
+
+const client: S3ArtifactClient = {
+  putObject: (input) => s3.send(new PutObjectCommand(input)),
+  getObject: (input) => s3.send(new GetObjectCommand(input)),
+  listObjectsV2: (input) => s3.send(new ListObjectsV2Command(input)),
+};
+```
+
+Pass the adapter as `artifacts: { kind: 's3', bucket, prefix?, region?, client }`. The same
+minimal interface works with the AWS SDK, MinIO, LocalStack, or a wrapped enterprise client.
+
 ## Public API surface
 
 Import from the package root for the full runtime surface:

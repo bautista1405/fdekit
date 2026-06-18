@@ -2,6 +2,7 @@ import { mkdtemp, readFile } from 'fs/promises';
 import { tmpdir } from 'os';
 import * as path from 'path';
 import { describe, expect, it } from 'vitest';
+import type { S3ArtifactStoreDefinition } from '@fdekit/core';
 import {
   createArtifactStore,
   createFileArtifactStore,
@@ -50,6 +51,25 @@ describe('artifact stores', () => {
 
     expect(await writeJsonArtifact(projectDir, 'traces', 'trace.json', { id: 'trace_1' }, store))
       .toBe('s3://fdekit-artifacts/artifacts/traces/trace.json');
+  });
+
+  it('rejects untyped S3 definitions without a client at runtime', () => {
+    const artifacts = {
+      kind: 's3',
+      bucket: 'fdekit-artifacts',
+    } as unknown as S3ArtifactStoreDefinition;
+
+    expect(() => createArtifactStore({
+      projectDir: '/tmp/fdekit-s3-missing-client',
+      deployment: {
+        name: 'missing-s3-client',
+        providers: {},
+        agents: {},
+        artifacts,
+      },
+    })).toThrow(
+      'S3 artifact store requires a client with putObject, getObject, and listObjectsV2 methods',
+    );
   });
 
   it('writes, lists, and appends S3 artifacts through an adapter client', async () => {

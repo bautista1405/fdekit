@@ -10,6 +10,7 @@ import {
   defineWorkflow,
   expectedToolCall,
   judgeRubric,
+  type S3ArtifactClient,
 } from '@fdekit/core';
 import {
   compileDeployment,
@@ -17,6 +18,16 @@ import {
   diffDeploymentSnapshots,
   validateDeployment,
 } from '../deployments/index.js';
+
+const s3ArtifactClient: S3ArtifactClient = {
+  async putObject() {},
+  async getObject() {
+    return {};
+  },
+  async listObjectsV2() {
+    return {};
+  },
+};
 
 describe('deployment validation and diffing', () => {
   it('compiles a deployment into an inspectable execution plan', () => {
@@ -195,6 +206,7 @@ describe('deployment validation and diffing', () => {
         bucket: 'fdekit-artifacts',
         prefix: 'teams/support',
         region: 'us-east-1',
+        client: s3ArtifactClient,
       },
       providers: {
         mock: { name: 'mock' },
@@ -231,6 +243,7 @@ describe('deployment validation and diffing', () => {
       artifacts: {
         kind: 's3',
         bucket: 'fdekit-artifacts',
+        client: s3ArtifactClient,
       },
       providers: {
         mock: { name: 'mock' },

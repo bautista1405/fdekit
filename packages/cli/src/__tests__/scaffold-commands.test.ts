@@ -305,6 +305,55 @@ describe('cli scaffold and setup commands', () => {
     ]);
   });
 
+  it('rejects unknown providers without mutating the project', async () => {
+    const projectDir = await createCliProject();
+    await writeFile(
+      path.join(projectDir, 'package.json'),
+      '{"name":"unknown-provider-test","private":true}\n',
+      'utf8',
+    );
+    await writeFile(path.join(projectDir, '.env.example'), 'FDEKIT_PROVIDER=mock\n', 'utf8');
+    const configBefore = await readConfig(projectDir);
+    const packageBefore = await readPackageJson(projectDir);
+    const envBefore = await readEnvExample(projectDir);
+
+    const output = await captureAddCommand(projectDir, ['provider', 'notaprovider']);
+
+    expect(output.exitCode).toBe(1);
+    expect(output.stderr).toContain('Error: Unknown provider: notaprovider');
+    expect(output.stderr).toContain('Usage: fdekit add provider <name>');
+    expect(output.stderr).toContain('Next: Choose one of: mock, localOllama, ollama, openai, anthropic, google, gemini.');
+    expect(output.stdout).not.toContain('Added provider');
+    expect(await readConfig(projectDir)).toBe(configBefore);
+    expect(await readPackageJson(projectDir)).toEqual(packageBefore);
+    expect(await readEnvExample(projectDir)).toBe(envBefore);
+  });
+
+  it('preserves top-level indentation when adding evals and policies', async () => {
+    const cwd = await mkProjectRoot('fdekit-cli-add-formatting-');
+    await captureCommand(() => cmdInit({ cwd, args: ['formatting-test'] }));
+    const projectDir = path.join(cwd, 'formatting-test');
+
+    await captureCommand(() => cmdAdd({
+      cwd: projectDir,
+      args: ['eval', 'my-eval'],
+    }));
+    await captureCommand(() => cmdAdd({
+      cwd: projectDir,
+      args: ['policy', 'my-policy'],
+    }));
+
+    const config = await readConfig(projectDir);
+    expect(config).toContain(`  evals: [
+    defineEval({ name: 'my-eval', assertions: [noPolicyViolation()] }),
+  ],
+  policies: [
+    definePolicy({ name: 'my-policy' }),
+  ],
+  agents: {`);
+    expect(config).not.toMatch(/^(evals|policies|agents):/m);
+    expect(config).not.toMatch(/^ {4}(evals|policies|agents):/m);
+  });
 
   it('scaffolds known connectors with imports, dependencies, and env docs', async () => {
     const projectDir = await createCliProject();
@@ -582,6 +631,21 @@ describe('cli scaffold and setup commands', () => {
     expect(doctor.stdout).toContain('FDEKit env doctor');
     expect(doctor.stdout).toContain('Environment: local-floci-test');
     expect(doctor.stdout).toContain('No environment health checks configured');
+  });
+
+  it('points unconfigured environments to exported helpers', async () => {
+    const projectDir = await createCliProject();
+
+    const output = await captureCommand(() => cmdEnv({ cwd: projectDir, args: ['describe'] }));
+
+    expect(output.exitCode).toBe(1);
+    expect(output.stdout).toContain('No runtime environment configured');
+    expect(output.stdout).toContain('`runtimeEnvironment: defineEnvironment(...)`');
+    expect(output.stdout).toContain('`defineEnvironment` from `@fdekit/core`');
+    expect(output.stdout).toContain('`@fdekit/environment-docker`');
+    expect(output.stdout).toContain('`@fdekit/environment-floci`');
+    expect(output.stdout).not.toContain('runtimeEnvironment: dockerEnvironment(...)');
+    expect(output.stdout).not.toContain('runtimeEnvironment: flociEnvironment(...)');
   });
 
 });

@@ -2,7 +2,12 @@ import { promises as fs } from 'fs';
 import * as path from 'path';
 import { asRecord, escapeRegExp } from '@fdekit/core';
 import { requireConfigFile } from '@fdekit/runtime';
-import { connectorManifest, connectorManifests, type ConnectorManifest } from '../catalog/index.js';
+import {
+  connectorManifest,
+  connectorManifests,
+  providerScaffoldNames,
+  type ConnectorManifest,
+} from '../catalog/index.js';
 import type { CommandContext } from '../context.js';
 import { connectorScaffold, providerScaffold, type AddScaffold, type EnvExample } from '../config/catalog.js';
 import { ensureCoreImports, ensurePackageImports, hasObjectEntry, insertArrayItem, insertObjectEntry } from '../config/edit.js';
@@ -11,6 +16,7 @@ import { CliUserError } from '../errors.js';
 import { escapeSingleQuoted, objectKey } from '../utils/strings.js';
 
 const ADD_CONNECTOR_USAGE = 'fdekit add connector <name>';
+const ADD_PROVIDER_USAGE = 'fdekit add provider <name>';
 
 export async function cmdAdd(ctx: CommandContext): Promise<void> {
   const [subcommand, name] = ctx.args;
@@ -27,14 +33,20 @@ export async function cmdAdd(ctx: CommandContext): Promise<void> {
 
   if (subcommand === 'provider') {
     const scaffold = providerScaffold(name);
-    const key = scaffold?.key ?? name;
+
+    if (!scaffold) {
+      throw new CliUserError(`Unknown provider: ${name}`, {
+        usage: ADD_PROVIDER_USAGE,
+        next: [`Choose one of: ${providerScaffoldNames().join(', ')}.`],
+      });
+    }
+
+    const key = scaffold.key;
 
     if (hasObjectEntry(config, 'providers', key)) {
       console.log(`Provider ${key} is already configured`);
     } else {
-      config = scaffold
-        ? applyKnownScaffold(config, 'providers', scaffold)
-        : insertObjectEntry(config, 'providers', `${objectKey(name)}: { name: '${escapeSingleQuoted(name)}' }`);
+      config = applyKnownScaffold(config, 'providers', scaffold);
       console.log(`Added provider ${key}`);
       await applyProjectScaffold(projectDir, scaffold);
     }

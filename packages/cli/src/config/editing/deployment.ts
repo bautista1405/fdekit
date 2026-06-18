@@ -87,7 +87,8 @@ function insertTopLevelProperty(
   const formatted = indentBlock(`${property}: ${value},`, propertyIndent);
 
   if (before) {
-    return insertText(config, before.getStart(sourceFile), `${formatted}\n`);
+    const insertionPosition = before.getStart(sourceFile) - propertyIndent.length;
+    return insertText(config, insertionPosition, `${formatted}\n`);
   }
 
   const range = containerRange(config, sourceFile, deployment);

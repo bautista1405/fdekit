@@ -29,7 +29,8 @@ export async function cmdEnv(ctx: CommandContext): Promise<void> {
 
   if (!environment) {
     console.log('No runtime environment configured');
-    console.log('Add `runtimeEnvironment: dockerEnvironment(...)` or `runtimeEnvironment: flociEnvironment(...)` to fde.config.ts to use env commands');
+    console.log('Add `runtimeEnvironment: defineEnvironment(...)` to fde.config.ts using `defineEnvironment` from `@fdekit/core`');
+    console.log('Environment adapters are also available from `@fdekit/environment-docker` and `@fdekit/environment-floci`');
     process.exitCode = 1;
     return;
   }

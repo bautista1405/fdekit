@@ -40,7 +40,7 @@ Declaration source: `packages/core/dist/index.d.ts`.
 
 ## Export Count
 
-This page documents 171 public root exports from `@fdekit/core`: 77 functions/values and 94 types/interfaces.
+This page documents 177 public root exports from `@fdekit/core`: 77 functions/values and 100 types/interfaces.
 
 ## Functions And Values
 
@@ -212,7 +212,13 @@ This page documents 171 public root exports from `@fdekit/core`: 77 functions/va
 | <a id="retrypolicy"></a>`RetryPolicy` | interface | [packages/core/src/types/provider.ts](../../packages/core/src/types/provider.ts) |
 | <a id="rolloutdefinition"></a>`RolloutDefinition` | interface | [packages/core/src/types/workflow.ts](../../packages/core/src/types/workflow.ts) |
 | <a id="rolloutstagename"></a>`RolloutStageName` | type | [packages/core/src/types/workflow.ts](../../packages/core/src/types/workflow.ts) |
+| <a id="s3artifactclient"></a>`S3ArtifactClient` | interface | [packages/core/src/types/deployment.ts](../../packages/core/src/types/deployment.ts) |
 | <a id="s3artifactstoredefinition"></a>`S3ArtifactStoreDefinition` | interface | [packages/core/src/types/deployment.ts](../../packages/core/src/types/deployment.ts) |
+| <a id="s3getobjectinput"></a>`S3GetObjectInput` | interface | [packages/core/src/types/deployment.ts](../../packages/core/src/types/deployment.ts) |
+| <a id="s3getobjectoutput"></a>`S3GetObjectOutput` | interface | [packages/core/src/types/deployment.ts](../../packages/core/src/types/deployment.ts) |
+| <a id="s3listobjectsv2input"></a>`S3ListObjectsV2Input` | interface | [packages/core/src/types/deployment.ts](../../packages/core/src/types/deployment.ts) |
+| <a id="s3listobjectsv2output"></a>`S3ListObjectsV2Output` | interface | [packages/core/src/types/deployment.ts](../../packages/core/src/types/deployment.ts) |
+| <a id="s3putobjectinput"></a>`S3PutObjectInput` | interface | [packages/core/src/types/deployment.ts](../../packages/core/src/types/deployment.ts) |
 | <a id="stringargoptions"></a>`StringArgOptions` | interface | [packages/core/src/types/tool.ts](../../packages/core/src/types/tool.ts) |
 | <a id="toolargsschema"></a>`ToolArgsSchema` | type | [packages/core/src/types/tool.ts](../../packages/core/src/types/tool.ts) |
 | <a id="toolcallcontext"></a>`ToolCallContext` | interface | [packages/core/src/types/tool.ts](../../packages/core/src/types/tool.ts) |

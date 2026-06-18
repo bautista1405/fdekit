@@ -91,7 +91,7 @@ Core is the authoring layer. It should stay free of local filesystem artifact co
 | `OutcomeMetricDefinition` | Outcome metric contract for customer-visible deployment impact. |
 | `DataLayersDefinition` | Data-layer contract for system of record, business rules, raw intake, and feedback. |
 | `RolloutDefinition`, `RolloutStageName` | Rollout stage and stage progression contracts. |
-| `ArtifactStoreDefinition`, `LocalArtifactStoreDefinition`, `S3ArtifactStoreDefinition` | Deployment artifact storage config. Local `artifacts/` is the default; S3 requires runtime client injection. |
+| `ArtifactStoreDefinition`, `LocalArtifactStoreDefinition`, `S3ArtifactStoreDefinition` | Deployment artifact storage config. Local `artifacts/` is the default; S3 requires a typed runtime client adapter. |
 | `PolicyDefinition`, `PolicyDecision`, `PolicyResult` | Policy contracts and decisions. |
 | `EvalDefinition`, `EvalCase`, `EvalAssertion`, `EvalAssertionResult`, `EvalRunContext` | Eval authoring contracts. |
 | `RecipeDefinition`, `RecipeReference`, `MigrationNote` | Recipe and migration metadata. |
@@ -303,7 +303,7 @@ Runtime strict mode is also explicit. `runAgent({ strict: true })` requires ever
 | `readJsonIfExists()` | Compatibility helper for reading optional local JSON safely. |
 | `joinNames()` | Format a list of names for reports. |
 
-S3 support is configurable from `fde.config.ts` without adding AWS SDK dependencies to `@fdekit/runtime`:
+S3 support is configurable from `fde.config.ts` without adding AWS SDK dependencies to `@fdekit/runtime`. The `client` adapter is required:
 
 ```ts
 artifacts: {

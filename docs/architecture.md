@@ -185,7 +185,7 @@ Prefer adding runtime artifacts through `writeJsonArtifact()`, `writeTextArtifac
 
 ### Adding An Artifact Store
 
-1. Extend `ArtifactStoreDefinition` in `@fdekit/core` only with serializable configuration fields.
+1. Extend `ArtifactStoreDefinition` in `@fdekit/core` with serializable configuration and the smallest injected adapter contract needed by the runtime; snapshots and compiled plans must omit live clients.
 2. Add a runtime implementation behind `packages/runtime/src/artifacts.ts`.
 3. Keep SDK clients injected so `@fdekit/runtime` does not gain cloud-provider dependencies.
 4. Make `compileDeployment()` return the normalized store and artifact URIs without instantiating clients.

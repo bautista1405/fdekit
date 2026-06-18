@@ -23,17 +23,20 @@ import {
   defineEval,
   expectedFinalAnswer,
   expectedToolCall,
+  providerFromEnv,
 } from '@fdekit/core';
+
+const provider = providerFromEnv();
 
 export default defineDeployment({
   name: 'support-triage',
   environment: 'local',
   providers: {
-    mock: { name: 'mock' },
+    [provider.name]: provider,
   },
   agents: {
     supportTriage: defineAgent({
-      provider: 'mock',
+      provider: provider.name,
       instructions: './agents/support-triage.md',
     }),
   },
@@ -59,7 +62,7 @@ Import from the package root:
 import { defineDeployment, defineTool, objectArgs } from '@fdekit/core';
 ```
 
-The API reference documents all public root exports, including `defineDeployment`, `defineAgent`, `defineConnector`, `defineTool`, `defineEval`, `objectArgs`, policy helpers, eval assertions, and public config/provider/tool types: [Core API Reference](../../docs/api/core.md).
+The API reference documents all public root exports, including `defineDeployment`, `defineAgent`, `providerFromEnv`, `defineConnector`, `defineTool`, `defineEval`, `objectArgs`, policy helpers, eval assertions, and public config/provider/tool types: [Core API Reference](../../docs/api/core.md).
 
 ## Stability/backward-compat notes
 

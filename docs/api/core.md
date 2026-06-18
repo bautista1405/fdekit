@@ -3,7 +3,7 @@
 <!-- Maintained via scripts/generate-api-docs.mjs. -->
 Run `npm run docs:api` to refresh this page after changing public exports.
 
-Applies to `@fdekit/core` v0.1.0.
+Applies to `@fdekit/core` v0.4.0.
 
 Declaration source: `packages/core/dist/index.d.ts`.
 
@@ -29,6 +29,7 @@ Declaration source: `packages/core/dist/index.d.ts`.
 | [`defineEval`](#defineeval) | Eval suite helper for datasets, assertions, and custom runners. |
 | [`expectedToolCall`](#expectedtoolcall) | Built-in eval assertion for required tool usage. |
 | [`defineGovernance`](#definegovernance) | Governance helper for approvals, budgets, scopes, audit, and data protection. |
+| [`providerFromEnv`](#providerfromenv) | Select the starter provider and optional model from FDEKIT_PROVIDER and FDEKIT_MODEL. |
 | [`defineHarness`](#defineharness) | Harness helper for explicit agent-loop phases and review controls. |
 | [`DeploymentDefinition`](#deploymentdefinition) | Top-level type behind deployment configs. |
 | [`AgentConfig`](#agentconfig) | Agent definition contract consumed by deployments and runtime execution. |
@@ -39,7 +40,7 @@ Declaration source: `packages/core/dist/index.d.ts`.
 
 ## Export Count
 
-This page documents 168 public root exports from `@fdekit/core`: 76 functions/values and 92 types/interfaces.
+This page documents 171 public root exports from `@fdekit/core`: 77 functions/values and 94 types/interfaces.
 
 ## Functions And Values
 
@@ -108,6 +109,7 @@ This page documents 168 public root exports from `@fdekit/core`: 76 functions/va
 | <a id="parseproviderplannerstep"></a>`parseProviderPlannerStep` | function | [packages/core/src/provider-planner/index.ts](../../packages/core/src/provider-planner/index.ts) |
 | <a id="pick"></a>`pick` | function | [packages/core/src/helpers/index.ts](../../packages/core/src/helpers/index.ts) |
 | <a id="providererrormessage"></a>`providerErrorMessage` | function | [packages/core/src/provider-planner/index.ts](../../packages/core/src/provider-planner/index.ts) |
+| <a id="providerfromenv"></a>`providerFromEnv` | function | [packages/core/src/providers/index.ts](../../packages/core/src/providers/index.ts) |
 | <a id="readenvvalue"></a>`readEnvValue` | function | [packages/core/src/connector-http/index.ts](../../packages/core/src/connector-http/index.ts) |
 | <a id="readprocessenv"></a>`readProcessEnv` | function | [packages/core/src/helpers/index.ts](../../packages/core/src/helpers/index.ts) |
 | <a id="redactsecrets"></a>`redactSecrets` | function | [packages/core/src/policies/index.ts](../../packages/core/src/policies/index.ts) |
@@ -151,6 +153,7 @@ This page documents 168 public root exports from `@fdekit/core`: 76 functions/va
 | <a id="environmentevidence"></a>`EnvironmentEvidence` | interface | [packages/core/src/types/environment.ts](../../packages/core/src/types/environment.ts) |
 | <a id="environmenthealthcheckdefinition"></a>`EnvironmentHealthCheckDefinition` | interface | [packages/core/src/types/environment.ts](../../packages/core/src/types/environment.ts) |
 | <a id="environmentname"></a>`EnvironmentName` | type | [packages/core/src/types/shared.ts](../../packages/core/src/types/shared.ts) |
+| <a id="environmentprovidername"></a>`EnvironmentProviderName` | type | [packages/core/src/providers/index.ts](../../packages/core/src/providers/index.ts) |
 | <a id="environmentseparationconfig"></a>`EnvironmentSeparationConfig` | interface | [packages/core/src/types/governance.ts](../../packages/core/src/types/governance.ts) |
 | <a id="environmentservicedefinition"></a>`EnvironmentServiceDefinition` | interface | [packages/core/src/types/environment.ts](../../packages/core/src/types/environment.ts) |
 | <a id="environmentvariablerequirement"></a>`EnvironmentVariableRequirement` | interface | [packages/core/src/types/shared.ts](../../packages/core/src/types/shared.ts) |
@@ -192,6 +195,7 @@ This page documents 168 public root exports from `@fdekit/core`: 76 functions/va
 | <a id="policyresult"></a>`PolicyResult` | type | [packages/core/src/types/policy.ts](../../packages/core/src/types/policy.ts) |
 | <a id="providerconfig"></a>`ProviderConfig` | interface | [packages/core/src/types/provider.ts](../../packages/core/src/types/provider.ts) |
 | <a id="providerfinalstep"></a>`ProviderFinalStep` | interface | [packages/core/src/types/provider.ts](../../packages/core/src/types/provider.ts) |
+| <a id="providerfromenvoptions"></a>`ProviderFromEnvOptions` | interface | [packages/core/src/providers/index.ts](../../packages/core/src/providers/index.ts) |
 | <a id="providerjsonrequestoptions"></a>`ProviderJsonRequestOptions` | interface | [packages/core/src/provider-planner/index.ts](../../packages/core/src/provider-planner/index.ts) |
 | <a id="providername"></a>`ProviderName` | type | [packages/core/src/types/shared.ts](../../packages/core/src/types/shared.ts) |
 | <a id="providerplancontext"></a>`ProviderPlanContext` | interface | [packages/core/src/types/provider.ts](../../packages/core/src/types/provider.ts) |

@@ -2,6 +2,7 @@ import { promises as fs } from 'fs';
 import * as path from 'path';
 import { asRecord, escapeRegExp } from '@fdekit/core';
 import { writeFileIfMissing } from '../utils/files.js';
+import { isDefaultStarterConfig } from './starter.js';
 
 export interface RecipeInstallResult {
   projectDir: string;
@@ -205,7 +206,7 @@ async function resolveRecipeConfigTarget(ctx: RecipeContext): Promise<RecipeConf
   try {
     const existing = await fs.readFile(ctx.configPath, 'utf8');
 
-    if (!isDefaultStarterScaffoldConfig(existing)) {
+    if (!isDefaultStarterConfig(existing)) {
       return {
         path: path.join(ctx.recipeDir, 'fde.config.ts'),
         kind: 'skipped',
@@ -313,14 +314,4 @@ function setMissingValues(record: Record<string, unknown>, values: Record<string
 
 function hasEnvEntry(contents: string, name: string): boolean {
   return new RegExp(`^${escapeRegExp(name)}=`, 'm').test(contents);
-}
-
-function isDefaultStarterScaffoldConfig(config: string): boolean {
-  const hasStarterProvider = config.includes("provider: 'openai'")
-    || (config.includes('const providerFactories = {')
-      && (config.includes('settings.provider') || config.includes('settings.modelProvider')));
-
-  return config.includes('support-triage-agent-smoke')
-    && config.includes('deployment-smoke')
-    && hasStarterProvider;
 }

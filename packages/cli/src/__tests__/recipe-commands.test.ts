@@ -454,8 +454,8 @@ describe('cli recipe commands', () => {
 
     expect(manifest.name).toBe('renewal-risk');
     expect(manifest.sourceDeployment).toBe('source-app');
-    expect(manifest.workflow?.name).toBe('Starter support triage');
-    expect(manifest.harness?.name).toBe('starter-governed-loop');
+    expect(manifest.workflow).toBeUndefined();
+    expect(manifest.harness).toBeUndefined();
     expect(manifest.install?.files).toEqual(expect.arrayContaining([
       'fde.config.ts',
       '.env.example',
@@ -498,8 +498,8 @@ describe('cli recipe commands', () => {
 
     expectTextIncludes(await readConfig(targetProjectDir), [
       "name: 'source-app'",
-      'workflow: defineWorkflow({',
-      'harness: defineHarness({',
+      'const provider = providerFromEnv();',
+      "name: 'support-triage-smoke'",
     ]);
 
     const packageJson = await readPackageJson(targetProjectDir);

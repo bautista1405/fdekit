@@ -44,6 +44,7 @@ function starterPackageJson(name: string): string {
     version: '0.1.0',
     private: true,
     scripts: {
+      agent: 'fdekit run supportTriage --input \'{"message":"An enterprise customer cannot access billing and says renewal is blocked."}\'',
       dev: 'fdekit dev',
       doctor: 'fdekit doctor',
       approvals: 'fdekit approvals list',
@@ -66,23 +67,21 @@ function starterPackageJson(name: string): string {
 }
 
 function starterEnvExample(): string {
-  return `# Provider; use mock, localOllama, openai, anthropic, or google.
+  return `# Copy this file to .env.
+# Keep mock for a credential-free smoke test, or choose one live provider:
+# localOllama, openai, anthropic, or google.
 FDEKIT_PROVIDER=mock
 
-# Optional model override; defaults are provider-specific.
+# Optional. Leave blank to use the selected provider's default model.
 FDEKIT_MODEL=
 
-# OpenAI settings used when FDEKIT_PROVIDER=openai.
+# Fill only the credential used by your selected provider.
 OPENAI_API_KEY=
-
-# Anthropic settings used when FDEKIT_PROVIDER=anthropic.
 ANTHROPIC_API_KEY=
-
-# Google Gemini settings used when FDEKIT_PROVIDER=google.
 GEMINI_API_KEY=
 
-# Advanced Ollama override used when FDEKIT_PROVIDER=localOllama.
-OLLAMA_BASE_URL=
+# Used only when FDEKIT_PROVIDER=localOllama.
+OLLAMA_BASE_URL=http://127.0.0.1:11434
 `;
 }
 

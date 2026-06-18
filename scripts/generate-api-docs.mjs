@@ -29,6 +29,7 @@ const publicPackages = [
       ['defineEval', 'Eval suite helper for datasets, assertions, and custom runners.'],
       ['expectedToolCall', 'Built-in eval assertion for required tool usage.'],
       ['defineGovernance', 'Governance helper for approvals, budgets, scopes, audit, and data protection.'],
+      ['providerFromEnv', 'Select the starter provider and optional model from FDEKIT_PROVIDER and FDEKIT_MODEL.'],
       ['defineHarness', 'Harness helper for explicit agent-loop phases and review controls.'],
       ['DeploymentDefinition', 'Top-level type behind deployment configs.'],
       ['AgentConfig', 'Agent definition contract consumed by deployments and runtime execution.'],

@@ -48,6 +48,7 @@ describe('cli scaffold and setup commands', () => {
 
     const packageJson = await readPackageJson(projectDir);
 
+    expect(packageJson.scripts?.agent).toContain('fdekit run supportTriage --input');
     expect(packageJson.scripts?.dev).toBe('fdekit dev');
     expect(packageJson.scripts?.doctor).toBe('fdekit doctor');
     expect(packageJson.scripts?.approvals).toBe('fdekit approvals list');
@@ -66,26 +67,24 @@ describe('cli scaffold and setup commands', () => {
 
     const config = await readConfig(projectDir);
     expectTextIncludes(config, [
-      "const provider = pick(process.env.FDEKIT_PROVIDER, ['mock', 'localOllama', 'openai', 'anthropic', 'google'], 'mock')",
-      'provider,',
-      'model: process.env.FDEKIT_MODEL || defaultModels[provider]',
-      'type ProviderConfig',
-      'const providerFactories = {',
+      'const provider = providerFromEnv();',
+      '[provider.name]: provider',
+      'provider: provider.name',
+      "name: 'support-triage-smoke'",
+      "dataset: './evals/support-triage.json'",
       'defineGovernance',
       'governance: defineGovernance({',
-      'workflow: defineWorkflow({',
-      'harness: defineHarness({',
       'connectors: {},',
-      'defineOutcomeMetric({',
-      'scorecard: {',
-      'dataLayers: defineDataLayers({',
-      'rollout: defineRollout({',
-      "name: 'localOllama'",
-      "apiKeyEnv: 'OPENAI_API_KEY'",
-      "apiKeyEnv: 'ANTHROPIC_API_KEY'",
-      "apiKeyEnv: 'GEMINI_API_KEY'",
     ]);
     expectTextExcludes(config, [
+      'defaultModels',
+      'providerFactories',
+      'type ProviderConfig',
+      'defineWorkflow',
+      'defineHarness',
+      'defineOutcomeMetric',
+      'defineDataLayers',
+      'defineRollout',
       'defineConnector',
       'github: defineConnector',
       'slack: defineConnector',
@@ -99,7 +98,7 @@ describe('cli scaffold and setup commands', () => {
       'OPENAI_API_KEY=',
       'ANTHROPIC_API_KEY=',
       'GEMINI_API_KEY=',
-      'OLLAMA_BASE_URL=',
+      'OLLAMA_BASE_URL=http://127.0.0.1:11434',
     ]);
     expectTextExcludes(envExample, [
       'OPENAI_MODEL=',

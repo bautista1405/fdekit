@@ -27,7 +27,8 @@ export async function cmdInit(ctx: CommandContext): Promise<void> {
   console.log(`Created FDEKit project ${name} in ${projectDir}`);
   console.log(`Next steps:
   cd ${path.relative(ctx.cwd, projectDir) || '.'}
-  fdekit dev
-  fdekit eval run
-  fdekit report`);
+  npm install
+  cp .env.example .env
+  # Choose a live provider and add its key in .env, or keep mock for a smoke test.
+  npm run agent`);
 }

@@ -61,6 +61,7 @@ Core is the authoring layer. It should stay free of local filesystem artifact co
 | `defineTool()` | Define a typed tool handler with optional schema, scopes, environment limits, category, and semantic tags. |
 | `defineConnector()` | Define a connector and the tools it exposes. |
 | `defineGovernance()` | Define audit, environment, permission, budget, and data-protection settings. |
+| `providerFromEnv()` | Select the starter provider and optional model from `FDEKIT_PROVIDER` and `FDEKIT_MODEL`; CLI commands supply the built-in runtime adapters. |
 | `defineHarness()` | Define the agent-loop phases and reference the tools, policies, evals, artifacts, review, and steering controls used by each phase. |
 | `defineWorkflow()` | Define the customer workflow, current/target state, scorecard, and ownership. |
 | `defineOutcomeMetric()` | Define a measurable business or operational outcome for the workflow. |
@@ -220,7 +221,7 @@ Runtime owns execution and artifacts. Runtime-specific interfaces live here rath
 | `PolicyViolation` | Runtime policy violation artifact. |
 | `createDevTrace()` | Create a lightweight development trace from a deployment. |
 
-Provider runtime resolution is explicit. `runAgent()` uses `ProviderConfig.runtime` when the selected provider config supplies one, or `AgentRunOptions.providerRegistry` when a caller wants to keep adapters outside `fde.config.ts`. The runtime has only a built-in mock fallback for credential-free local runs; OpenAI, Anthropic, Google, Ollama, and custom providers should come from their provider packages or a caller-supplied registry.
+Provider runtime resolution is explicit. `runAgent()` uses `ProviderConfig.runtime` when the selected provider config supplies one, or `AgentRunOptions.providerRegistry` when a caller wants to keep adapters outside `fde.config.ts`. The CLI supplies its built-in registry for configs using `providerFromEnv()`. Programmatic runtime callers should use provider package helpers or pass a registry themselves; the runtime only has a built-in mock fallback.
 
 Runtime strict mode is also explicit. `runAgent({ strict: true })` requires every available tool to declare `argsSchema`, `scopes`, and `environments`, then validates provider-planned args at the runtime edge before the tool handler executes. Standard runs are permissive about missing metadata, but declared schemas and environments are still enforced.
 

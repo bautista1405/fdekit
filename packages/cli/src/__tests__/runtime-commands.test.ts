@@ -239,13 +239,25 @@ describe('cli runtime commands', () => {
     )) as {
       source?: { decidedApprovals?: number };
       cases?: Array<{
+        input?: Record<string, unknown>;
         expected?: { humanDecision?: string; shouldProceed?: boolean };
-        metadata?: { approvalId?: string };
+        metadata?: {
+          approvalId?: string;
+          args?: unknown;
+          humanDecision?: string;
+          inputSource?: string;
+        };
       }>;
     };
     expect(feedbackArtifact.source?.decidedApprovals).toBe(1);
     expect(feedbackArtifact.cases).toHaveLength(1);
     expect(feedbackArtifact.cases?.[0]?.metadata?.approvalId).toBe(approvals[0].id);
+    expect(feedbackArtifact.cases?.[0]?.input).toEqual({ ticketId: 'tick_1001' });
+    expect(feedbackArtifact.cases?.[0]?.metadata).toMatchObject({
+      args: expect.objectContaining({ ticketId: 'tick_1001' }),
+      humanDecision: 'approved',
+      inputSource: 'trace',
+    });
     expect(feedbackArtifact.cases?.[0]?.expected).toMatchObject({
       humanDecision: 'approved',
       shouldProceed: true,
@@ -255,6 +267,46 @@ describe('cli runtime commands', () => {
       'utf8',
     )) as unknown[];
     expect(feedbackCases).toHaveLength(1);
+
+    const configPath = path.join(projectDir, 'fde.config.ts');
+    const config = await readFile(configPath, 'utf8');
+    await writeFile(
+      configPath,
+      config.replace(
+        '  evals: [',
+        `  evals: [
+    defineEval({
+      name: 'approval-feedback-replay',
+      agent: 'supportTriage',
+      dataset: './artifacts/feedback/eval-cases.json',
+      maxSteps: 8,
+    }),`,
+      ),
+      'utf8',
+    );
+
+    const feedbackEvalOutput = await captureCommand(() => cmdEval({
+      cwd: projectDir,
+      args: ['run'],
+    }));
+
+    expect(feedbackEvalOutput.exitCode).toBeUndefined();
+    const feedbackEval = JSON.parse(await readFile(
+      path.join(projectDir, 'artifacts', 'evals', 'latest.json'),
+      'utf8',
+    )) as {
+      results?: Array<{
+        name?: string;
+        status?: string;
+        cases?: Array<{ assertions?: Array<{ message?: string; passed?: boolean }> }>;
+      }>;
+    };
+    const replayResult = feedbackEval.results?.find((result) => result.name === 'approval-feedback-replay');
+    expect(replayResult?.status).toBe('passed');
+    expect(replayResult?.cases?.[0]?.assertions).toContainEqual(expect.objectContaining({
+      passed: true,
+      message: 'Expected approved tool "issue.create" to proceed',
+    }));
 
     const consoleOutput = await captureCommand(() => cmdConsole({ cwd: projectDir, args: [] }));
     expect(consoleOutput.stdout).toContain('Approvals loaded: 1');

@@ -269,7 +269,11 @@ describe('cli scaffold and setup commands', () => {
     expect(localProviderOutput.stdout).toContain('Added provider localOllama');
     expect(googleProviderOutput.stdout).toContain('Added provider google');
     expect(localProviderOutput.stdout).toContain('Run `ollama pull llama3.1:8b`');
+    expect(providerOutput.stdout).toContain('Next: npm install');
+    expect(localProviderOutput.stdout).toContain('Next: npm install');
+    expect(googleProviderOutput.stdout).toContain('Next: npm install');
     expect(policyOutput.stdout).toContain('Added policy limit-cost');
+    expect(policyOutput.stdout).not.toContain('Next: npm install');
 
     const config = await readConfig(projectDir);
     expectTextIncludes(config, [
@@ -398,6 +402,13 @@ describe('cli scaffold and setup commands', () => {
     expect(k6Output.stdout).toContain('Added connector k6');
     expect(k6Output.stdout).toContain('k6 mode requires the k6 CLI');
     expect(customOutput.stdout).toContain('Added connector internal-crm');
+    expect(postgresOutput.stdout).toContain('Next: npm install');
+    expect(linearOutput.stdout).toContain('Next: npm install');
+    expect(hubspotOutput.stdout).toContain('Next: npm install');
+    expect(salesforceOutput.stdout).toContain('Next: npm install');
+    expect(codebaseOutput.stdout).toContain('Next: npm install');
+    expect(k6Output.stdout).toContain('Next: npm install');
+    expect(customOutput.stdout).not.toContain('Next: npm install');
 
     const config = await readConfig(projectDir);
     expectTextIncludes(config, [
@@ -544,9 +555,13 @@ describe('cli scaffold and setup commands', () => {
     }));
 
     expect(firstPostgres.stdout).toContain('Added connector postgres');
+    expect(firstPostgres.stdout).toContain('Next: npm install');
     expect(duplicatePostgres.stdout).toContain('Connector postgres is already configured');
+    expect(duplicatePostgres.stdout).not.toContain('Next: npm install');
     expect(firstCustom.stdout).toContain('Added connector internal-crm');
     expect(duplicateCustom.stdout).toContain('Connector internal-crm is already configured');
+    expect(firstCustom.stdout).not.toContain('Next: npm install');
+    expect(duplicateCustom.stdout).not.toContain('Next: npm install');
 
     const config = await readConfig(projectDir);
     expect(config.match(/^    postgres:/gm)).toHaveLength(1);

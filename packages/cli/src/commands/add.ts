@@ -195,12 +195,14 @@ async function applyProjectScaffold(projectDir: string, scaffold: AddScaffold | 
   }
 
   const changed: string[] = [];
+  let dependenciesChanged = false;
 
   if (scaffold.dependencies && Object.keys(scaffold.dependencies).length > 0) {
     const updated = await upsertPackageDependencies(projectDir, scaffold.dependencies);
 
     if (updated) {
       changed.push('package.json');
+      dependenciesChanged = true;
     }
   }
 
@@ -218,6 +220,10 @@ async function applyProjectScaffold(projectDir: string, scaffold: AddScaffold | 
 
   if (scaffold.note) {
     console.log(scaffold.note);
+  }
+
+  if (dependenciesChanged) {
+    console.log('Next: npm install');
   }
 }
 

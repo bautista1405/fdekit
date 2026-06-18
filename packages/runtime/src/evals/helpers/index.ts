@@ -163,6 +163,26 @@ function evaluateExpectedBehavior(
     });
   }
 
+  if (typeof expected.toolName === 'string' && typeof expected.shouldProceed === 'boolean') {
+    const observedTools = runResult.toolCalls.map((call) => call.name);
+    const observed = observedTools.includes(expected.toolName);
+    const passed = expected.shouldProceed ? observed : !observed;
+
+    results.push({
+      passed,
+      message: expected.shouldProceed
+        ? `Expected approved tool "${expected.toolName}" to proceed`
+        : `Expected rejected tool "${expected.toolName}" not to proceed`,
+      score: passed ? 1 : 0,
+      metadata: {
+        toolName: expected.toolName,
+        shouldProceed: expected.shouldProceed,
+        observed,
+        observedTools,
+      },
+    });
+  }
+
   for (const key of ['customerId', 'priority', 'issueType'] as const) {
     if (typeof expected[key] !== 'string') {
       continue;

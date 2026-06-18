@@ -295,6 +295,8 @@ async function createEvalProject(): Promise<string> {
       input: { ticketId: 'tick_1001' },
       expected: {
         escalation: true,
+        toolName: 'issue.create',
+        shouldProceed: true,
         customerId: 'cus_company',
         priority: 'high',
         issueType: 'billing',
@@ -305,6 +307,8 @@ async function createEvalProject(): Promise<string> {
       input: { ticketId: 'tick_1002' },
       expected: {
         escalation: false,
+        toolName: 'issue.create',
+        shouldProceed: false,
         customerId: 'cus_globex',
         priority: 'normal',
       },

@@ -33,7 +33,7 @@ Recipe configs intentionally mix executable deployment contract with field-metho
 | Config area | Runtime meaning |
 | --- | --- |
 | `providers`, `connectors`, connector tools, `agents`, `governance`, `policies`, `evals`, `harness`, `artifacts`, and env requirements | Load-bearing. Runtime, validation, strict mode, evals, reports, and artifact routing use these fields directly. |
-| `workflow.currentState`, `workflow.targetState`, `workflow.scorecard`, `outcomeMetrics`, `dataLayers`, `rollout`, and migration notes | Reporting and handoff context. They feed console pages, reports, recipe docs, and stakeholder review, but FDEKit does not verify that the business narrative is true. |
+| `workflow.currentState`, `workflow.targetState`, `workflow.scorecard`, `outcomeMetrics`, `dataLayers`, `rollout`, and migration notes | Reporting and handoff context. They feed console pages, reports, recipe docs, and stakeholder review. Validation checks their declared structure, but FDEKit does not verify that the business narrative is true. |
 
 This matters most in larger examples such as `sales-research-agent`, where the config carries CRM connector setup and local demo tools alongside business narrative like manual baseline, outcome targets, and data-layer ownership. Edit the load-bearing fields when changing what runs; edit the narrative fields when changing what the deployment explains to reviewers.
 

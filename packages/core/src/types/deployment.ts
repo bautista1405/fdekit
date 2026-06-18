@@ -28,7 +28,41 @@ export interface S3ArtifactStoreDefinition {
   bucket: string;
   prefix?: string;
   region?: string;
-  client?: unknown;
+  client: S3ArtifactClient;
+}
+
+export interface S3ArtifactClient {
+  putObject(input: S3PutObjectInput): Promise<unknown>;
+  getObject(input: S3GetObjectInput): Promise<S3GetObjectOutput>;
+  listObjectsV2(input: S3ListObjectsV2Input): Promise<S3ListObjectsV2Output>;
+}
+
+export interface S3PutObjectInput {
+  Bucket: string;
+  Key: string;
+  Body: string | Uint8Array;
+  ContentType?: string;
+}
+
+export interface S3GetObjectInput {
+  Bucket: string;
+  Key: string;
+}
+
+export interface S3GetObjectOutput {
+  Body?: unknown;
+}
+
+export interface S3ListObjectsV2Input {
+  Bucket: string;
+  Prefix: string;
+  ContinuationToken?: string;
+}
+
+export interface S3ListObjectsV2Output {
+  Contents?: Array<{ Key?: string }>;
+  IsTruncated?: boolean;
+  NextContinuationToken?: string;
 }
 
 export interface DeploymentDefinition {

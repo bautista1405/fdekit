@@ -18,9 +18,15 @@ import {
   parseEnvironmentEndpointConfigValue,
   requireApproval,
   resolveEnvironmentEndpoint,
+  type S3ArtifactClient,
+  type S3ArtifactStoreDefinition,
 } from '../index.js';
 
 describe('definition helpers', () => {
+  it('requires a typed client for S3 artifact definitions', () => {
+    expectTypeOf<S3ArtifactStoreDefinition['client']>().toEqualTypeOf<S3ArtifactClient>();
+  });
+
   it('defines field deployment method primitives as typed deployment fields', () => {
     const workflow = defineWorkflow({
       name: 'Support escalation',

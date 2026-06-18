@@ -78,6 +78,40 @@ const answerQuality = judgeRubric({
 });
 ```
 
+## S3 artifact storage
+
+S3 storage uses an injected client so FDEKit does not require the AWS SDK. The `client`
+field is required and must implement `putObject`, `getObject`, and `listObjectsV2`.
+`@fdekit/core` exports `S3ArtifactClient` and the related input/output types for custom
+AWS, MinIO, LocalStack, or enterprise adapters.
+
+```ts
+import { defineDeployment, type S3ArtifactClient } from '@fdekit/core';
+import {
+  GetObjectCommand,
+  ListObjectsV2Command,
+  PutObjectCommand,
+  S3Client,
+} from '@aws-sdk/client-s3';
+
+const s3 = new S3Client({ region: process.env.AWS_REGION });
+
+const artifactsClient: S3ArtifactClient = {
+  putObject: (input) => s3.send(new PutObjectCommand(input)),
+  getObject: (input) => s3.send(new GetObjectCommand(input)),
+  listObjectsV2: (input) => s3.send(new ListObjectsV2Command(input)),
+};
+
+export default defineDeployment({
+  // providers and agents...
+  artifacts: {
+    kind: 's3',
+    bucket: 'fdekit-artifacts',
+    client: artifactsClient,
+  },
+});
+```
+
 ## Public API surface
 
 Import from the package root:

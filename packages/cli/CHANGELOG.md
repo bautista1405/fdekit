@@ -1,5 +1,21 @@
 # fdekit
 
+## 0.4.2
+
+### Patch Changes
+
+- dbe7868: Simplify newly initialized projects around an env-selected provider, a minimal runnable agent config, clearer `.env.example` guidance, and a first-loop npm script. Config discovery and all file-creating workflows now keep deployment files, package/env mutations, recipes, and runtime output inside a contained `fdekit/` project, while preserving legacy root configs and invocation-relative recipe paths. The default runtime output and cache directory is now `artifacts/` instead of `.fdekit/`.
+- c77f318: fdekit init scaffolding, simpler starter config
+- Updated dependencies [dbe7868]
+- Updated dependencies [c77f318]
+  - @fdekit/core@0.4.2
+  - @fdekit/runtime@0.4.2
+  - @fdekit/console@0.4.2
+  - @fdekit/provider-anthropic@0.4.2
+  - @fdekit/provider-google@0.4.2
+  - @fdekit/provider-ollama@0.4.2
+  - @fdekit/provider-openai@0.4.2
+
 ## 0.4.1
 
 ### Patch Changes

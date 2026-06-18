@@ -15,6 +15,7 @@ import type {
   DeploymentValidationResult,
   DeploymentValidationSeverity,
 } from './interfaces/index.js';
+import { validateFieldMethodMetadata } from './field-method-validation.js';
 
 export function validateDeployment(
   deployment: DeploymentDefinition,
@@ -69,6 +70,7 @@ export function validateDeployment(
   }
 
   validateArtifactStore(deployment, add);
+  validateFieldMethodMetadata(deployment, add);
   validateEnvironmentWiring(deployment, add);
 
   for (const [connectorKey, connector] of Object.entries(connectors)) {

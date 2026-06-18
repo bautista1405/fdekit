@@ -2,9 +2,11 @@ import { describe, expect, it } from 'vitest';
 import {
   defineAgent,
   defineConnector,
+  defineDataLayers,
   defineDeployment,
   defineGovernance,
   defineHarness,
+  defineOutcomeMetric,
   defineRollout,
   defineTool,
   defineWorkflow,
@@ -352,6 +354,142 @@ describe('deployment validation and diffing', () => {
       severity: 'error',
       path: 'evals.answer-quality.assertions.judge-rubric.judge',
       message: 'judgeRubric requires a judge function; FDEKit does not provide a built-in provider-backed judge',
+    });
+  });
+
+  it('validates field-method metadata before it reaches reports and snapshots', () => {
+    const deployment = defineDeployment({
+      name: 'invalid-field-method-metadata',
+      providers: {
+        mock: { name: 'mock' },
+      },
+      agents: {
+        reviewer: defineAgent({
+          provider: 'mock',
+          instructions: './agents/reviewer.md',
+        }),
+      },
+      workflow: defineWorkflow({
+        name: '',
+        owner: { team: 'operations' } as never,
+        currentState: {
+          handoffs: ['support', 42] as never,
+        },
+      }),
+      outcomeMetrics: [
+        defineOutcomeMetric({
+          description: 'Missing its required name',
+        } as never),
+      ],
+      dataLayers: defineDataLayers({
+        businessRules: ['support policy', false] as never,
+      }),
+      rollout: defineRollout({
+        stage: 12345 as never,
+        owner: { team: 'operations' } as never,
+      }),
+    });
+
+    const result = validateDeployment(deployment);
+
+    expect(result.valid).toBe(false);
+    expect(result.issues).toEqual(expect.arrayContaining([
+      {
+        severity: 'error',
+        path: 'workflow.name',
+        message: 'Workflow name must be a non-empty string',
+      },
+      {
+        severity: 'error',
+        path: 'workflow.owner',
+        message: 'Workflow owner must be a string',
+      },
+      {
+        severity: 'error',
+        path: 'workflow.currentState.handoffs.1',
+        message: 'Workflow state handoffs entries must be strings',
+      },
+      {
+        severity: 'error',
+        path: 'outcomeMetrics.0.name',
+        message: 'Outcome metric name must be a non-empty string',
+      },
+      {
+        severity: 'error',
+        path: 'dataLayers.businessRules.1',
+        message: 'Data layers businessRules entries must be strings',
+      },
+      {
+        severity: 'error',
+        path: 'rollout.stage',
+        message: 'Rollout stage must be a non-empty string',
+      },
+      {
+        severity: 'error',
+        path: 'rollout.owner',
+        message: 'Rollout owner must be a string',
+      },
+    ]));
+  });
+
+  it('accepts structurally valid field-method metadata', () => {
+    const deployment = defineDeployment({
+      name: 'valid-field-method-metadata',
+      providers: {
+        mock: { name: 'mock' },
+      },
+      agents: {
+        reviewer: defineAgent({
+          provider: 'mock',
+          instructions: './agents/reviewer.md',
+        }),
+      },
+      workflow: defineWorkflow({
+        name: 'Support escalation',
+        owner: 'support operations',
+        currentState: {
+          summary: 'Manual triage',
+          handoffs: ['support', 'engineering'],
+          baseline: {
+            cycleTime: '18 minutes',
+            manualSteps: 7,
+          },
+        },
+        targetState: {
+          summary: 'Governed agent triage',
+          target: 'under 5 minutes',
+        },
+        scorecard: {
+          volume: 'high',
+          fragmentedSystems: ['Slack', 'Postgres'],
+          measurablePain: ['cycle time'],
+        },
+      }),
+      outcomeMetrics: [
+        defineOutcomeMetric({
+          name: 'Escalation cycle time',
+          baseline: '18 minutes',
+          target: 'under 5 minutes',
+          owner: 'support operations',
+        }),
+      ],
+      dataLayers: defineDataLayers({
+        systemOfRecord: ['Postgres customer profile'],
+        businessRules: ['support escalation policy'],
+        rawIntake: ['ticket text'],
+        feedback: ['approval decisions'],
+      }),
+      rollout: defineRollout({
+        stage: 'shadow',
+        stages: ['local', 'shadow', 'approved-write'],
+        next: 'Approve five low-risk escalations',
+        owner: 'support operations',
+      }),
+    });
+
+    expect(validateDeployment(deployment)).toEqual({
+      valid: true,
+      issues: [],
     });
   });
 

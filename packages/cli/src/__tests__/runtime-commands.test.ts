@@ -354,6 +354,51 @@ describe('cli runtime commands', () => {
   });
 
 
+  it('surfaces invalid field-method metadata through validate', async () => {
+    const projectDir = await mkProjectRoot('fdekit-cli-field-method-');
+    await writeFile(path.join(projectDir, 'fde.config.ts'), `import {
+  defineAgent,
+  defineDeployment,
+  defineOutcomeMetric,
+  defineRollout,
+} from '@fdekit/core';
+
+export default defineDeployment({
+  name: 'invalid-field-method-metadata',
+  providers: {
+    mock: { name: 'mock' },
+  },
+  agents: {
+    reviewer: defineAgent({
+      provider: 'mock',
+      instructions: './agents/reviewer.md',
+    }),
+  },
+  outcomeMetrics: [
+    defineOutcomeMetric({ description: 'Missing its required name' } as any),
+  ],
+  rollout: defineRollout({
+    stage: 12345 as any,
+    owner: { team: 'operations' } as any,
+  }),
+});
+`, 'utf8');
+
+    const output = await captureCommand(() => cmdValidate({ cwd: projectDir, args: [] }));
+
+    expect(output.exitCode).toBe(1);
+    expect(output.stdout).toContain(
+      'ERROR outcomeMetrics.0.name: Outcome metric name must be a non-empty string',
+    );
+    expect(output.stdout).toContain(
+      'ERROR rollout.stage: Rollout stage must be a non-empty string',
+    );
+    expect(output.stdout).toContain(
+      'ERROR rollout.owner: Rollout owner must be a string',
+    );
+    expect(output.stdout).toContain('Summary: deployment config has validation errors');
+  });
+
   it('validates deployments, writes snapshots, and diffs config changes', async () => {
     const projectDir = await createCliProject();
 

@@ -177,7 +177,7 @@ Runtime does not import the AWS SDK. The S3 store consumes a tiny adapter shape 
 | `fdekit approvals approve/reject` | `approvals/<id>.json`, `audit/audit.jsonl` | existing approval file |
 | `fdekit eval run` | `evals/latest.json`, `evals/<eval-id>.json`, optional eval trace files | `fde.config.ts`, datasets referenced by eval definitions |
 | `fdekit eval macro` | `evals/macro/latest.json`, `evals/macro/<id>.json`, `evals/macro/report.md` | traces, latest eval artifact |
-| `fdekit feedback export` | `feedback/eval-candidates.json`, `feedback/eval-cases.json` | approvals and audit log |
+| `fdekit feedback export` | `feedback/eval-candidates.json`, `feedback/eval-cases.json` | decided approvals plus original run inputs recovered from traces or audit events |
 | `fdekit report` | `reports/deployment-report.md` | latest eval and traces |
 | `fdekit console` | `console.html`, `consoles/*.html`, `consoles/history.json`, `exports/*` | deployment, traces, latest eval, macro eval, report, approvals, audit log |
 

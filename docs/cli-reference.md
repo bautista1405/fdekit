@@ -84,6 +84,24 @@ Runtime evidence commands write through the configured artifact store. With no `
 
 ## Evals
 
+`fdekit feedback export` writes replay-ready cases to
+`artifacts/feedback/eval-cases.json`. Each case uses the original redacted agent run input;
+approval arguments, rationale, decision, and provenance stay under `metadata`. Point an eval
+at that dataset to turn reviewed decisions into regressions:
+
+```ts
+defineEval({
+  name: 'approval-feedback',
+  agent: 'supportTriage',
+  dataset: './artifacts/feedback/eval-cases.json',
+})
+```
+
+The runtime automatically interprets each exported case's `expected.toolName` and
+`expected.shouldProceed`: approved decisions require the tool call to occur, while rejected
+decisions require it not to occur. Decisions from legacy artifacts are skipped when neither
+their trace nor audit event contains a recoverable run input.
+
 | Command | Purpose |
 | --- | --- |
 | `fdekit eval run` | Run configured lower-level evals. |

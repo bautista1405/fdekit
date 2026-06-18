@@ -425,7 +425,7 @@ Main commands:
 | `fdekit report` | Generate a Markdown deployment report. |
 | `fdekit console` | Generate the static dashboard and exports. |
 | `fdekit approvals` | Inspect and decide pending approvals. |
-| `fdekit feedback export` | Export approvals and audit decisions into eval-candidate artifacts. |
+| `fdekit feedback export` | Export decided approvals into replay-ready eval cases using the original redacted run input; approval details remain in metadata and `expected.shouldProceed` is enforced during eval replay. |
 
 ## Stability Notes
 

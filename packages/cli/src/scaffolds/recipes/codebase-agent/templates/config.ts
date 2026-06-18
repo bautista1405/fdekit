@@ -216,7 +216,7 @@ function deploymentBlock(projectName: string): string {
     systemOfRecord: ['customer repository', 'issue tracker'],
     businessRules: ['./agents/codebase-agent.md', 'governance policies', 'eval assertions'],
     rawIntake: ['task input', 'codebase.search results', 'codebase.readFile contents'],
-    feedback: ['.fdekit/approvals', '.fdekit/audit', '.fdekit/evals'],
+    feedback: ['artifacts/approvals', 'artifacts/audit', 'artifacts/evals'],
   }),
   rollout: defineRollout({
     stage: 'local',

@@ -20,7 +20,7 @@ export function formatCliError(error: unknown): string {
     return [
       `Error: ${error.message}`,
       '',
-      'Next: run `fdekit init <name>` to create a deployment, or run the command from a folder that contains fde.config.ts.',
+      'Next: run `fdekit init` to create `./fdekit`, or run the command from a project that contains fde.config.ts.',
     ].join('\n');
   }
 

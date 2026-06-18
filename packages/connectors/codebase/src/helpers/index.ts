@@ -68,8 +68,8 @@ export function readTextFile(filePath: string): Promise<string> {
   return fs.readFile(filePath, 'utf8');
 }
 
-export function resolveRoot(rootDir: string): string {
-  return path.resolve(rootDir);
+export function resolveRoot(rootDir: string, projectDir?: string): string {
+  return path.resolve(projectDir ?? process.cwd(), rootDir);
 }
 
 export function resolveSafePath(root: string, filePath: string): string {

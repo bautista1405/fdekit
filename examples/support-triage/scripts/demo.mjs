@@ -25,7 +25,7 @@ try {
   await run('fdekit', ['recipe', 'capture', 'support-renewal-risk', '--force']);
 
   printHeader('Demo Ready');
-  console.log(`Open dashboard: ${join(process.cwd(), '.fdekit', 'console.html')}`);
+  console.log(`Open dashboard: ${join(process.cwd(), 'artifacts', 'console.html')}`);
   console.log(`Captured recipe: ${join(process.cwd(), 'recipes', 'support-renewal-risk')}`);
 } finally {
   if (apiProcess) {

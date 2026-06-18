@@ -3,7 +3,7 @@
 <!-- Maintained via scripts/generate-api-docs.mjs. -->
 Run `npm run docs:api` to refresh this page after changing public exports.
 
-Applies to `@fdekit/runtime` v0.1.0.
+Applies to `@fdekit/runtime` v0.4.0.
 
 Declaration source: `packages/runtime/dist/index.d.ts`.
 
@@ -39,7 +39,7 @@ Declaration source: `packages/runtime/dist/index.d.ts`.
 
 ## Export Count
 
-This page documents 124 public root exports from `@fdekit/runtime`: 46 functions/values and 78 types/interfaces.
+This page documents 125 public root exports from `@fdekit/runtime`: 47 functions/values and 78 types/interfaces.
 
 ## Functions And Values
 
@@ -51,6 +51,7 @@ This page documents 124 public root exports from `@fdekit/runtime`: 46 functions
 | <a id="approveapproval"></a>`approveApproval` | function | [packages/runtime/src/governance/index.ts](../../packages/runtime/src/governance/index.ts) |
 | <a id="ass3artifactclient"></a>`asS3ArtifactClient` | function | [packages/runtime/src/artifact-store/s3-store.ts](../../packages/runtime/src/artifact-store/s3-store.ts) |
 | <a id="collectevals"></a>`collectEvals` | function | [packages/runtime/src/evals/index.ts](../../packages/runtime/src/evals/index.ts) |
+| <a id="collectreportpolicynames"></a>`collectReportPolicyNames` | function | [packages/runtime/src/reports.ts](../../packages/runtime/src/reports.ts) |
 | <a id="compiledeployment"></a>`compileDeployment` | function | [packages/runtime/src/deployments/compiler.ts](../../packages/runtime/src/deployments/compiler.ts) |
 | <a id="confignotfounderror"></a>`ConfigNotFoundError` | class | [packages/runtime/src/config/index.ts](../../packages/runtime/src/config/index.ts) |
 | <a id="createartifactstore"></a>`createArtifactStore` | function | [packages/runtime/src/artifact-store/factory.ts](../../packages/runtime/src/artifact-store/factory.ts) |

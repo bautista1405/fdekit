@@ -1,6 +1,10 @@
 import * as path from 'path';
 import type { ArtifactStore } from '../../artifact-store/index.js';
-import { readJsonArtifact, writeJsonArtifact } from '../../artifact-store/index.js';
+import {
+  readJsonArtifact,
+  writeJsonArtifact,
+} from '../../artifact-store/index.js';
+import { DEFAULT_ARTIFACT_ROOT } from '../../artifact-store/paths.js';
 import type { ApprovalArtifact } from '../interfaces/index.js';
 
 const SENSITIVE_KEY_PATTERN = /(?:api[_-]?key|authorization|cookie|password|secret|token)/i;
@@ -27,11 +31,11 @@ export async function readApprovalArtifact(
 }
 
 export function approvalsDir(projectDir: string): string {
-  return path.join(projectDir, '.fdekit', 'approvals');
+  return path.join(projectDir, DEFAULT_ARTIFACT_ROOT, 'approvals');
 }
 
 export function auditDir(projectDir: string): string {
-  return path.join(projectDir, '.fdekit', 'audit');
+  return path.join(projectDir, DEFAULT_ARTIFACT_ROOT, 'audit');
 }
 
 export function approvalIdFromFingerprint(fingerprint: string): string {

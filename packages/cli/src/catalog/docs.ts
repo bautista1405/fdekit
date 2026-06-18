@@ -50,7 +50,7 @@ export function renderCommandHelp(command: string): string | undefined {
     case 'init':
       return `Usage: ${commandUsages.init}
 
-Scaffold a new FDEKit deployment in [name], or in the current directory when omitted.
+Scaffold a new FDEKit deployment in [name], or in ./fdekit when omitted.
 
 Options:
   -h, --help  Show this command help

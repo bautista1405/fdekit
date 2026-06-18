@@ -251,7 +251,7 @@ function deploymentBlock(projectName: string): string {
     systemOfRecord: ['customer-api tickets', 'customer subscription records', 'issue tracker'],
     businessRules: ['./agents/support-triage.md', 'governance policies', 'eval assertions'],
     rawIntake: ['ticket.body', 'ticket.priority', 'customer.tier', 'subscription.status'],
-    feedback: ['.fdekit/approvals', '.fdekit/audit', '.fdekit/evals'],
+    feedback: ['artifacts/approvals', 'artifacts/audit', 'artifacts/evals'],
   }),
   rollout: defineRollout({
     stage: 'local',

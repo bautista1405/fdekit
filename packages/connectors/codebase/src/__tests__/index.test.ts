@@ -13,6 +13,23 @@ describe('codebaseConnector', () => {
     }
   });
 
+  it('resolves relative roots from the loaded FDEKit project directory', () => {
+    const contained = codebaseConnector({
+      env: {
+        FDEKIT_PROJECT_DIR: '/customer/app/fdekit',
+      },
+    });
+    const recipe = codebaseConnector({
+      rootDir: './sample-repo',
+      env: {
+        FDEKIT_PROJECT_DIR: '/customer/app/fdekit',
+      },
+    });
+
+    expect(contained.config.rootDir).toBe(path.resolve('/customer/app'));
+    expect(recipe.config.rootDir).toBe(path.resolve('/customer/app/fdekit/sample-repo'));
+  });
+
   it('lists, searches, and reads files within the configured root', async () => {
     const rootDir = await mkdtemp(path.join(tmpdir(), 'fdekit-codebase-'));
     await mkdir(path.join(rootDir, 'src'), { recursive: true });

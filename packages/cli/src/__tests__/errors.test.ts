@@ -68,7 +68,7 @@ describe('cli error UX', () => {
 
     expect(output.exitCode).toBe(1);
     expect(output.stderr).toContain('Error: No fde.config.ts found');
-    expect(output.stderr).toContain('Next: run `fdekit init <name>`');
+    expect(output.stderr).toContain('Next: run `fdekit init` to create `./fdekit`');
   });
 
   it('suggests the nearest command for unknown commands', async () => {
@@ -96,7 +96,7 @@ describe('cli error UX', () => {
     const initHelp = await captureCli(['init', '--help'], cwd);
     expect(initHelp.exitCode).toBeUndefined();
     expect(initHelp.stdout).toContain('Usage: fdekit init [name]');
-    expect(initHelp.stdout).toContain('Scaffold a new FDEKit deployment');
+    expect(initHelp.stdout).toContain('Scaffold a new FDEKit deployment in [name], or in ./fdekit');
     expect(initHelp.stderr).toBe('');
     await expect(access(path.join(cwd, '--help'))).rejects.toMatchObject({ code: 'ENOENT' });
 

@@ -239,9 +239,9 @@
         "subscription.status"
       ],
       "feedback": [
-        ".fdekit/approvals",
-        ".fdekit/audit",
-        ".fdekit/evals"
+        "artifacts/approvals",
+        "artifacts/audit",
+        "artifacts/evals"
       ]
     },
     "rollout": {

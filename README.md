@@ -55,7 +55,7 @@ The demo command builds the workspace, checks that runnable examples still match
 Inspect both outputs:
 
 ```txt
-examples/support-triage/.fdekit/console.html
+examples/support-triage/artifacts/console.html
 examples/support-triage/recipes/support-renewal-risk/
 ```
 
@@ -68,12 +68,14 @@ mkdir support-demo
 cd support-demo
 npm install -D @fdekit/cli
 npx fdekit init
-npx fdekit recipe install support-triage
+cd fdekit
 npm install
+npx fdekit recipe install support-triage
 npm run demo
 ```
 
 The npm package is `@fdekit/cli`; it installs the `fdekit` binary used by the commands below.
+Bare `fdekit init` keeps deployment source and runtime artifacts under `./fdekit`; commands launched from the containing customer project discover that folder automatically.
 
 The installed recipe's `npm run demo` script starts the local customer API on `127.0.0.1:8787`, waits for `/health`, runs the same governed loop, captures `recipes/support-renewal-risk/`, and shuts the API down when it finishes.
 
@@ -184,7 +186,7 @@ npm run example:macro
 npm run example:console
 ```
 
-Open `examples/support-triage/.fdekit/console.html`.
+Open `examples/support-triage/artifacts/console.html`.
 
 For maintainer-facing package boundaries, runtime flow, artifact lifecycle, and ADRs, see [Maintainer Architecture](./docs/architecture.md). For public symbols, start with [Public API Reference](./docs/api-reference.md).
 

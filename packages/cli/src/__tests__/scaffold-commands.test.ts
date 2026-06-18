@@ -1,4 +1,4 @@
-import { mkdir, writeFile } from 'fs/promises';
+import { mkdir, readFile, readdir, writeFile } from 'fs/promises';
 import * as path from 'path';
 import { describe, expect, it, vi } from 'vitest';
 import { cmdAdd } from '../commands/add.js';
@@ -31,6 +31,51 @@ import {
 vi.setConfig({ testTimeout: 30000 });
 
 describe('cli scaffold and setup commands', () => {
+  it('keeps a bare init contained in a fdekit directory', async () => {
+    const cwd = await mkProjectRoot('fdekit-cli-contained-init-');
+    const output = await captureCommand(() => cmdInit({ cwd, args: [] }));
+    const projectDir = path.join(cwd, 'fdekit');
+
+    expect(output.exitCode).toBeUndefined();
+    expect(output.stdout).toContain(`Created FDEKit project ${path.basename(cwd)}`);
+    expect(output.stdout).toContain('cd fdekit');
+    await expectFiles(projectDir, [
+      'fde.config.ts',
+      '.env.example',
+      '.gitignore',
+      'package.json',
+      'agents/support-triage.md',
+      'evals/support-triage.json',
+      'workflow.md',
+    ]);
+    expect(await readFile(path.join(projectDir, '.gitignore'), 'utf8')).toContain('/artifacts/');
+    expect(await readdir(cwd)).toEqual(['fdekit']);
+
+    const validateOutput = await captureCommand(() => cmdValidate({ cwd, args: [] }));
+    expect(validateOutput.exitCode).toBeUndefined();
+    expect(validateOutput.stdout).toContain('Config: fdekit/fde.config.ts');
+    await expectFiles(projectDir, ['artifacts/deployments/latest.json']);
+    expect(await readdir(cwd)).toEqual(['fdekit']);
+  });
+
+  it('applies add scaffolds to the contained project when invoked from the customer root', async () => {
+    const cwd = await mkProjectRoot('fdekit-cli-contained-add-');
+    await writeFile(path.join(cwd, 'package.json'), '{"name":"customer-app","private":true}\n', 'utf8');
+    await captureCommand(() => cmdInit({ cwd, args: [] }));
+
+    const output = await captureCommand(() => cmdAdd({
+      cwd,
+      args: ['provider', 'anthropic'],
+    }));
+
+    expect(output.exitCode).toBeUndefined();
+    expect(output.stdout).toContain('Updated package.json');
+    expect((await readPackageJson(cwd)).dependencies?.['@fdekit/provider-anthropic']).toBeUndefined();
+    expect((await readPackageJson(path.join(cwd, 'fdekit'))).dependencies?.['@fdekit/provider-anthropic'])
+      .toBe(fdekitDependencyVersion);
+    expect(await readEnvExample(path.join(cwd, 'fdekit'))).toContain('ANTHROPIC_API_KEY=');
+  });
+
   it('scaffolds a new deployment project', async () => {
     const cwd = await mkProjectRoot('fdekit-cli-init-');
     const output = await captureCommand(() => cmdInit({ cwd, args: ['company-deployment'] }));
@@ -90,6 +135,15 @@ describe('cli scaffold and setup commands', () => {
       'slack: defineConnector',
       'postgres: defineConnector',
     ]);
+
+    const evalCases = JSON.parse(
+      await readFile(path.join(projectDir, 'evals', 'support-triage.json'), 'utf8'),
+    ) as Array<{ input?: unknown; expected?: unknown }>;
+    expect(evalCases).toHaveLength(1);
+    expect(evalCases[0]?.input).toEqual({
+      message: 'company Corp cannot access billing and says this blocks renewal',
+    });
+    expect(evalCases[0]?.expected).toBeUndefined();
 
     const envExample = await readEnvExample(projectDir);
     expectTextIncludes(envExample, [
@@ -307,9 +361,8 @@ describe('cli scaffold and setup commands', () => {
       "allowedStatements: ['select', 'with']",
       "linear: linearConnector({",
       "hubspot: hubspotConnector({",
-      "codebase: codebaseConnector({",
+      'codebase: codebaseConnector()',
       "k6: k6Connector({",
-      "rootDir: process.env.CODEBASE_ROOT ?? '.'",
       "mode: process.env.FDEKIT_CONNECTOR_MODE === 'api' ? 'api' : 'local'",
       '"internal-crm": defineConnector({ name: \'internal-crm\' })',
     ]);
@@ -336,7 +389,7 @@ describe('cli scaffold and setup commands', () => {
     expectTextIncludes(envExample, [
       'DATABASE_URL=postgresql://user:password@localhost:5432/app',
       'FDEKIT_CONNECTOR_MODE=local',
-      'CODEBASE_ROOT=.',
+      'CODEBASE_ROOT=',
       'LINEAR_API_KEY=',
       'LINEAR_TEAM_ID=',
       'HUBSPOT_ACCESS_TOKEN=',

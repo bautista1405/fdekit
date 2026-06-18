@@ -11,7 +11,7 @@ Use this when the goal is to prove the FDEKit loop in 30 minutes without credent
 | Provider | `mock` provider |
 | Connectors | Local-mode connectors such as `customerApiConnector()`, `slackConnector({ mode: 'local' })`, `githubConnector({ mode: 'local' })`, or `k6Connector({ mode: 'local' })` |
 | Environment | Local sample API or no runtime environment |
-| Artifacts | Default local `.fdekit` artifact store |
+| Artifacts | Default local `artifacts/` directory |
 | Governance | Basic policies, local approvals, audit log, evals, macro evals, report, console |
 
 Recommended path:
@@ -39,7 +39,7 @@ Use this when the deployment still runs locally but one or more customer-facing 
 | Provider | `mock`, local Ollama, or a hosted provider such as OpenAI, Anthropic, or Google |
 | Connectors | Mix local context with live write paths, for example local customer API plus Slack/GitHub/Jira/Linear/HubSpot/Salesforce API mode |
 | Environment | Optional Docker or Floci local environment around the customer API |
-| Artifacts | Local `.fdekit` artifacts, reviewed after every run |
+| Artifacts | Local `artifacts/` outputs, reviewed after every run |
 | Governance | Approval gates on write tools, `fdekit doctor --live`, strict validation before customer demos, feedback export into evals |
 
 Recommended path:

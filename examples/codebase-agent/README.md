@@ -31,7 +31,7 @@ npm run example:codebase:report
 npm run example:codebase:console
 ```
 
-The default run searches for `TODO(fdekit)` in `sample-repo`, reads the matching source file, creates a local issue-tracker result, writes traces, and produces a final handoff. Run the console command after a run to see deployment health signals, connector evidence, the created issue, policy-as-code, budget caps, approval queue, audit log, eval comparison, cost/latency, charts, and run history in `.fdekit/console.html`; each console generation preserves a timestamped snapshot in `.fdekit/consoles/`, writes `.csv` and `.md` export artifacts in `.fdekit/exports/`, and includes a print-to-PDF button.
+The default run searches for `TODO(fdekit)` in `sample-repo`, reads the matching source file, creates a local issue-tracker result, writes traces, and produces a final handoff. Run the console command after a run to see deployment health signals, connector evidence, the created issue, policy-as-code, budget caps, approval queue, audit log, eval comparison, cost/latency, charts, and run history in `artifacts/console.html`; each console generation preserves a timestamped snapshot in `artifacts/consoles/`, writes `.csv` and `.md` export artifacts in `artifacts/exports/`, and includes a print-to-PDF button.
 
 The config reads `.env` automatically. Choose the provider per customer/developer environment:
 

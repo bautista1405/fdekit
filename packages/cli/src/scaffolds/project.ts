@@ -29,10 +29,8 @@ function starterEvalDataset(): string {
   return `${JSON.stringify([
     {
       name: 'enterprise-customer-escalation',
-      input: 'company Corp cannot access billing and says this blocks renewal',
-      expected: {
-        escalation: true,
-        issueType: 'billing',
+      input: {
+        message: 'company Corp cannot access billing and says this blocks renewal',
       },
     },
   ], null, 2)}\n`;
@@ -86,7 +84,7 @@ OLLAMA_BASE_URL=http://127.0.0.1:11434
 }
 
 function starterGitignore(): string {
-  return `.fdekit
+  return `/artifacts/
 node_modules
 .env
 `;

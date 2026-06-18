@@ -87,7 +87,7 @@ async function readSnapshot(filePath: string): Promise<DeploymentSnapshot> {
   if (!isSnapshot(value)) {
     throw new CliUserError(`File is not a FDEKit deployment snapshot: ${filePath}`, {
       usage: DIFF_USAGE,
-      next: ['Use a snapshot from `.fdekit/deployments/snapshots`, or pass a config file path.'],
+      next: ['Use a snapshot from `artifacts/deployments/snapshots`, or pass a config file path.'],
     });
   }
 

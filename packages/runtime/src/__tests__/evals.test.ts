@@ -56,7 +56,7 @@ describe('runEvals', () => {
     for (const evalCase of cases) {
       expect(evalCase.traceId).toBeTypeOf('string');
       const trace = JSON.parse(await readFile(
-        path.join(projectDir, '.fdekit', 'traces', `${evalCase.traceId}.json`),
+        path.join(projectDir, 'artifacts', 'traces', `${evalCase.traceId}.json`),
         'utf8',
       )) as { id?: string; events?: unknown[] };
 

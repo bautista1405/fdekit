@@ -1,4 +1,4 @@
-import { readFile, writeFile } from 'fs/promises';
+import { readFile, readdir, writeFile } from 'fs/promises';
 import * as path from 'path';
 import { describe, expect, it, vi } from 'vitest';
 import { cmdDoctor } from '../commands/doctor.js';
@@ -25,6 +25,27 @@ import {
 vi.setConfig({ testTimeout: 30000 });
 
 describe('cli recipe commands', () => {
+  it('installs a recipe into ./fdekit when invoked from an uninitialized customer root', async () => {
+    const cwd = await mkProjectRoot('fdekit-cli-contained-recipe-');
+    const output = await captureCommand(() => cmdRecipe({
+      cwd,
+      args: ['install', 'support-triage'],
+    }));
+    const projectDir = path.join(cwd, 'fdekit');
+
+    expect(output.exitCode).toBeUndefined();
+    expect(output.stdout).toContain('Installed recipe support-triage');
+    expect(await readdir(cwd)).toEqual(['fdekit']);
+    await expectFiles(projectDir, [
+      'fde.config.ts',
+      'package.json',
+      '.env.example',
+      'agents/support-triage.md',
+      'customer-api/server.js',
+    ]);
+    expect(await readConfig(projectDir)).toContain(`name: '${path.basename(cwd)}-support-triage'`);
+  });
+
   it('installs the support-triage recipe as a runnable laddered scaffold', async () => {
     const cwd = await mkProjectRoot('fdekit-cli-recipe-');
     await captureCommand(() => cmdInit({ cwd, args: ['recipe-app'] }));
@@ -190,7 +211,7 @@ describe('cli recipe commands', () => {
       'FDEKIT_PROVIDER=mock',
       'FDEKIT_MODEL=',
       'CODEBASE_ROOT=./sample-repo',
-      'set to . when installing inside a customer repo',
+      'use .. when the FDEKit project lives in ./fdekit',
       'OLLAMA_BASE_URL=',
       'OPENAI_API_KEY=',
       'ANTHROPIC_API_KEY=',
@@ -470,21 +491,22 @@ describe('cli recipe commands', () => {
 
   it('installs a captured recipe by path into another project', async () => {
     const sourceCwd = await mkProjectRoot('fdekit-cli-recipe-source-');
-    await captureCommand(() => cmdInit({ cwd: sourceCwd, args: ['source-app'] }));
-    const sourceProjectDir = path.join(sourceCwd, 'source-app');
+    await captureCommand(() => cmdInit({ cwd: sourceCwd, args: [] }));
+    const sourceProjectDir = path.join(sourceCwd, 'fdekit');
     await captureCommand(() => cmdRecipe({
-      cwd: sourceProjectDir,
+      cwd: sourceCwd,
       args: ['capture', 'renewal-risk'],
     }));
 
     const targetCwd = await mkProjectRoot('fdekit-cli-recipe-target-');
-    await captureCommand(() => cmdInit({ cwd: targetCwd, args: ['target-app'] }));
-    const targetProjectDir = path.join(targetCwd, 'target-app');
+    await captureCommand(() => cmdInit({ cwd: targetCwd, args: [] }));
+    const targetProjectDir = path.join(targetCwd, 'fdekit');
     const recipePath = path.join(sourceProjectDir, 'recipes', 'renewal-risk');
+    const relativeRecipePath = path.relative(targetCwd, recipePath);
 
     const output = await captureCommand(() => cmdRecipe({
-      cwd: targetProjectDir,
-      args: ['install', recipePath],
+      cwd: targetCwd,
+      args: ['install', relativeRecipePath],
     }));
 
     expect(output.exitCode).toBeUndefined();
@@ -492,12 +514,13 @@ describe('cli recipe commands', () => {
     expect(output.stdout).toContain('Config updated:');
     await expectFiles(targetProjectDir, [
       'recipes/renewal-risk/recipe.json',
+      'recipes/renewal-risk/artifacts/deployment-snapshot.json',
       'agents/support-triage.md',
       'evals/support-triage.json',
     ]);
 
     expectTextIncludes(await readConfig(targetProjectDir), [
-      "name: 'source-app'",
+      `name: '${path.basename(sourceCwd)}'`,
       'const provider = providerFromEnv();',
       "name: 'support-triage-smoke'",
     ]);

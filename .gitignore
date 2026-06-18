@@ -3,6 +3,10 @@ node_modules/
 .env.*
 !.env.example
 **/.fdekit/
+/artifacts/
+/examples/*/artifacts/
+/packages/*/artifacts/
+/packages/*/*/artifacts/
 **/.turbo/
 **/dist/
 *.tsbuildinfo

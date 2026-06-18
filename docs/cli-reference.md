@@ -31,7 +31,7 @@ Use `fdekit validate --strict` before customer handoff or production-shaped pilo
 
 | Command | Purpose |
 | --- | --- |
-| `fdekit init [name]` | Scaffold a new FDEKit deployment. |
+| `fdekit init [name]` | Scaffold a new FDEKit deployment. Without a name, files are created in `./fdekit`. |
 | `fdekit recipe install <name>` | Install a built-in recipe: `support-triage`, `codebase-agent`, `sales-research-agent`, or `load-test-agent`. |
 | `fdekit recipe install <path-to-local-recipe>` | Install a recipe captured from another project. |
 | `fdekit recipe capture <name> [--force]` | Capture the current deployment as a reusable local recipe. |
@@ -80,7 +80,7 @@ See [Versioning And Migration Notes](./cookbook/versioning-and-migrations.md) fo
 | `fdekit report` | Generate a deployment report. |
 | `fdekit console` | Generate an HTML dashboard and export artifacts. |
 
-Runtime evidence commands write through the configured artifact store. With no `deployment.artifacts` config, outputs stay under local `.fdekit`. With S3 configured, command output prints `s3://...` URIs.
+Runtime evidence commands write through the configured artifact store. With no `deployment.artifacts` config, outputs stay under local `artifacts/`. With S3 configured, command output prints `s3://...` URIs.
 
 ## Evals
 

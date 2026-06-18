@@ -25,7 +25,7 @@ export async function cmdRecipe(ctx: CommandContext): Promise<void> {
   const projectDir = await findProjectDir(ctx.cwd);
 
   if (!builtinRecipe) {
-    const localRecipe = await resolveLocalRecipe(projectDir, recipeName);
+    const localRecipe = await resolveLocalRecipe(projectDir, recipeName, ctx.cwd);
 
     if (!localRecipe) {
       console.error(`Unknown recipe: ${recipeName}`);

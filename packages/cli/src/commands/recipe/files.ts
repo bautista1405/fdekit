@@ -66,7 +66,6 @@ export async function isDirectory(filePath: string): Promise<boolean> {
 function shouldSkipEntry(name: string): boolean {
   return [
     'node_modules',
-    '.fdekit',
     '.git',
     '.turbo',
     'dist',

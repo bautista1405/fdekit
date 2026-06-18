@@ -28,7 +28,7 @@ fdekit CLI
 The direction matters:
 
 - `@fdekit/core` owns authoring types and helpers. It should not depend on runtime, CLI, console, providers, connectors, or filesystem artifacts.
-- `@fdekit/runtime` owns execution and the `ArtifactStore` contract. Local `.fdekit` remains the default store. It should not depend on concrete provider, connector, or storage SDK packages.
+- `@fdekit/runtime` owns execution and the `ArtifactStore` contract. Local `artifacts/` is the default store. It should not depend on concrete provider, connector, or storage SDK packages.
 - Provider packages turn `ProviderConfig` into `AgentProvider` adapters.
 - Connector packages expose `ConnectorDefinition` and typed tools. Runtime only sees tools.
 - `fdekit` owns command behavior, starter scaffolds, built-in catalog manifests, docs snippets, and the built-in provider registry used by CLI runs.
@@ -56,7 +56,7 @@ The normal `fdekit run <agent>` path is:
 CLI command
   -> requireConfigFile(cwd)
   -> loadDeployment(fde.config.ts)
-  -> createArtifactStore(deployment.artifacts ?? local .fdekit)
+  -> createArtifactStore(deployment.artifacts ?? local artifacts/)
   -> runAgent({
        deployment,
        projectDir,
@@ -143,7 +143,7 @@ Runtime edge events are part of the trace vocabulary:
 
 ## Artifact Lifecycle
 
-Runtime artifacts are written through `ArtifactStore`. The default store is local files under `.fdekit`, so existing projects keep the same layout and command output. Deployments can opt into S3 by setting `artifacts` in `fde.config.ts`; command output then prints `s3://...` URIs for artifact outputs.
+Runtime artifacts are written through `ArtifactStore`. The default store is the local `artifacts/` directory. Deployments can opt into S3 by setting `artifacts` in `fde.config.ts`; command output then prints `s3://...` URIs.
 
 ```ts
 import { defineDeployment } from '@fdekit/core';

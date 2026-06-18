@@ -71,7 +71,7 @@ Before opening a PR, please check:
 - Public APIs stay laddered: easy defaults first, advanced customization when needed.
 - New behavior has focused tests.
 - `npm run typecheck`, `npm run test`, and `npm run build` pass.
-- Build/runtime output such as `.fdekit/`, `dist/`, `.turbo/`, and local `.env` files are not committed.
+- Build/runtime output such as `artifacts/`, `dist/`, `.turbo/`, and local `.env` files are not committed.
 - Docs or examples are updated when the user-facing behavior changes.
 
 ## Project Conventions

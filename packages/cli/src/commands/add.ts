@@ -22,6 +22,7 @@ export async function cmdAdd(ctx: CommandContext): Promise<void> {
   }
 
   const configPath = await requireConfigFile(ctx.cwd);
+  const projectDir = path.dirname(configPath);
   let config = await fs.readFile(configPath, 'utf8');
 
   if (subcommand === 'provider') {
@@ -35,7 +36,7 @@ export async function cmdAdd(ctx: CommandContext): Promise<void> {
         ? applyKnownScaffold(config, 'providers', scaffold)
         : insertObjectEntry(config, 'providers', `${objectKey(name)}: { name: '${escapeSingleQuoted(name)}' }`);
       console.log(`Added provider ${key}`);
-      await applyProjectScaffold(ctx.cwd, scaffold);
+      await applyProjectScaffold(projectDir, scaffold);
     }
   } else if (subcommand === 'connector') {
     const scaffold = connectorScaffold(name);
@@ -72,7 +73,7 @@ export async function cmdAdd(ctx: CommandContext): Promise<void> {
       }
 
       console.log(`Added connector ${key}`);
-      await applyProjectScaffold(ctx.cwd, scaffold);
+      await applyProjectScaffold(projectDir, scaffold);
     }
   } else if (subcommand === 'eval') {
     config = ensureCoreImports(config, ['defineEval', 'noPolicyViolation']);

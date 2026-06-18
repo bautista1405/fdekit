@@ -356,7 +356,7 @@ function deploymentBlock(projectName: string): string {
     systemOfRecord: ['CRM account records', 'CRM contacts', 'intent signal sources'],
     businessRules: ['./agents/sales-research-agent.md', 'governance policies', 'eval assertions'],
     rawIntake: ['accountId', 'persona', 'sales-data/prospects.json'],
-    feedback: ['.fdekit/approvals', '.fdekit/audit', '.fdekit/evals'],
+    feedback: ['artifacts/approvals', 'artifacts/audit', 'artifacts/evals'],
   }),
   rollout: defineRollout({
     stage: 'local',

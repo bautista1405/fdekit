@@ -30,7 +30,7 @@ npm run example:sales:report
 npm run example:sales:console
 ```
 
-The default run researches `acct_company`, finds buyer context, gathers intent signals, creates a local CRM note result, writes traces, and produces a final account handoff. Run the console command after a run to inspect tool calls, policy-as-code, budget caps, audit evidence, eval status, charts, and run history in `.fdekit/console.html`.
+The default run researches `acct_company`, finds buyer context, gathers intent signals, creates a local CRM note result, writes traces, and produces a final account handoff. Run the console command after a run to inspect tool calls, policy-as-code, budget caps, audit evidence, eval status, charts, and run history in `artifacts/console.html`.
 
 The config reads `.env` automatically:
 

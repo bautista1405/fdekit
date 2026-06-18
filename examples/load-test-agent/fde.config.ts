@@ -162,7 +162,7 @@ export default defineDeployment({
     systemOfRecord: ['customer API', 'load-test script'],
     businessRules: ['./agents/load-test-agent.md', 'k6 thresholds', 'governance policies'],
     rawIntake: ['scenario', 'targetUrl', 'vus', 'duration'],
-    feedback: ['.fdekit/approvals', '.fdekit/audit', '.fdekit/evals', 'load-tests/.results'],
+    feedback: ['artifacts/approvals', 'artifacts/audit', 'artifacts/evals', 'load-tests/.results'],
   }),
   rollout: defineRollout({
     stage: 'local',

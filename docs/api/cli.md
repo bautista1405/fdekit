@@ -3,7 +3,7 @@
 <!-- Maintained via scripts/generate-api-docs.mjs. -->
 Run `npm run docs:api` to refresh this page after changing public exports.
 
-Applies to `@fdekit/cli` v0.1.0. The installed binary remains `fdekit`.
+Applies to `@fdekit/cli` v0.4.0. The installed binary remains `fdekit`.
 
 Declaration source: `packages/cli/dist/index.d.ts`; command map source: `scripts/generate-api-docs.mjs`.
 
@@ -20,7 +20,7 @@ Declaration source: `packages/cli/dist/index.d.ts`; command map source: `scripts
 
 | Command | Why advanced users reach for it |
 | --- | --- |
-| [`fdekit init [name]`](#fdekit-init-name) | Start a deployment project with the expected FDEKit shape. |
+| [`fdekit init [name]`](#fdekit-init-name) | Start a deployment project with the expected FDEKit shape, defaulting to ./fdekit. |
 | [`fdekit recipe install <name>`](#fdekit-recipe-install-name) | Bring in a bundled recipe and its docs, evals, and config. |
 | [`fdekit validate [--json] [--strict]`](#fdekit-validate-json-strict) | Check config readiness and write reviewable deployment artifacts. |
 | [`fdekit diff [--from <snapshot>] [--to <config-or-snapshot>]`](#fdekit-diff-from-snapshot-to-config-or-snapshot) | Review deployment changes before customer handoff. |
@@ -34,13 +34,13 @@ Declaration source: `packages/cli/dist/index.d.ts`; command map source: `scripts
 
 ## TypeScript Exports
 
-The package root exports 2 TypeScript symbols.
+The package root exports 3 TypeScript symbols.
 
 ## Command Symbols
 
 | Command | Purpose | Defined in |
 | --- | --- | --- |
-| <a id="fdekit-init-name"></a>`fdekit init [name]` | Scaffold a new FDEKit deployment. | [packages/cli/src/commands/init.ts](../../packages/cli/src/commands/init.ts) |
+| <a id="fdekit-init-name"></a>`fdekit init [name]` | Scaffold a new FDEKit deployment, defaulting to ./fdekit. | [packages/cli/src/commands/init.ts](../../packages/cli/src/commands/init.ts) |
 | <a id="fdekit-add-provider-name"></a>`fdekit add provider <name>` | Add a provider config and env docs. | [packages/cli/src/commands/add.ts](../../packages/cli/src/commands/add.ts) |
 | <a id="fdekit-add-connector-name"></a>`fdekit add connector <name>` | Add a connector config and env docs. | [packages/cli/src/commands/add.ts](../../packages/cli/src/commands/add.ts) |
 | <a id="fdekit-add-policy-name"></a>`fdekit add policy <name>` | Add a policy helper to the current deployment. | [packages/cli/src/commands/add.ts](../../packages/cli/src/commands/add.ts) |

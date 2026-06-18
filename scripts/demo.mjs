@@ -60,7 +60,7 @@ async function runSupportTriageDemo() {
   const capturedRecipe = await captureDemoRecipe(supportDir, 'support-renewal-risk');
 
   printHeader('Demo Ready');
-  console.log(`Open dashboard: ${join(supportDir, '.fdekit', 'console.html')}`);
+  console.log(`Open dashboard: ${join(supportDir, 'artifacts', 'console.html')}`);
   console.log(`Captured recipe: ${capturedRecipe}`);
   console.log('');
   console.log('Talk track: "We ran a customer-shaped agent loop, proved external actions, checked governance/evals, created a stakeholder dashboard, then captured the workflow as a reusable recipe."');
@@ -129,7 +129,7 @@ async function runLoadTestingAgentDemo() {
 
   printHeader('Load Testing Demo Ready');
   console.log(`Real customer API: ${realCustomerApiUrl}`);
-  console.log(`Open dashboard: ${join(loadTestingDir, '.fdekit', 'console.html')}`);
+  console.log(`Open dashboard: ${join(loadTestingDir, 'artifacts', 'console.html')}`);
   console.log(`Captured recipe: ${capturedRecipe}`);
   console.log('');
   console.log('Talk track: "We pointed the load-testing agent at a real customer API, generated evidence from an actual run, evaluated the outcome, published the dashboard, and captured the workflow as a reusable recipe."');
@@ -154,7 +154,7 @@ async function runCodebaseAgentDemo() {
   const capturedRecipe = await captureDemoRecipe(codebaseDir, 'codebase-agent-repository-review');
 
   printHeader('Codebase Agent Demo Ready');
-  console.log(`Open dashboard: ${join(codebaseDir, '.fdekit', 'console.html')}`);
+  console.log(`Open dashboard: ${join(codebaseDir, 'artifacts', 'console.html')}`);
   console.log(`Captured recipe: ${capturedRecipe}`);
   console.log('');
   console.log('Talk track: "We pointed the codebase agent at a repository, generated grounded engineering guidance, ran checks and evals, published the dashboard, and captured the workflow as a reusable recipe."');

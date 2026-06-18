@@ -1,7 +1,7 @@
 import * as path from 'path';
 import type { ArtifactRef } from './types.js';
 
-export const DEFAULT_ARTIFACT_ROOT = '.fdekit';
+export const DEFAULT_ARTIFACT_ROOT = 'artifacts';
 
 export function localPath(root: string, ref: ArtifactRef): string {
   return path.join(localGroupPath(root, ref.group), ref.fileName);

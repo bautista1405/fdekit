@@ -96,9 +96,9 @@ const customerApi = customerApiConnector({
 
 The `example:run` command executes the `supportTriage` agent with the deterministic `mock` provider. It calls the configured connector tools, applies policies, writes a trace, and returns a final triage summary. Real OpenAI, Anthropic, Google Gemini, and local Ollama adapters sit behind the same runtime provider boundary.
 
-The `example:eval` command runs each case in `evals/support-triage.json` through that same loop. The eval runner grades expected escalation behavior, required base tool calls, policy violations, latency, and cost, then writes per-case run traces plus `.fdekit/evals/latest.json`.
+The `example:eval` command runs each case in `evals/support-triage.json` through that same loop. The eval runner grades expected escalation behavior, required base tool calls, policy violations, latency, and cost, then writes per-case run traces plus `artifacts/evals/latest.json`.
 
-The `example:console` command writes `.fdekit/console.html`, a local command-center dashboard with deployment health signals, connector evidence, policy-as-code, budget caps, approval queue, audit log, eval comparison, created issue, Slack notification, eval status, cost/latency, trace timeline, connector tool activity, governance checks, run history, and report preview. It preserves timestamped snapshots in `.fdekit/consoles/`, writes `.csv` and `.md` export artifacts in `.fdekit/exports/`, and includes a print-to-PDF button.
+The `example:console` command writes `artifacts/console.html`, a local command-center dashboard with deployment health signals, connector evidence, policy-as-code, budget caps, approval queue, audit log, eval comparison, created issue, Slack notification, eval status, cost/latency, trace timeline, connector tool activity, governance checks, run history, and report preview. It preserves timestamped snapshots in `artifacts/consoles/`, writes `.csv` and `.md` export artifacts in `artifacts/exports/`, and includes a print-to-PDF button.
 
 To prove the external connector path with real Slack and GitHub calls, set API mode and credentials:
 

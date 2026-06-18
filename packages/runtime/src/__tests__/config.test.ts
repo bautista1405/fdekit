@@ -2,7 +2,55 @@ import { mkdir, mkdtemp, readdir, writeFile } from 'fs/promises';
 import { tmpdir } from 'os';
 import * as path from 'path';
 import { describe, expect, it } from 'vitest';
-import { loadDeployment } from '../config/index.js';
+import {
+  findConfigFile,
+  findProjectDir,
+  loadDeployment,
+} from '../config/index.js';
+
+describe('project discovery', () => {
+  it('finds a contained fdekit project from the customer root or its descendants', async () => {
+    const customerRoot = await mkdtemp(path.join(tmpdir(), 'fdekit-contained-project-'));
+    const projectDir = path.join(customerRoot, 'fdekit');
+    const nestedDir = path.join(customerRoot, 'src', 'features');
+    const configPath = path.join(projectDir, 'fde.config.ts');
+
+    await mkdir(projectDir, { recursive: true });
+    await mkdir(nestedDir, { recursive: true });
+    await writeFile(configPath, 'export default {};\n', 'utf8');
+
+    expect(await findConfigFile(customerRoot)).toBe(configPath);
+    expect(await findConfigFile(nestedDir)).toBe(configPath);
+    expect(await findProjectDir(customerRoot)).toBe(projectDir);
+  });
+
+  it('prefers a direct legacy config and defaults new projects to ./fdekit', async () => {
+    const customerRoot = await mkdtemp(path.join(tmpdir(), 'fdekit-project-precedence-'));
+    const directConfig = path.join(customerRoot, 'fde.config.ts');
+    const containedConfig = path.join(customerRoot, 'fdekit', 'fde.config.ts');
+
+    await mkdir(path.dirname(containedConfig), { recursive: true });
+    await writeFile(directConfig, 'export default {};\n', 'utf8');
+    await writeFile(containedConfig, 'export default {};\n', 'utf8');
+
+    expect(await findConfigFile(customerRoot)).toBe(directConfig);
+
+    const emptyRoot = await mkdtemp(path.join(tmpdir(), 'fdekit-project-default-'));
+    expect(await findProjectDir(emptyRoot)).toBe(path.join(emptyRoot, 'fdekit'));
+    expect(await findProjectDir(path.join(emptyRoot, 'fdekit')))
+      .toBe(path.join(emptyRoot, 'fdekit'));
+  });
+
+  it('creates new contained projects at the nearest customer project marker', async () => {
+    const customerRoot = await mkdtemp(path.join(tmpdir(), 'fdekit-project-marker-'));
+    const nestedDir = path.join(customerRoot, 'src', 'features');
+
+    await mkdir(nestedDir, { recursive: true });
+    await writeFile(path.join(customerRoot, 'package.json'), '{"private":true}\n', 'utf8');
+
+    expect(await findProjectDir(nestedDir)).toBe(path.join(customerRoot, 'fdekit'));
+  });
+});
 
 describe('loadDeployment', () => {
   it('loads project .env values before evaluating fde.config.ts', async () => {
@@ -38,7 +86,7 @@ export default defineDeployment({
 
   it('uses one content-addressed config cache file across repeated loads', async () => {
     const projectDir = await mkdtemp(path.join(tmpdir(), 'fdekit-config-cache-'));
-    const cacheDir = path.join(projectDir, '.fdekit', 'cache');
+    const cacheDir = path.join(projectDir, 'artifacts', 'cache');
     const configPath = path.join(projectDir, 'fde.config.ts');
 
     await mkdir(cacheDir, { recursive: true });
@@ -63,6 +111,7 @@ export default defineDeployment({
 
     expect(cacheFiles).toHaveLength(1);
     expect(cacheFiles[0]).toMatch(/^fde\.config\.ts-[a-f0-9]{12}\.mjs$/);
+    expect(await readdir(projectDir)).not.toContain('.fdekit');
   }, 10000);
 
   it('reevaluates content-cached configs in the same process', async () => {

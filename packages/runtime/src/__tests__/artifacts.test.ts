@@ -21,12 +21,12 @@ import {
 } from '../artifact-store/index.js';
 
 describe('artifact stores', () => {
-  it('keeps .fdekit as the default local artifact root', async () => {
+  it('keeps artifacts as the default local artifact root', async () => {
     const projectDir = await mkArtifactProjectDir();
     const store = createArtifactStore({ projectDir });
     const uri = await writeJsonArtifact(projectDir, 'traces', 'trace.json', { id: 'trace_1' }, store);
 
-    expect(uri).toBe(path.join(projectDir, '.fdekit', 'traces', 'trace.json'));
+    expect(uri).toBe(path.join(projectDir, 'artifacts', 'traces', 'trace.json'));
     expect(await readJsonArtifact(projectDir, 'traces', 'trace.json', store)).toEqual({ id: 'trace_1' });
     expect(await readJsonArtifacts(projectDir, 'traces', store)).toEqual([{ id: 'trace_1' }]);
     await expect(readFile(uri, 'utf8')).resolves.toContain('"trace_1"');
@@ -34,10 +34,22 @@ describe('artifact stores', () => {
 
   it('supports a custom local artifact root without changing helper call sites', async () => {
     const projectDir = await mkArtifactProjectDir();
-    const store = createFileArtifactStore({ projectDir, rootDir: 'artifacts' });
+    const store = createFileArtifactStore({ projectDir, rootDir: 'custom-artifacts' });
     const uri = await writeTextArtifact(projectDir, 'reports', 'deployment-report.md', 'hello', store);
 
-    expect(uri).toBe(path.join(projectDir, 'artifacts', 'reports', 'deployment-report.md'));
+    expect(uri).toBe(path.join(projectDir, 'custom-artifacts', 'reports', 'deployment-report.md'));
+  });
+
+  it('uses artifacts as the default S3 prefix', async () => {
+    const projectDir = await mkArtifactProjectDir();
+    const client = new MemoryS3Client();
+    const store = createS3ArtifactStore({
+      bucket: 'fdekit-artifacts',
+      client,
+    });
+
+    expect(await writeJsonArtifact(projectDir, 'traces', 'trace.json', { id: 'trace_1' }, store))
+      .toBe('s3://fdekit-artifacts/artifacts/traces/trace.json');
   });
 
   it('writes, lists, and appends S3 artifacts through an adapter client', async () => {

@@ -1,3 +1,4 @@
+import * as path from 'path';
 import { defineConnector, defineTool, type ConnectorDefinition } from '@fdekit/core';
 import {
   collectFiles,
@@ -13,7 +14,7 @@ import type { CodebaseConnectorConfig, CodebaseConnectorOptions, CodebaseFileEnt
 export type { CodebaseConnectorConfig, CodebaseConnectorOptions, CodebaseFileEntry, CodebaseListFilesArgs, CodebaseReadFileArgs, CodebaseReadFileResult, CodebaseSearchArgs, CodebaseSearchMatch } from './interfaces/index.js';
 
 const defaultIgnore = [
-  '.fdekit',
+  'artifacts',
   '.git',
   'dist',
   'node_modules',
@@ -72,7 +73,9 @@ const readFileArgsSchema = {
 
 export function codebaseConnector(options: CodebaseConnectorOptions = {}): ConnectorDefinition<CodebaseConnectorConfig> {
   const rootDirEnv = options.rootDirEnv ?? 'CODEBASE_ROOT';
-  const rootDir = options.rootDir ?? readEnvValue(rootDirEnv, options.env) ?? '.';
+  const projectDir = readEnvValue('FDEKIT_PROJECT_DIR', options.env);
+  const configuredRoot = options.rootDir ?? readEnvValue(rootDirEnv, options.env) ?? defaultRoot(projectDir);
+  const rootDir = resolveRoot(configuredRoot, projectDir);
   const maxFileBytes = options.maxFileBytes ?? 80_000;
   const ignore = options.ignore ?? defaultIgnore;
 
@@ -175,4 +178,8 @@ export function codebaseConnector(options: CodebaseConnectorOptions = {}): Conne
       }),
     ],
   });
+}
+
+function defaultRoot(projectDir: string | undefined): string {
+  return projectDir && path.basename(projectDir) === 'fdekit' ? '..' : '.';
 }

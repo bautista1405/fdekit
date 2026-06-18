@@ -31,7 +31,7 @@ try {
 
   printHeader('Demo Ready');
   console.log(`Target API: ${targetUrl}`);
-  console.log(`Open dashboard: ${join(process.cwd(), '.fdekit', 'console.html')}`);
+  console.log(`Open dashboard: ${join(process.cwd(), 'artifacts', 'console.html')}`);
   console.log(`Captured recipe: ${join(process.cwd(), 'recipes', 'load-test-local-readiness')}`);
 } finally {
   if (apiProcess) {

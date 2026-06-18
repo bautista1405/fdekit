@@ -9,10 +9,13 @@ Start with a recipe when you want a complete runnable deployment. Use `fdekit ad
 ```bash
 npm install -D @fdekit/cli
 npx fdekit init
+cd fdekit
+npm install
 npx fdekit recipe install <name>
 cp .env.example .env
-npm install
 ```
+
+Recipe installation uses the discovered FDEKit project. From an uninitialized customer root, it creates and writes into `./fdekit`; relative local-recipe paths remain relative to the directory where the command was invoked.
 
 Available built-ins:
 

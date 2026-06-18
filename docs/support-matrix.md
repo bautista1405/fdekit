@@ -16,7 +16,7 @@ Maturity levels:
 | Node.js | `>=18` | Ready | Uses Node ESM/NodeNext and built-in `fetch`. Node 20+ is recommended for active development. |
 | Package manager | npm workspaces | Ready | The repo uses npm workspaces and Turbo. Other package managers are not part of the supported path yet. |
 | TypeScript | TS 5.x, ESM output | Ready | Source imports use `.js` specifiers intentionally so emitted NodeNext ESM is valid. |
-| Runtime mode | Local filesystem runtime | Ready | Traces, evals, approvals, audit logs, reports, exports, and console artifacts default to `.fdekit`. |
+| Runtime mode | Local filesystem runtime | Ready | Traces, evals, approvals, audit logs, reports, exports, and console output default to `artifacts/`. |
 | Artifact storage | S3 artifact store | Beta | Configurable through deployment `artifacts`; requires a caller-supplied S3 adapter client and project-owned bucket permissions. |
 | Runtime environments | `runtimeEnvironment` plus `fdekit env` commands | Experimental | Used for local customer-like environments such as Docker Compose or Floci. Agent runs still talk to the customer API URL. |
 | Hosted runtime service | Not included | Planned | Runtime-as-a-service, auth, tenancy, and durable multi-tenant trace/audit APIs are roadmap items. |

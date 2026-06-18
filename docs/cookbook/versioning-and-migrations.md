@@ -63,8 +63,8 @@ CLI reference: [`fdekit validate`](../api/cli.md#fdekit-validate-json-strict). R
 
 This checks the deployment and writes:
 
-- `.fdekit/deployments/latest.json`
-- `.fdekit/deployments/snapshots/deployment-*.json`
+- `artifacts/deployments/latest.json`
+- `artifacts/deployments/snapshots/deployment-*.json`
 
 The snapshot is normalized so it can be reviewed and diffed. It includes field-method primitives, deployment metadata, provider models, connectors, tools, tool scopes, agent/provider links, governance settings, eval names, eval assertions, and migration notes.
 
@@ -91,7 +91,7 @@ CLI reference: [`fdekit validate`](../api/cli.md#fdekit-validate-json-strict) an
 You can also compare explicit snapshots or configs:
 
 ```bash
-fdekit diff --from .fdekit/deployments/snapshots/deployment-2026-05-01T10-00-00-000Z.json --to fde.config.ts
+fdekit diff --from artifacts/deployments/snapshots/deployment-2026-05-01T10-00-00-000Z.json --to fde.config.ts
 fdekit diff --from customer-v1.json --to customer-v2.json --json
 ```
 

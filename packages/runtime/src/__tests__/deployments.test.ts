@@ -181,9 +181,9 @@ describe('deployment validation and diffing', () => {
     ]));
     expect(plan.artifactStore).toEqual({
       kind: 'local',
-      root: '/tmp/fdekit-compiled/.fdekit',
+      root: '/tmp/fdekit-compiled/artifacts',
     });
-    expect(plan.artifactPaths.executionPlan).toBe('/tmp/fdekit-compiled/.fdekit/deployments/execution-plan.json');
+    expect(plan.artifactPaths.executionPlan).toBe('/tmp/fdekit-compiled/artifacts/deployments/execution-plan.json');
   });
 
   it('compiles S3 artifact roots into execution-plan URIs', () => {
@@ -222,6 +222,29 @@ describe('deployment validation and diffing', () => {
       prefix: 'teams/support',
       region: 'us-east-1',
     });
+  });
+
+  it('uses artifacts as the default S3 prefix', () => {
+    const deployment = defineDeployment({
+      name: 's3-default-prefix',
+      artifacts: {
+        kind: 's3',
+        bucket: 'fdekit-artifacts',
+      },
+      providers: {
+        mock: { name: 'mock' },
+      },
+      agents: {},
+    });
+
+    const plan = compileDeployment(deployment);
+
+    expect(plan.artifactStore).toMatchObject({
+      root: 's3://fdekit-artifacts/artifacts',
+      prefix: 'artifacts',
+    });
+    expect(plan.artifactPaths.executionPlan)
+      .toBe('s3://fdekit-artifacts/artifacts/deployments/execution-plan.json');
   });
 
   it('marks used providers without runtime adapters as compile errors', () => {

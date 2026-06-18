@@ -28,11 +28,13 @@ The config reads `.env` automatically; choose `FDEKIT_PROVIDER=mock`, `localOlla
 
 ## Use A Customer Codebase
 
-The bundled `sample-repo` is only the first rung; to run against the current project repository:
+The bundled `sample-repo` is only the first rung. When FDEKit lives in the default `./fdekit` folder, inspect the containing customer project with:
 
 ```bash
-CODEBASE_ROOT=. npm run fdekit:codebase:run
+CODEBASE_ROOT=.. npm run fdekit:codebase:run
 ```
+
+For a standalone FDEKit checkout, use `CODEBASE_ROOT=.` instead.
 
 To run against another local checkout:
 

@@ -54,7 +54,6 @@ export default defineDeployment({
       },
     ],
   }),
-  evals: [supportTriageSmoke],
 });
 `;
 }

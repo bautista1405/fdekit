@@ -1,8 +1,7 @@
 import * as path from 'path';
 import type { ArtifactStoreDefinition } from '@fdekit/core';
+import { DEFAULT_ARTIFACT_ROOT } from '../../artifact-store/paths.js';
 import type { CompiledArtifactPaths, CompiledArtifactStorePlan } from '../interfaces/index.js';
-
-const DEFAULT_ARTIFACT_ROOT = '.fdekit';
 
 export function compileArtifactStore(
   definition: ArtifactStoreDefinition | undefined,

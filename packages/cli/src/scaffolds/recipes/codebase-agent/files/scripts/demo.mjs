@@ -21,7 +21,7 @@ await run('fdekit', ['console']);
 await run('fdekit', ['recipe', 'capture', 'codebase-agent-repository-review', '--force']);
 
 printHeader('Demo Ready');
-console.log(`Open dashboard: ${join(process.cwd(), '.fdekit', 'console.html')}`);
+console.log(`Open dashboard: ${join(process.cwd(), 'artifacts', 'console.html')}`);
 console.log(`Captured recipe: ${join(process.cwd(), 'recipes', 'codebase-agent-repository-review')}`);
 
 async function run(command, commandArgs) {

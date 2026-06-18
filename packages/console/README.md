@@ -58,6 +58,6 @@ Subpath imports are internal. Treat HTML structure and CSS classes as implementa
 ## See also
 
 - Runtime artifacts consumed by the dashboard: [@fdekit/runtime](../runtime/README.md)
-- CLI command that writes `.fdekit/console.html`: [fdekit](../cli/README.md)
+- CLI command that writes `artifacts/console.html`: [fdekit](../cli/README.md)
 - Deployment config types used in `ConsoleData`: [@fdekit/core](../core/README.md)
 - Console command docs: [CLI Reference](../../docs/cli-reference.md#runtime-and-evidence)

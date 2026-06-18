@@ -54,7 +54,7 @@ export interface RecipeSpec {
   config: (ctx: RecipeContext) => string;
 }
 
-export const recipeGitignore = `.fdekit
+export const recipeGitignore = `/artifacts/
 node_modules
 .env
 `;

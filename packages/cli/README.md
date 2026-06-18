@@ -20,8 +20,12 @@ The package installs the `fdekit` binary, so commands stay unscoped:
 
 ```bash
 npx fdekit init
+cd fdekit
+npm install
 npx fdekit recipe install support-triage
 ```
+
+Bare `fdekit init` creates `./fdekit`. Commands can run from there or from the containing customer project; config, package/env edits, recipes, and the `artifacts/` directory stay inside the contained project.
 
 ## Who should use this package
 
@@ -47,8 +51,9 @@ mkdir support-demo
 cd support-demo
 npm install -D @fdekit/cli@latest
 npx fdekit init
-npx fdekit recipe install support-triage
+cd fdekit
 npm install
+npx fdekit recipe install support-triage
 npm run demo
 ```
 
@@ -70,7 +75,7 @@ npm run fdekit:eval
 npm run fdekit:console
 ```
 
-Open `.fdekit/console.html` after the console command to inspect traces, eval status, approvals, policy posture, reports, and exports.
+Open `artifacts/console.html` after the console command to inspect traces, eval status, approvals, policy posture, reports, and exports.
 
 ## Public API surface
 

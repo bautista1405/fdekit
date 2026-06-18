@@ -45,6 +45,8 @@ const result = await runAgent({
 console.log(result.status, result.finalAnswer);
 ```
 
+Config discovery checks the current directory and its ancestors for `fde.config.ts`. At each level it also checks `./fdekit/fde.config.ts`; new file-creating workflows without a config use `fdekit/` under the nearest `package.json` or Git project root.
+
 ## Public API surface
 
 Import from the package root for the full runtime surface:

@@ -11,11 +11,29 @@ import { cmdReport } from '../commands/report.js';
 import { cmdRun } from '../commands/run.js';
 import { cmdTrace } from '../commands/trace.js';
 import { cmdValidate } from '../commands/validate.js';
-import { captureCommand, createCliProject, readJsonDir } from './helpers.js';
+import {
+  captureCommand,
+  createCliProject,
+  expectFiles,
+  mkProjectRoot,
+  readJsonDir,
+} from './helpers.js';
 
 vi.setConfig({ testTimeout: 30000 });
 
 describe('cli runtime commands', () => {
+  it('keeps config-free trace output inside the contained project directory', async () => {
+    const customerRoot = await mkProjectRoot('fdekit-cli-contained-trace-');
+    await writeFile(path.join(customerRoot, 'package.json'), '{"name":"customer-app","private":true}\n', 'utf8');
+
+    const output = await captureCommand(() => cmdTrace({ cwd: customerRoot, args: [] }));
+
+    expect(output.exitCode).toBeUndefined();
+    expect(output.stdout).toContain(path.join(customerRoot, 'fdekit', 'artifacts', 'trace-viewer.html'));
+    await expectFiles(path.join(customerRoot, 'fdekit'), ['artifacts/trace-viewer.html']);
+    expect(await readdir(customerRoot)).toEqual(['fdekit', 'package.json']);
+  });
+
   it('runs a configured agent and writes a trace artifact', async () => {
     const projectDir = await createCliProject();
 
@@ -30,7 +48,7 @@ describe('cli runtime commands', () => {
     expect(output.stdout).toContain('Tool calls: ticket.get, customer.get, issue.create, slack.message, ticket.escalate');
     expect(output.stdout).toContain('Final answer: company Bank ticket tick_1001 was escalated');
 
-    const traces = await readJsonDir(path.join(projectDir, '.fdekit', 'traces'));
+    const traces = await readJsonDir(path.join(projectDir, 'artifacts', 'traces'));
     expect(traces).toHaveLength(1);
     expect(traces[0]).toMatchObject({
       deployment: 'cli-test-deployment',
@@ -51,7 +69,7 @@ describe('cli runtime commands', () => {
     expect(firstRun.stdout).toContain('Approvals: appr_');
     expect(firstRun.stdout).toContain('Next: fdekit approvals approve');
 
-    const approvals = await readJsonDir(path.join(projectDir, '.fdekit', 'approvals')) as Array<{
+    const approvals = await readJsonDir(path.join(projectDir, 'artifacts', 'approvals')) as Array<{
       id: string;
       status: string;
       toolName: string;
@@ -110,7 +128,7 @@ describe('cli runtime commands', () => {
     expect(feedbackOutput.stdout).toContain('FDEKit feedback export');
     expect(feedbackOutput.stdout).toContain('Feedback candidates: 1');
     const feedbackArtifact = JSON.parse(await readFile(
-      path.join(projectDir, '.fdekit', 'feedback', 'eval-candidates.json'),
+      path.join(projectDir, 'artifacts', 'feedback', 'eval-candidates.json'),
       'utf8',
     )) as {
       source?: { decidedApprovals?: number };
@@ -127,7 +145,7 @@ describe('cli runtime commands', () => {
       shouldProceed: true,
     });
     const feedbackCases = JSON.parse(await readFile(
-      path.join(projectDir, '.fdekit', 'feedback', 'eval-cases.json'),
+      path.join(projectDir, 'artifacts', 'feedback', 'eval-cases.json'),
       'utf8',
     )) as unknown[];
     expect(feedbackCases).toHaveLength(1);
@@ -135,7 +153,7 @@ describe('cli runtime commands', () => {
     const consoleOutput = await captureCommand(() => cmdConsole({ cwd: projectDir, args: [] }));
     expect(consoleOutput.stdout).toContain('Approvals loaded: 1');
     expect(consoleOutput.stdout).toContain('Audit entries loaded:');
-    const workbenchHtml = await readFile(path.join(projectDir, '.fdekit', 'workbench.html'), 'utf8');
+    const workbenchHtml = await readFile(path.join(projectDir, 'artifacts', 'workbench.html'), 'utf8');
     expect(workbenchHtml).toContain('Governance Review');
     expect(workbenchHtml).toContain('Approval Queue');
     expect(workbenchHtml).toContain(approvals[0].id);
@@ -152,7 +170,7 @@ describe('cli runtime commands', () => {
     expect(evalOutput.stdout).toContain('Eval suites: 1');
 
     const latestEval = JSON.parse(await readFile(
-      path.join(projectDir, '.fdekit', 'evals', 'latest.json'),
+      path.join(projectDir, 'artifacts', 'evals', 'latest.json'),
       'utf8',
     )) as { status?: string; results?: unknown[] };
     expect(latestEval.status).toBe('passed');
@@ -161,7 +179,7 @@ describe('cli runtime commands', () => {
     const reportOutput = await captureCommand(() => cmdReport({ cwd: projectDir, args: [] }));
     expect(reportOutput.stdout).toContain('Report written:');
 
-    const report = await readFile(path.join(projectDir, '.fdekit', 'reports', 'deployment-report.md'), 'utf8');
+    const report = await readFile(path.join(projectDir, 'artifacts', 'reports', 'deployment-report.md'), 'utf8');
     expect(report).toContain('# cli-test-deployment Deployment Report');
     expect(report).toContain('- Status: passed');
 
@@ -169,20 +187,20 @@ describe('cli runtime commands', () => {
     expect(macroOutput.exitCode).toBeUndefined();
     expect(macroOutput.stdout).toContain('Macro eval patterns:');
     expect(macroOutput.stdout).toContain('Focus pattern:');
-    const macroArtifact = JSON.parse(await readFile(path.join(projectDir, '.fdekit', 'evals', 'macro', 'latest.json'), 'utf8')) as {
+    const macroArtifact = JSON.parse(await readFile(path.join(projectDir, 'artifacts', 'evals', 'macro', 'latest.json'), 'utf8')) as {
       traceDocuments?: unknown[];
       patterns?: unknown[];
     };
     expect(macroArtifact.traceDocuments?.length).toBeGreaterThan(0);
     expect(macroArtifact.patterns?.length).toBeGreaterThan(0);
-    const macroReport = await readFile(path.join(projectDir, '.fdekit', 'evals', 'macro', 'report.md'), 'utf8');
+    const macroReport = await readFile(path.join(projectDir, 'artifacts', 'evals', 'macro', 'report.md'), 'utf8');
     expect(macroReport).toContain('Macro Eval Report');
 
     const traceOutput = await captureCommand(() => cmdTrace({ cwd: projectDir, args: [] }));
     expect(traceOutput.stdout).toContain('Trace viewer created:');
     expect(traceOutput.stdout).toContain('Traces loaded: 2');
 
-    const viewer = await readFile(path.join(projectDir, '.fdekit', 'trace-viewer.html'), 'utf8');
+    const viewer = await readFile(path.join(projectDir, 'artifacts', 'trace-viewer.html'), 'utf8');
     expect(viewer).toContain('FDEKit Trace Viewer');
 
     const consoleOutput = await captureCommand(() => cmdConsole({ cwd: projectDir, args: [] }));
@@ -191,16 +209,16 @@ describe('cli runtime commands', () => {
     expect(consoleOutput.stdout).toContain('Exports written:');
     expect(consoleOutput.stdout).toContain('Eval status: passed');
 
-    const consoleHtml = await readFile(path.join(projectDir, '.fdekit', 'console.html'), 'utf8');
+    const consoleHtml = await readFile(path.join(projectDir, 'artifacts', 'console.html'), 'utf8');
     expect(consoleHtml).toContain('FDEKit Console');
     expect(consoleHtml).toContain('cli-test-deployment');
     expect(consoleHtml).toContain('Export dashboard data');
     expect(consoleHtml).toContain('downloadExport');
     expect(consoleHtml).toContain('href="charts.html"');
     expect(consoleHtml).toContain('href="workbench.html"');
-    const chartsHtml = await readFile(path.join(projectDir, '.fdekit', 'charts.html'), 'utf8');
+    const chartsHtml = await readFile(path.join(projectDir, 'artifacts', 'charts.html'), 'utf8');
     expect(chartsHtml).toContain('Deployment Charts');
-    const workbenchHtml = await readFile(path.join(projectDir, '.fdekit', 'workbench.html'), 'utf8');
+    const workbenchHtml = await readFile(path.join(projectDir, 'artifacts', 'workbench.html'), 'utf8');
     expect(workbenchHtml).toContain('support-triage-dataset');
     expect(workbenchHtml).toContain('Review Gates');
     expect(workbenchHtml).toContain('Governance Review');
@@ -208,7 +226,7 @@ describe('cli runtime commands', () => {
     expect(workbenchHtml).toContain('Customer Report');
     expect(workbenchHtml).not.toContain('Macro Evals');
     expect(workbenchHtml).not.toContain('Dashboard History');
-    const consolePages = await readdir(path.join(projectDir, '.fdekit'));
+    const consolePages = await readdir(path.join(projectDir, 'artifacts'));
     expect(consolePages).toEqual(expect.arrayContaining([
       'console.html',
       'charts.html',
@@ -216,16 +234,16 @@ describe('cli runtime commands', () => {
       'readiness.html',
       'workbench.html',
     ]));
-    const consoleSnapshots = await readdir(path.join(projectDir, '.fdekit', 'consoles'));
+    const consoleSnapshots = await readdir(path.join(projectDir, 'artifacts', 'consoles'));
     expect(consoleSnapshots.some((entry) => entry.startsWith('console-') && entry.endsWith('.html'))).toBe(true);
-    const consoleHistory = JSON.parse(await readFile(path.join(projectDir, '.fdekit', 'consoles', 'history.json'), 'utf8')) as unknown[];
+    const consoleHistory = JSON.parse(await readFile(path.join(projectDir, 'artifacts', 'consoles', 'history.json'), 'utf8')) as unknown[];
     expect(consoleHistory).toHaveLength(1);
-    const exportEntries = await readdir(path.join(projectDir, '.fdekit', 'exports'));
+    const exportEntries = await readdir(path.join(projectDir, 'artifacts', 'exports'));
     expect(exportEntries).toEqual(expect.arrayContaining(['dashboard.csv', 'dashboard.md', 'dashboard-data.json']));
-    const dashboardCsv = await readFile(path.join(projectDir, '.fdekit', 'exports', 'dashboard.csv'), 'utf8');
+    const dashboardCsv = await readFile(path.join(projectDir, 'artifacts', 'exports', 'dashboard.csv'), 'utf8');
     expect(dashboardCsv).toContain('record_type,id,created_at,status,title');
     expect(dashboardCsv).toContain('issue');
-    const dashboardMarkdown = await readFile(path.join(projectDir, '.fdekit', 'exports', 'dashboard.md'), 'utf8');
+    const dashboardMarkdown = await readFile(path.join(projectDir, 'artifacts', 'exports', 'dashboard.md'), 'utf8');
     expect(dashboardMarkdown).toContain('# cli-test-deployment Dashboard Export');
   });
 
@@ -243,7 +261,7 @@ describe('cli runtime commands', () => {
     expect(validateOutput.stdout).toContain('Execution plan:');
     expect(validateOutput.stdout).toContain('Summary: deployment config is valid');
 
-    const latestPath = path.join(projectDir, '.fdekit', 'deployments', 'latest.json');
+    const latestPath = path.join(projectDir, 'artifacts', 'deployments', 'latest.json');
     const latestSnapshot = JSON.parse(await readFile(latestPath, 'utf8')) as {
       deployment?: {
         name?: string;
@@ -256,7 +274,7 @@ describe('cli runtime commands', () => {
     };
     expect(latestSnapshot.deployment?.name).toBe('cli-test-deployment');
 
-    const planPath = path.join(projectDir, '.fdekit', 'deployments', 'execution-plan.json');
+    const planPath = path.join(projectDir, 'artifacts', 'deployments', 'execution-plan.json');
     const executionPlan = JSON.parse(await readFile(planPath, 'utf8')) as {
       valid?: boolean;
       agents?: {

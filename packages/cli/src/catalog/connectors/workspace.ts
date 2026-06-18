@@ -44,9 +44,7 @@ export const workspaceConnectorManifests: ConnectorManifest[] = [
     systemDependency: 'Set `CODEBASE_ROOT` to the local repository root',
     scaffold: {
       key: 'codebase',
-      expression: `codebaseConnector({
-  rootDir: process.env.CODEBASE_ROOT ?? '.',
-})`,
+      expression: 'codebaseConnector()',
       imports: [
         { moduleName: '@fdekit/connector-codebase', names: ['codebaseConnector'] },
       ],
@@ -54,8 +52,7 @@ export const workspaceConnectorManifests: ConnectorManifest[] = [
       env: [
         {
           name: 'CODEBASE_ROOT',
-          value: '.',
-          description: 'Local repository root for codebase tools',
+          description: 'Optional repository root; defaults to the customer project containing ./fdekit',
         },
       ],
     },

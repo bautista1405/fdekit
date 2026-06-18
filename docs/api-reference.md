@@ -91,7 +91,7 @@ Core is the authoring layer. It should stay free of local filesystem artifact co
 | `OutcomeMetricDefinition` | Outcome metric contract for customer-visible deployment impact. |
 | `DataLayersDefinition` | Data-layer contract for system of record, business rules, raw intake, and feedback. |
 | `RolloutDefinition`, `RolloutStageName` | Rollout stage and stage progression contracts. |
-| `ArtifactStoreDefinition`, `LocalArtifactStoreDefinition`, `S3ArtifactStoreDefinition` | Deployment artifact storage config. Local `.fdekit` is default; S3 requires runtime client injection. |
+| `ArtifactStoreDefinition`, `LocalArtifactStoreDefinition`, `S3ArtifactStoreDefinition` | Deployment artifact storage config. Local `artifacts/` is the default; S3 requires runtime client injection. |
 | `PolicyDefinition`, `PolicyDecision`, `PolicyResult` | Policy contracts and decisions. |
 | `EvalDefinition`, `EvalCase`, `EvalAssertion`, `EvalAssertionResult`, `EvalRunContext` | Eval authoring contracts. |
 | `RecipeDefinition`, `RecipeReference`, `MigrationNote` | Recipe and migration metadata. |
@@ -204,9 +204,9 @@ Runtime owns execution and artifacts. Runtime-specific interfaces live here rath
 | Export | Purpose |
 | --- | --- |
 | `ConfigNotFoundError` | Error thrown when no `fde.config.ts` can be found. |
-| `findConfigFile()` | Search upward for `fde.config.ts`. |
-| `requireConfigFile()` | Search upward and throw if missing. |
-| `findProjectDir()` | Resolve the project directory from a config search. |
+| `findConfigFile()` | Search the current directory and ancestors for `fde.config.ts` or `fdekit/fde.config.ts`. |
+| `requireConfigFile()` | Run the same contained/ancestor search and throw if missing. |
+| `findProjectDir()` | Resolve the discovered config directory, defaulting new file-creating workflows to `fdekit/` under the nearest `package.json` or Git project root. |
 | `loadDeployment()` | Load and transpile `fde.config.ts`, including `.env` loading. |
 
 ### Agent Execution
@@ -287,7 +287,7 @@ Runtime strict mode is also explicit. `runAgent({ strict: true })` requires ever
 | `renderTraceViewer()` | Render simple static trace viewer HTML. |
 | `renderReport()` | Render Markdown deployment report content. |
 | `ArtifactStore`, `ArtifactStoreKind`, `ArtifactRef` | Runtime artifact store contract and refs. |
-| `createArtifactStore()` | Resolve a caller-supplied store, deployment `artifacts` config, or default local `.fdekit` store. |
+| `createArtifactStore()` | Resolve a caller-supplied store, deployment `artifacts` config, or default local `artifacts/` directory. |
 | `createArtifactStoreFromDefinition()` | Create a store from an explicit `ArtifactStoreDefinition`. |
 | `createFileArtifactStore()` | Create the local filesystem artifact store. |
 | `createS3ArtifactStore()` | Create an S3 artifact store from a bucket, prefix, and adapter client. |
@@ -404,7 +404,7 @@ Main commands:
 
 | Command | Purpose |
 | --- | --- |
-| `fdekit init` | Scaffold a new FDEKit project. |
+| `fdekit init` | Scaffold a new FDEKit project in `./fdekit`. |
 | `fdekit recipe install <name>` | Install a recipe such as `support-triage`, `codebase-agent`, `sales-research-agent`, or `load-test-agent`. |
 | `fdekit recipe install <path>` | Install a captured local recipe from a filesystem path. |
 | `fdekit recipe capture <name>` | Capture the current deployment as a reusable local recipe under `recipes/<name>/`. |

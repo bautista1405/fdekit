@@ -83,7 +83,7 @@ const cliPackage = {
 };
 
 const cliCommands = [
-  ['fdekit init [name]', 'Scaffold a new FDEKit deployment.', 'packages/cli/src/commands/init.ts'],
+  ['fdekit init [name]', 'Scaffold a new FDEKit deployment, defaulting to ./fdekit.', 'packages/cli/src/commands/init.ts'],
   ['fdekit add provider <name>', 'Add a provider config and env docs.', 'packages/cli/src/commands/add.ts'],
   ['fdekit add connector <name>', 'Add a connector config and env docs.', 'packages/cli/src/commands/add.ts'],
   ['fdekit add policy <name>', 'Add a policy helper to the current deployment.', 'packages/cli/src/commands/add.ts'],
@@ -304,7 +304,7 @@ function renderCliPage() {
     '| Command | Why advanced users reach for it |',
     '| --- | --- |',
     ...[
-      ['fdekit init [name]', 'Start a deployment project with the expected FDEKit shape.'],
+      ['fdekit init [name]', 'Start a deployment project with the expected FDEKit shape, defaulting to ./fdekit.'],
       ['fdekit recipe install <name>', 'Bring in a bundled recipe and its docs, evals, and config.'],
       ['fdekit validate [--json] [--strict]', 'Check config readiness and write reviewable deployment artifacts.'],
       ['fdekit diff [--from <snapshot>] [--to <config-or-snapshot>]', 'Review deployment changes before customer handoff.'],

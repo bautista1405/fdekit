@@ -21,7 +21,7 @@ await run('fdekit', ['console']);
 await run('fdekit', ['recipe', 'capture', 'sales-research-account-brief', '--force']);
 
 printHeader('Demo Ready');
-console.log(`Open dashboard: ${join(process.cwd(), '.fdekit', 'console.html')}`);
+console.log(`Open dashboard: ${join(process.cwd(), 'artifacts', 'console.html')}`);
 console.log(`Captured recipe: ${join(process.cwd(), 'recipes', 'sales-research-account-brief')}`);
 
 async function run(command, commandArgs) {

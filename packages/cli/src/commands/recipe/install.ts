@@ -64,11 +64,12 @@ export async function installCapturedRecipe(
 export async function resolveLocalRecipe(
   projectDir: string,
   recipeNameOrPath: string,
+  invocationDir = projectDir,
 ): Promise<LocalRecipe | null> {
   const candidates = [
     path.isAbsolute(recipeNameOrPath)
       ? recipeNameOrPath
-      : path.resolve(projectDir, recipeNameOrPath),
+      : path.resolve(invocationDir, recipeNameOrPath),
     path.join(projectDir, 'recipes', recipeNameOrPath),
   ];
 

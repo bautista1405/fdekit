@@ -108,7 +108,7 @@ export async function installRecipe(
   projectDir: string,
   recipe: Recipe,
 ): Promise<RecipeInstallResult> {
-  const projectName = path.basename(projectDir);
+  const projectName = projectNameFromDir(projectDir);
   const recipeDir = path.join(projectDir, 'recipes', recipe.name);
   const configPath = path.join(projectDir, 'fde.config.ts');
   const ctx: RecipeContext = {
@@ -314,4 +314,10 @@ function setMissingValues(record: Record<string, unknown>, values: Record<string
 
 function hasEnvEntry(contents: string, name: string): boolean {
   return new RegExp(`^${escapeRegExp(name)}=`, 'm').test(contents);
+}
+
+function projectNameFromDir(projectDir: string): string {
+  return path.basename(projectDir) === 'fdekit'
+    ? path.basename(path.dirname(projectDir))
+    : path.basename(projectDir);
 }

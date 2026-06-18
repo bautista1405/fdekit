@@ -71,7 +71,7 @@ export const codebaseAgentRecipe: RecipeSpec = {
   },
   env: [
     ...providerEnv(),
-    env('CODEBASE_ROOT', './sample-repo', 'Local repository root; set to . when installing inside a customer repo'),
+    env('CODEBASE_ROOT', './sample-repo', 'Repository to inspect; use .. when the FDEKit project lives in ./fdekit'),
     env('FDEKIT_ISSUE_TRACKER', 'github', 'Issue tracker backing issue.create; use github, jira, or linear'),
     env('FDEKIT_CONNECTOR_MODE', 'local', 'Set to api to create real external issues'),
     env('GITHUB_TOKEN', '', 'GitHub token for API mode issue creation'),

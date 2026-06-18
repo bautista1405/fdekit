@@ -2,6 +2,7 @@ import { promises as fs } from 'fs';
 import * as path from 'path';
 import { pathToFileURL } from 'url';
 import type { DeploymentDefinition } from '@fdekit/core';
+import { DEFAULT_ARTIFACT_ROOT } from '../artifact-store/paths.js';
 import {
   cachedModuleFileName,
   loadProjectEnv,
@@ -16,16 +17,19 @@ export class ConfigNotFoundError extends Error {
   }
 }
 
+const defaultProjectDirectory = 'fdekit';
+
 export async function findConfigFile(startDir: string): Promise<string | null> {
-  let dir = startDir;
+  let dir = path.resolve(startDir);
 
   while (true) {
-    const candidate = path.join(dir, 'fde.config.ts');
-    try {
-      await fs.access(candidate);
-      return candidate;
-    } catch {
-      //keep searching
+    for (const candidate of configCandidates(dir)) {
+      try {
+        await fs.access(candidate);
+        return candidate;
+      } catch {
+        // Keep searching.
+      }
     }
 
     const parent = path.dirname(dir);
@@ -49,13 +53,56 @@ export async function requireConfigFile(startDir: string): Promise<string> {
 
 export async function findProjectDir(startDir: string): Promise<string> {
   const configPath = await findConfigFile(startDir);
-  return configPath ? path.dirname(configPath) : startDir;
+  return configPath ? path.dirname(configPath) : await defaultProjectDirFor(startDir);
+}
+
+function configCandidates(dir: string): string[] {
+  return [
+    path.join(dir, 'fde.config.ts'),
+    path.join(dir, defaultProjectDirectory, 'fde.config.ts'),
+  ];
+}
+
+async function defaultProjectDirFor(startDir: string): Promise<string> {
+  const resolved = path.resolve(startDir);
+
+  if (path.basename(resolved) === defaultProjectDirectory) {
+    return resolved;
+  }
+
+  let dir = resolved;
+  while (true) {
+    if (await hasProjectMarker(dir)) {
+      return path.join(dir, defaultProjectDirectory);
+    }
+
+    const parent = path.dirname(dir);
+    if (parent === dir) {
+      return path.join(resolved, defaultProjectDirectory);
+    }
+    dir = parent;
+  }
+}
+
+async function hasProjectMarker(dir: string): Promise<boolean> {
+  for (const marker of ['package.json', '.git']) {
+    try {
+      await fs.access(path.join(dir, marker));
+      return true;
+    } catch {
+      // Try the next marker.
+    }
+  }
+
+  return false;
 }
 
 let configImportCounter = 0;
 
 export async function loadDeployment(configPath: string): Promise<DeploymentDefinition> {
-  await loadProjectEnv(path.dirname(configPath));
+  const projectDir = path.dirname(configPath);
+  await loadProjectEnv(projectDir);
+  process.env.FDEKIT_PROJECT_DIR = projectDir;
 
   const source = await fs.readFile(configPath, 'utf8');
   const ts = await import('typescript');
@@ -69,7 +116,7 @@ export async function loadDeployment(configPath: string): Promise<DeploymentDefi
     fileName: configPath,
   }).outputText;
 
-  const cacheDir = path.join(path.dirname(configPath), '.fdekit', 'cache');
+  const cacheDir = path.join(projectDir, DEFAULT_ARTIFACT_ROOT, 'cache');
   await fs.mkdir(cacheDir, { recursive: true });
   const executableConfig = await rewriteConfigRelativeImports(
     await rewriteFdekitImports(transpiled),

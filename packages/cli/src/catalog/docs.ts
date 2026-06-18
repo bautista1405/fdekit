@@ -172,7 +172,7 @@ Options:
     case 'feedback':
       return `Usage: ${commandUsages.feedback}
 
-Export approval and audit feedback into eval candidates.
+Export decided approvals into replay-ready eval cases using their original run inputs.
 
 Options:
   --json      Print export metadata as JSON

@@ -4,10 +4,12 @@ import {
   loadDeployment,
   readApprovals,
   readAuditLog,
+  readJsonArtifacts,
   requireConfigFile,
   writeJsonArtifact,
   type ApprovalArtifact,
   type AuditLogEntry,
+  type TraceArtifact,
 } from '@fdekit/runtime';
 import type { CommandContext } from '../context.js';
 import { CliUserError } from '../errors.js';
@@ -22,6 +24,8 @@ interface FeedbackExportArtifact {
     approvals: number;
     auditEvents: number;
     decidedApprovals: number;
+    replayableCases: number;
+    skippedApprovals: number;
   };
   cases: FeedbackEvalCase[];
   auditFeedback: FeedbackAuditEvent[];
@@ -29,13 +33,7 @@ interface FeedbackExportArtifact {
 
 interface FeedbackEvalCase {
   name: string;
-  input: {
-    toolName: string;
-    args: unknown;
-    reason: string;
-    humanDecision: 'approved' | 'rejected';
-    decisionReason?: string;
-  };
+  input: Record<string, unknown>;
   expected: {
     toolName: string;
     humanDecision: 'approved' | 'rejected';
@@ -50,8 +48,14 @@ interface FeedbackEvalCase {
     traceId: string;
     runId: string;
     policy: string;
+    toolName: string;
+    args: unknown;
+    reason: string;
+    humanDecision: 'approved' | 'rejected';
+    decisionReason?: string;
     decidedBy?: string;
     decidedAt?: string;
+    inputSource: 'trace' | 'audit';
   };
 }
 
@@ -90,10 +94,12 @@ export async function cmdFeedback(ctx: CommandContext): Promise<void> {
   const artifactStore = createArtifactStore({ deployment, projectDir });
   const approvals = await readApprovals(projectDir, artifactStore);
   const auditLog = await readAuditLog(projectDir, artifactStore);
+  const traces = await readJsonArtifacts<TraceArtifact>(projectDir, 'traces', artifactStore);
   const artifact = createFeedbackExport({
     deploymentName: deployment.name,
     approvals,
     auditLog,
+    traces,
   });
   const artifactPath = await writeJsonArtifact(projectDir, 'feedback', 'eval-candidates.json', artifact, artifactStore);
   const casesPath = await writeJsonArtifact(projectDir, 'feedback', 'eval-cases.json', artifact.cases, artifactStore);
@@ -111,6 +117,9 @@ export async function cmdFeedback(ctx: CommandContext): Promise<void> {
   console.log(`Deployment: ${deployment.name}`);
   console.log(`Feedback candidates: ${artifact.cases.length}`);
   console.log(`Decided approvals: ${artifact.source.decidedApprovals}/${artifact.source.approvals}`);
+  if (artifact.source.skippedApprovals > 0) {
+    console.log(`Skipped approvals without run input: ${artifact.source.skippedApprovals}`);
+  }
   console.log(`Audit feedback events: ${artifact.auditFeedback.length}`);
   console.log(`Artifact: ${artifactPath}`);
   console.log(`Eval cases: ${casesPath}`);
@@ -120,8 +129,14 @@ function createFeedbackExport(input: {
   deploymentName: string;
   approvals: ApprovalArtifact[];
   auditLog: AuditLogEntry[];
+  traces: TraceArtifact[];
 }): FeedbackExportArtifact {
   const decidedApprovals = input.approvals.filter((approval) => approval.status === 'approved' || approval.status === 'rejected');
+  const replayableCases = decidedApprovals.flatMap((approval) => {
+    const runInput = findRunInput(approval, input.traces, input.auditLog);
+
+    return runInput ? [approvalToEvalCase(approval, runInput)] : [];
+  });
   const auditFeedback = input.auditLog
     .filter((entry) => entry.action.startsWith('approval.') || entry.actor !== 'agent')
     .map((entry) => ({
@@ -145,24 +160,23 @@ function createFeedbackExport(input: {
       approvals: input.approvals.length,
       auditEvents: input.auditLog.length,
       decidedApprovals: decidedApprovals.length,
+      replayableCases: replayableCases.length,
+      skippedApprovals: decidedApprovals.length - replayableCases.length,
     },
-    cases: decidedApprovals.map(approvalToEvalCase),
+    cases: replayableCases,
     auditFeedback,
   };
 }
 
-function approvalToEvalCase(approval: ApprovalArtifact): FeedbackEvalCase {
+function approvalToEvalCase(
+  approval: ApprovalArtifact,
+  runInput: { value: Record<string, unknown>; source: 'trace' | 'audit' },
+): FeedbackEvalCase {
   const humanDecision = approval.status as 'approved' | 'rejected';
 
   return {
     name: `${humanDecision} ${approval.toolName} ${approval.id}`,
-    input: {
-      toolName: approval.toolName,
-      args: approval.args,
-      reason: approval.reason,
-      humanDecision,
-      decisionReason: approval.decisionReason,
-    },
+    input: runInput.value,
     expected: {
       toolName: approval.toolName,
       humanDecision,
@@ -177,8 +191,42 @@ function approvalToEvalCase(approval: ApprovalArtifact): FeedbackEvalCase {
       traceId: approval.traceId,
       runId: approval.runId,
       policy: approval.policy,
+      toolName: approval.toolName,
+      args: approval.args,
+      reason: approval.reason,
+      humanDecision,
+      decisionReason: approval.decisionReason,
       decidedBy: approval.decidedBy,
       decidedAt: approval.decidedAt,
+      inputSource: runInput.source,
     },
   };
+}
+
+function findRunInput(
+  approval: ApprovalArtifact,
+  traces: TraceArtifact[],
+  auditLog: AuditLogEntry[],
+): { value: Record<string, unknown>; source: 'trace' | 'audit' } | undefined {
+  const trace = traces.find((candidate) => candidate.id === approval.traceId);
+  const traceStart = trace?.events.find((event) => event.type === 'agent.run.started');
+  const traceInput = asRecord(traceStart?.input);
+
+  if (traceInput) {
+    return { value: traceInput, source: 'trace' };
+  }
+
+  const auditStart = auditLog.find((entry) => (
+    entry.action === 'agent.run.started'
+    && (entry.traceId === approval.traceId || entry.runId === approval.runId)
+  ));
+  const auditInput = asRecord(auditStart?.metadata?.input);
+
+  return auditInput ? { value: auditInput, source: 'audit' } : undefined;
+}
+
+function asRecord(value: unknown): Record<string, unknown> | undefined {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : undefined;
 }

@@ -1,5 +1,14 @@
 # @fdekit/console
 
+## 0.4.3
+
+### Patch Changes
+
+- 0f8e226: command surface, s3 store and core governed-loop, validation gaps and DX/docs
+- Updated dependencies [0f8e226]
+  - @fdekit/core@0.4.3
+  - @fdekit/runtime@0.4.3
+
 ## 0.4.2
 
 ### Patch Changes

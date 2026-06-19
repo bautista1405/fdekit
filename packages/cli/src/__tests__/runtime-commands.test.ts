@@ -8,7 +8,7 @@ import { cmdDiff } from '../commands/diff.js';
 import { cmdEval } from '../commands/eval.js';
 import { cmdFeedback } from '../commands/feedback.js';
 import { cmdReport } from '../commands/report.js';
-import { cmdRun } from '../commands/run.js';
+import { collectRunWarnings, cmdRun } from '../commands/run.js';
 import { cmdTrace } from '../commands/trace.js';
 import { cmdValidate } from '../commands/validate.js';
 import { printCliError } from '../errors.js';
@@ -23,6 +23,24 @@ import {
 vi.setConfig({ testTimeout: 30000 });
 
 describe('cli runtime commands', () => {
+  it('warns when a measured load test cannot find the k6 executable', () => {
+    expect(collectRunWarnings({
+      events: [{
+        type: 'tool.call.failed',
+        toolName: 'loadtest.run',
+        result: {
+          error: {
+            message: 'spawn k6 ENOENT',
+          },
+        },
+      }],
+    })).toEqual([
+      'k6 is required for measured load tests but was not found. '
+      + 'Install it before using k6 mode (macOS: `brew install k6`) or set K6_BINARY. '
+      + 'https://grafana.com/docs/k6/latest/set-up/install-k6/',
+    ]);
+  });
+
   it('reports missing rubric judges during validation', async () => {
     const projectDir = await createCliProject();
     const configPath = path.join(projectDir, 'fde.config.ts');

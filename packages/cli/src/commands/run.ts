@@ -1,4 +1,5 @@
 import * as path from 'path';
+import { asRecord, getString } from '@fdekit/core';
 import {
   createArtifactStore,
   AgentRunError,
@@ -59,6 +60,10 @@ export async function cmdRun(ctx: CommandContext): Promise<void> {
 
   const tracePath = await writeJsonArtifact(projectDir, 'traces', `${result.trace.id}.json`, result.trace, artifactStore);
 
+  for (const warning of collectRunWarnings(result.trace)) {
+    console.warn(`Warning: ${warning}`);
+  }
+
   console.log(`Agent: ${result.agent}`);
   console.log(`Status: ${result.status}`);
   console.log(`Tool calls: ${result.toolCalls.length > 0 ? result.toolCalls.map((call) => call.name).join(', ') : 'none'}`);
@@ -79,6 +84,29 @@ export async function cmdRun(ctx: CommandContext): Promise<void> {
 
     process.exitCode = 1;
   }
+}
+
+export function collectRunWarnings(trace: { events?: unknown[] }): string[] {
+  return (trace.events ?? []).flatMap((event) => {
+    const record = asRecord(event);
+
+    if (record.type !== 'tool.call.failed' || record.toolName !== 'loadtest.run') {
+      return [];
+    }
+
+    const error = asRecord(asRecord(record.result).error);
+    const message = getString(error.message);
+
+    if (!message?.includes('ENOENT')) {
+      return [];
+    }
+
+    return [
+      'k6 is required for measured load tests but was not found. '
+      + 'Install it before using k6 mode (macOS: `brew install k6`) or set K6_BINARY. '
+      + 'https://grafana.com/docs/k6/latest/set-up/install-k6/',
+    ];
+  });
 }
 
 function parseRunArgs(args: string[]): { input: Record<string, unknown>; maxSteps?: number; strict?: boolean } {

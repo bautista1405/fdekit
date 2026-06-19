@@ -73,6 +73,8 @@ const client: S3ArtifactClient = {
 
 Pass the adapter as `artifacts: { kind: 's3', bucket, prefix?, region?, client }`. The same
 minimal interface works with the AWS SDK, MinIO, LocalStack, or a wrapped enterprise client.
+`validateDeployment()` and `fdekit validate` report an `artifacts.client` error when the
+adapter is missing or incomplete, before any S3 artifact write is attempted.
 
 ## Public API surface
 

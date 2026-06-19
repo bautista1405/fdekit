@@ -263,6 +263,36 @@ describe('deployment validation and diffing', () => {
       .toBe('s3://fdekit-artifacts/artifacts/deployments/execution-plan.json');
   });
 
+  it('validates the required S3 client before artifact-store construction', () => {
+    const deployment = defineDeployment({
+      name: 's3-missing-client',
+      artifacts: {
+        kind: 's3',
+        bucket: 'fdekit-artifacts',
+      } as never,
+      providers: {
+        mock: { name: 'mock' },
+      },
+      agents: {
+        worker: defineAgent({
+          provider: 'mock',
+          instructions: './agents/worker.md',
+        }),
+      },
+    });
+
+    expect(validateDeployment(deployment)).toMatchObject({
+      valid: false,
+      issues: expect.arrayContaining([
+        {
+          severity: 'error',
+          path: 'artifacts.client',
+          message: 'S3 artifact store requires a client with putObject, getObject, and listObjectsV2 methods',
+        },
+      ]),
+    });
+  });
+
   it('marks used providers without runtime adapters as compile errors', () => {
     const deployment = defineDeployment({
       name: 'missing-runtime',

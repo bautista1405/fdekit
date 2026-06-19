@@ -1,5 +1,6 @@
 import { parseJsonl } from './json.js';
 import { DEFAULT_ARTIFACT_ROOT, normalizeS3Prefix, s3GroupPrefix, s3Key } from './paths.js';
+import { isS3ArtifactClient } from './s3-client.js';
 import type { ArtifactRef, ArtifactStore, S3ArtifactClient, S3ArtifactStoreOptions } from './types.js';
 
 export function createS3ArtifactStore(options: S3ArtifactStoreOptions): ArtifactStore {
@@ -59,18 +60,11 @@ export function createS3ArtifactStore(options: S3ArtifactStoreOptions): Artifact
 }
 
 export function asS3ArtifactClient(value: unknown): S3ArtifactClient {
-  const candidate = value as Partial<S3ArtifactClient> | undefined;
-
-  if (
-    !candidate
-    || typeof candidate.putObject !== 'function'
-    || typeof candidate.getObject !== 'function'
-    || typeof candidate.listObjectsV2 !== 'function'
-  ) {
+  if (!isS3ArtifactClient(value)) {
     throw new Error('S3 artifact store requires a client with putObject, getObject, and listObjectsV2 methods');
   }
 
-  return candidate as S3ArtifactClient;
+  return value;
 }
 
 async function readS3Json<T>(

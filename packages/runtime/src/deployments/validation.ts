@@ -16,6 +16,7 @@ import type {
   DeploymentValidationSeverity,
 } from './interfaces/index.js';
 import { validateFieldMethodMetadata } from './field-method-validation.js';
+import { isS3ArtifactClient } from '../artifact-store/s3-client.js';
 
 export function validateDeployment(
   deployment: DeploymentDefinition,
@@ -339,6 +340,14 @@ function validateArtifactStore(
 
   if (artifacts.region !== undefined && typeof artifacts.region !== 'string') {
     add('error', 'artifacts.region', 'S3 artifact region must be a string');
+  }
+
+  if (!isS3ArtifactClient((artifacts as { client?: unknown }).client)) {
+    add(
+      'error',
+      'artifacts.client',
+      'S3 artifact store requires a client with putObject, getObject, and listObjectsV2 methods',
+    );
   }
 }
 

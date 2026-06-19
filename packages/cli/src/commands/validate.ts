@@ -17,7 +17,6 @@ export async function cmdValidate(ctx: CommandContext): Promise<void> {
   const configPath = await requireConfigFile(ctx.cwd);
   const projectDir = path.dirname(configPath);
   const deployment = await loadDeployment(configPath);
-  const artifactStore = createArtifactStore({ deployment, projectDir });
   const plan = compileDeployment(deployment, {
     projectDir,
     strict,
@@ -25,23 +24,33 @@ export async function cmdValidate(ctx: CommandContext): Promise<void> {
   });
   const result = plan.validation;
   const snapshot = createDeploymentSnapshot(deployment);
-  const latestPath = await writeJsonArtifact(projectDir, 'deployments', 'latest.json', snapshot, artifactStore);
-  const snapshotPath = await writeJsonArtifact(
-    projectDir,
-    'deployments/snapshots',
-    `deployment-${safeTimestamp(snapshot.createdAt)}.json`,
-    snapshot,
-    artifactStore,
-  );
-  const planPath = await writeJsonArtifact(projectDir, 'deployments', 'execution-plan.json', plan, artifactStore);
+  const artifactStoreValid = !result.issues.some((issue) => (
+    issue.severity === 'error' && (issue.path === 'artifacts' || issue.path.startsWith('artifacts.'))
+  ));
+  let latestPath: string | undefined;
+  let snapshotPath: string | undefined;
+  let planPath: string | undefined;
+
+  if (artifactStoreValid) {
+    const artifactStore = createArtifactStore({ deployment, projectDir });
+    latestPath = await writeJsonArtifact(projectDir, 'deployments', 'latest.json', snapshot, artifactStore);
+    snapshotPath = await writeJsonArtifact(
+      projectDir,
+      'deployments/snapshots',
+      `deployment-${safeTimestamp(snapshot.createdAt)}.json`,
+      snapshot,
+      artifactStore,
+    );
+    planPath = await writeJsonArtifact(projectDir, 'deployments', 'execution-plan.json', plan, artifactStore);
+  }
 
   if (json) {
     console.log(JSON.stringify({
       valid: result.valid,
       issues: result.issues,
-      snapshot: latestPath,
-      snapshotCopy: snapshotPath,
-      executionPlan: planPath,
+      snapshot: latestPath ?? null,
+      snapshotCopy: snapshotPath ?? null,
+      executionPlan: planPath ?? null,
       migrationNotes: deployment.migrationNotes ?? [],
       strict,
     }, null, 2));
@@ -59,9 +68,13 @@ export async function cmdValidate(ctx: CommandContext): Promise<void> {
 
     console.log(`Config: ${path.relative(ctx.cwd, configPath) || path.basename(configPath)}`);
     console.log(`Mode: ${strict ? 'strict' : 'standard'}`);
-    console.log(`Snapshot: ${latestPath}`);
-    console.log(`Snapshot copy: ${snapshotPath}`);
-    console.log(`Execution plan: ${planPath}`);
+    if (artifactStoreValid) {
+      console.log(`Snapshot: ${latestPath}`);
+      console.log(`Snapshot copy: ${snapshotPath}`);
+      console.log(`Execution plan: ${planPath}`);
+    } else {
+      console.log('Artifacts: not written because the artifact store configuration is invalid');
+    }
     console.log('');
 
     if (result.issues.length === 0) {

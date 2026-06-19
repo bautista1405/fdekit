@@ -280,6 +280,7 @@ describe('cli runtime commands', () => {
       agent: 'supportTriage',
       dataset: './artifacts/feedback/eval-cases.json',
       maxSteps: 8,
+      assertions: [expectedApprovalOutcome()],
     }),`,
       ),
       'utf8',
@@ -447,6 +448,43 @@ export default defineDeployment({
     );
     expect(output.stdout).toContain(
       'ERROR rollout.owner: Rollout owner must be a string',
+    );
+    expect(output.stdout).toContain('Summary: deployment config has validation errors');
+  });
+
+  it('reports an incomplete S3 artifact store without throwing during validate', async () => {
+    const projectDir = await mkProjectRoot('fdekit-cli-invalid-s3-');
+    await writeFile(path.join(projectDir, 'fde.config.ts'), `import {
+  defineAgent,
+  defineDeployment,
+} from '@fdekit/core';
+
+export default defineDeployment({
+  name: 'invalid-s3-artifacts',
+  providers: {
+    mock: { name: 'mock' },
+  },
+  agents: {
+    reviewer: defineAgent({
+      provider: 'mock',
+      instructions: './agents/reviewer.md',
+    }),
+  },
+  artifacts: {
+    kind: 's3',
+    bucket: 'fdekit-artifacts',
+  } as any,
+});
+`, 'utf8');
+
+    const output = await captureCommand(() => cmdValidate({ cwd: projectDir, args: [] }));
+
+    expect(output.exitCode).toBe(1);
+    expect(output.stdout).toContain(
+      'ERROR artifacts.client: S3 artifact store requires a client with putObject, getObject, and listObjectsV2 methods',
+    );
+    expect(output.stdout).toContain(
+      'Artifacts: not written because the artifact store configuration is invalid',
     );
     expect(output.stdout).toContain('Summary: deployment config has validation errors');
   });

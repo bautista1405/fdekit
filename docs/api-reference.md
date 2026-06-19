@@ -172,6 +172,7 @@ export const codeQuality = defineConnector({
 
 | Export | Purpose |
 | --- | --- |
+| `expectedApprovalOutcome()` | Match exported approval expectations (`toolName` and `shouldProceed`) against observed tool calls. |
 | `expectedToolCall()` | Require one or more calls to a tool. |
 | `notExpectedToolCall()` | Require zero calls to a tool. |
 | `expectedFinalAnswer()` | Match final answer text with a string, regex, or predicate. |
@@ -230,7 +231,7 @@ Runtime strict mode is also explicit. `runAgent({ strict: true })` requires ever
 | Export | Purpose |
 | --- | --- |
 | `compileDeployment()` | Build a normalized execution plan with resolved providers, tools, policies, harness refs, env requirements, validation issues, and artifact paths. |
-| `validateDeployment()` | Validate deployment structure, providers, agents, tools, evals, governance, and the structural shape of workflow/outcome/data-layer/rollout metadata. `strict: true` makes missing tool `argsSchema`, `scopes`, and `environments` errors. |
+| `validateDeployment()` | Validate deployment structure, providers, agents, tools, evals, governance, artifact-store adapters, and the structural shape of workflow/outcome/data-layer/rollout metadata. `strict: true` makes missing tool `argsSchema`, `scopes`, and `environments` errors. |
 | `createDeploymentSnapshot()` | Normalize deployment config into an audit/diff snapshot. |
 | `diffDeploymentSnapshots()` | Compare two snapshots and return human-readable changes. |
 | `CompileDeploymentOptions`, `CompiledDeploymentPlan`, `CompiledAgentPlan`, `CompiledProviderPlan`, `CompiledConnectorPlan`, `CompiledToolPlan`, `CompiledPolicyPlan`, `CompiledHarnessPlan`, `CompiledEnvRequirement`, `CompiledArtifactStorePlan`, `CompiledArtifactPaths` | Deployment compiler options and execution-plan artifacts. |

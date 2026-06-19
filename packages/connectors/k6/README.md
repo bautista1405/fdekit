@@ -2,7 +2,7 @@
 
 ## Purpose
 
-`@fdekit/connector-k6` lets FDEKit agents run governed load-test scenarios through `loadtest.run`. Local mode returns deterministic threshold-oriented results; k6 mode invokes the k6 CLI.
+`@fdekit/connector-k6` lets FDEKit agents run governed load-test scenarios through `loadtest.run`. Local mode returns an explicitly simulated, deterministic result without making HTTP requests. k6 mode invokes the k6 CLI and returns measured evidence.
 
 ## Who should use this package
 
@@ -48,13 +48,13 @@ import { k6Connector } from '@fdekit/connector-k6';
 import type { K6ConnectorOptions, K6RunResult } from '@fdekit/connector-k6';
 ```
 
-Root exports include `k6Connector`, `K6ConnectorConfig`, `K6ConnectorMode`, `K6ConnectorOptions`, `K6RunArgs`, `K6RunResult`, `K6Scenario`, `K6CommandInvocation`, and `K6CommandResult`. The connector family is summarized in the public API index: [Public API Reference](../../../docs/api-reference.md#connectors).
+Root exports include `k6Connector`, `K6ConnectorConfig`, `K6ConnectorMode`, `K6ConnectorOptions`, `K6RunArgs`, `K6RunEvidenceKind`, `K6RunResult`, `K6Scenario`, `K6CommandInvocation`, and `K6CommandResult`. `K6RunResult.evidenceKind` is `simulated` in local mode and `measured` in k6 mode. The connector family is summarized in the public API index: [Public API Reference](../../../docs/api-reference.md#connectors).
 
 ## Stability/backward-compat notes
 
 `@fdekit/connector-k6` is public but pre-1.0. The package-root factory, option/result types, local/k6 modes, and `loadtest.run` tool name are compatibility-sensitive.
 
-Subpath imports are internal. Keep local mode deterministic so demos and tests do not require the k6 binary.
+Subpath imports are internal. Keep local mode deterministic and explicitly simulated so demos and tests do not require the k6 binary or imply real performance evidence.
 
 ## See also
 

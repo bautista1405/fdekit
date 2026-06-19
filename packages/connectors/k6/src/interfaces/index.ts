@@ -1,5 +1,7 @@
 export type K6ConnectorMode = 'local' | 'k6';
 
+export type K6RunEvidenceKind = 'simulated' | 'measured';
+
 export type K6Scenario = 'smoke' | 'baseline' | 'stress' | 'spike' | (string & {});
 
 export interface K6ConnectorConfig extends Record<string, unknown> {
@@ -52,6 +54,7 @@ export interface K6CommandResult {
   stdout: string;
   stderr: string;
   durationMs: number;
+  summary?: Record<string, unknown>;
 }
 
 export interface K6RunArgs {
@@ -66,6 +69,7 @@ export interface K6RunArgs {
 
 export interface K6RunResult {
   mode: K6ConnectorMode;
+  evidenceKind: K6RunEvidenceKind;
   status: 'passed' | 'failed';
   scenario: K6Scenario;
   targetUrl: string;

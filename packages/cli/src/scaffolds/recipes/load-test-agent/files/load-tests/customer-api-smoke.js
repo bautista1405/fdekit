@@ -14,7 +14,7 @@ export const options = {
 };
 
 export default function () {
-  const health = http.get(`${targetUrl}/healthz`);
+  const health = http.get(`${targetUrl}/health`);
   check(health, {
     'health status is 200': (response) => response.status === 200,
   });

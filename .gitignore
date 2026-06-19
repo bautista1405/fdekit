@@ -5,6 +5,7 @@ node_modules/
 **/.fdekit/
 /artifacts/
 /examples/*/artifacts/
+/examples/*/load-tests/.results/
 /packages/*/artifacts/
 /packages/*/*/artifacts/
 **/.turbo/

@@ -1,4 +1,6 @@
 import { spawn } from 'child_process';
+import { mkdir, readFile, rm } from 'fs/promises';
+import { dirname, isAbsolute, resolve } from 'path';
 import type {
   K6CommandInvocation,
   K6CommandResult,
@@ -116,6 +118,7 @@ export function localK6Result(
 
   return {
     mode: 'local',
+    evidenceKind: 'simulated',
     status: passed ? 'passed' : 'failed',
     scenario: args.scenario,
     targetUrl: args.targetUrl,
@@ -148,14 +151,29 @@ export function commandResultToK6Result(
   result: K6CommandResult,
   now: () => string,
 ): K6RunResult {
-  const metrics = parseK6Metrics(result.stdout);
+  const stdoutMetrics = parseK6Metrics(result.stdout);
+  const summaryMetrics = parseK6Summary(result.summary);
+  const metrics = {
+    httpReqDurationP95Ms: summaryMetrics.httpReqDurationP95Ms ?? stdoutMetrics.httpReqDurationP95Ms,
+    httpReqFailedRate: summaryMetrics.httpReqFailedRate ?? stdoutMetrics.httpReqFailedRate,
+    checksSucceededRate: summaryMetrics.checksSucceededRate ?? stdoutMetrics.checksSucceededRate,
+    iterations: summaryMetrics.iterations ?? stdoutMetrics.iterations,
+    requests: summaryMetrics.requests ?? stdoutMetrics.requests,
+  };
+  const measurementComplete = metrics.httpReqDurationP95Ms !== undefined
+    && metrics.httpReqFailedRate !== undefined
+    && metrics.checksSucceededRate !== undefined;
   const p95 = metrics.httpReqDurationP95Ms ?? 0;
   const errorRate = metrics.httpReqFailedRate ?? (result.exitCode === 0 ? 0 : 1);
   const checksSucceededRate = metrics.checksSucceededRate ?? (result.exitCode === 0 ? 1 : 0);
-  const passed = result.exitCode === 0 && p95 <= config.thresholds.p95Ms && errorRate <= config.thresholds.errorRate;
+  const passed = result.exitCode === 0
+    && measurementComplete
+    && p95 <= config.thresholds.p95Ms
+    && errorRate <= config.thresholds.errorRate;
 
   return {
     mode: 'k6',
+    evidenceKind: 'measured',
     status: passed ? 'passed' : 'failed',
     scenario: args.scenario,
     targetUrl: args.targetUrl,
@@ -184,7 +202,24 @@ export function commandResultToK6Result(
   };
 }
 
-function spawnCommand(invocation: K6CommandInvocation): Promise<K6CommandResult> {
+async function spawnCommand(invocation: K6CommandInvocation): Promise<K6CommandResult> {
+  const summaryPath = resolveSummaryPath(invocation);
+
+  if (summaryPath) {
+    await mkdir(dirname(summaryPath), { recursive: true });
+    await rm(summaryPath, { force: true });
+  }
+
+  const result = await spawnProcess(invocation);
+  const summary = summaryPath ? await readSummary(summaryPath) : undefined;
+
+  return {
+    ...result,
+    ...(summary ? { summary } : {}),
+  };
+}
+
+function spawnProcess(invocation: K6CommandInvocation): Promise<K6CommandResult> {
   const startedAt = Date.now();
 
   return new Promise((resolve, reject) => {
@@ -218,20 +253,72 @@ function spawnCommand(invocation: K6CommandInvocation): Promise<K6CommandResult>
   });
 }
 
-function parseK6Metrics(stdout: string): {
+interface ParsedK6Metrics {
   httpReqDurationP95Ms?: number;
   httpReqFailedRate?: number;
   checksSucceededRate?: number;
   iterations?: number;
   requests?: number;
-} {
+}
+
+function parseK6Metrics(stdout: string): ParsedK6Metrics {
   return {
     httpReqDurationP95Ms: parseMetric(stdout, /http_req_duration[\s\S]*?p\(95\)=([0-9.]+)(ms|s)?/),
-    httpReqFailedRate: parseRate(stdout, /http_req_failed\s+([0-9.]+)%/),
-    checksSucceededRate: parseRate(stdout, /checks\s+([0-9.]+)%/),
+    httpReqFailedRate: parseRate(stdout, /http_req_failed[.\s:]+([0-9.]+)%/),
+    checksSucceededRate: parseRate(stdout, /checks[.\s:]+([0-9.]+)%/),
     iterations: parseInteger(stdout, /iterations[.\s:]+([0-9]+)/),
     requests: parseInteger(stdout, /http_reqs[.\s:]+([0-9]+)/),
   };
+}
+
+function parseK6Summary(summary: Record<string, unknown> | undefined): ParsedK6Metrics {
+  const metrics = recordValue(summary?.metrics);
+
+  return {
+    httpReqDurationP95Ms: metricValue(metrics, 'http_req_duration', 'p(95)'),
+    httpReqFailedRate: metricValue(metrics, 'http_req_failed', 'rate'),
+    checksSucceededRate: metricValue(metrics, 'checks', 'rate'),
+    iterations: metricValue(metrics, 'iterations', 'count'),
+    requests: metricValue(metrics, 'http_reqs', 'count'),
+  };
+}
+
+function metricValue(
+  metrics: Record<string, unknown>,
+  metricName: string,
+  valueName: string,
+): number | undefined {
+  const metric = recordValue(metrics[metricName]);
+  const values = recordValue(metric.values);
+  const value = values[valueName];
+
+  return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
+}
+
+function resolveSummaryPath(invocation: K6CommandInvocation): string | undefined {
+  const configuredPath = invocation.env.FDEKIT_K6_SUMMARY_PATH;
+
+  if (!configuredPath) {
+    return undefined;
+  }
+
+  return isAbsolute(configuredPath)
+    ? configuredPath
+    : resolve(invocation.cwd, configuredPath);
+}
+
+async function readSummary(summaryPath: string): Promise<Record<string, unknown> | undefined> {
+  try {
+    return recordValue(JSON.parse(await readFile(summaryPath, 'utf8')));
+  } catch {
+    return undefined;
+  }
+}
+
+function recordValue(value: unknown): Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : {};
 }
 
 function parseMetric(stdout: string, pattern: RegExp): number | undefined {

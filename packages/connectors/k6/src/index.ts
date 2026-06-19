@@ -8,7 +8,7 @@ import {
   runK6,
 } from './helpers/index.js';
 import type { K6ConnectorConfig, K6ConnectorMode, K6ConnectorOptions, K6RunArgs, K6RunResult, K6Scenario } from './interfaces/index.js';
-export type { K6CommandInvocation, K6CommandResult, K6ConnectorConfig, K6ConnectorMode, K6ConnectorOptions, K6RunArgs, K6RunResult, K6Scenario } from './interfaces/index.js';
+export type { K6CommandInvocation, K6CommandResult, K6ConnectorConfig, K6ConnectorMode, K6ConnectorOptions, K6RunArgs, K6RunEvidenceKind, K6RunResult, K6Scenario } from './interfaces/index.js';
 
 const k6RunArgsSchema = {
   type: 'object',
@@ -50,7 +50,7 @@ export function k6Connector(options: K6ConnectorOptions = {}): ConnectorDefiniti
 
   return defineConnector({
     name: 'k6',
-    description: 'Run governed API load tests from inside the FDEKit runtime; local mode is deterministic; k6 mode invokes the k6 CLI',
+    description: 'Run governed API load-test scenarios; local mode simulates deterministic metrics without HTTP, while k6 mode invokes the k6 CLI',
     config,
     env: [
       {
@@ -69,7 +69,7 @@ export function k6Connector(options: K6ConnectorOptions = {}): ConnectorDefiniti
     tools: [
       defineTool<K6RunArgs, K6RunResult>({
         name: 'loadtest.run',
-        description: 'Run a governed k6-compatible load test and return threshold-oriented results',
+        description: 'Run a governed load-test scenario; local mode returns a simulation without making HTTP requests, while k6 mode returns measured results',
         scopes: ['loadtest:run'],
         environments: ['local', 'staging'],
         category: 'load-test',

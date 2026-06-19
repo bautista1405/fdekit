@@ -28,11 +28,33 @@ describe('k6Connector', () => {
 
     expect(result).toMatchObject({
       mode: 'local',
+      evidenceKind: 'simulated',
       status: 'passed',
       targetUrl: 'http://localhost:8788',
       vus: 4,
       duration: '10s',
       startedAt: '2026-05-29T00:00:00.000Z',
+    });
+  });
+
+  it('honors a per-run target instead of replacing it with the connector default', async () => {
+    const connector = k6Connector({
+      mode: 'local',
+      targetUrl: 'http://configured.local',
+    });
+    const tool = connector.tools.find((candidate) => candidate.name === 'loadtest.run');
+
+    const result = await tool?.handler({
+      scenario: 'smoke',
+      targetUrl: 'http://requested.local/path/',
+    }, {
+      agentName: 'loadTestAgent',
+      toolName: 'loadtest.run',
+    });
+
+    expect(result).toMatchObject({
+      evidenceKind: 'simulated',
+      targetUrl: 'http://requested.local/path',
     });
   });
 
@@ -75,6 +97,7 @@ describe('k6Connector', () => {
     });
     expect(result).toMatchObject({
       mode: 'k6',
+      evidenceKind: 'measured',
       status: 'passed',
       metrics: {
         httpReqDurationP95Ms: 245,
@@ -82,6 +105,73 @@ describe('k6Connector', () => {
         checksSucceededRate: 1,
         iterations: 12,
         requests: 36,
+      },
+    });
+  });
+
+  it('prefers measured metrics from the k6 summary artifact', async () => {
+    const connector = k6Connector({
+      mode: 'k6',
+      runCommand: async () => ({
+        exitCode: 0,
+        stdout: 'custom handleSummary suppressed the default text summary',
+        stderr: '',
+        durationMs: 321,
+        summary: {
+          metrics: {
+            http_req_duration: { values: { 'p(95)': 27.4 } },
+            http_req_failed: { values: { rate: 0 } },
+            checks: { values: { rate: 1 } },
+            iterations: { values: { count: 6 } },
+            http_reqs: { values: { count: 18 } },
+          },
+        },
+      }),
+    });
+    const tool = connector.tools.find((candidate) => candidate.name === 'loadtest.run');
+
+    const result = await tool?.handler({}, {
+      agentName: 'loadTestAgent',
+      toolName: 'loadtest.run',
+    });
+
+    expect(result).toMatchObject({
+      mode: 'k6',
+      evidenceKind: 'measured',
+      status: 'passed',
+      metrics: {
+        httpReqDurationP95Ms: 27.4,
+        httpReqFailedRate: 0,
+        checksSucceededRate: 1,
+        iterations: 6,
+        requests: 18,
+      },
+    });
+  });
+
+  it('does not pass a k6 run when no measured metrics can be parsed', async () => {
+    const connector = k6Connector({
+      mode: 'k6',
+      runCommand: async () => ({
+        exitCode: 0,
+        stdout: 'k6 completed without a parseable summary',
+        stderr: '',
+        durationMs: 100,
+      }),
+    });
+    const tool = connector.tools.find((candidate) => candidate.name === 'loadtest.run');
+
+    const result = await tool?.handler({}, {
+      agentName: 'loadTestAgent',
+      toolName: 'loadtest.run',
+    });
+
+    expect(result).toMatchObject({
+      mode: 'k6',
+      evidenceKind: 'measured',
+      status: 'failed',
+      thresholds: {
+        passed: false,
       },
     });
   });

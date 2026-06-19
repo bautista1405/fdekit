@@ -24,7 +24,7 @@ Available built-ins:
 | `support-triage` | Customer API lookup, escalation, Slack notification, issue creation, approval evidence, report | Local customer API, local Slack-style message, local GitHub-style issue | Slack API and GitHub API |
 | `codebase-agent` | Search/read a customer repo, create an engineering issue, run codebase evals | Local sample repo and local issue creation | GitHub, Jira, or Linear |
 | `sales-research-agent` | Research an account, gather buyer context, create a CRM note | Local CRM/research dataset and local CRM note | HubSpot or Salesforce |
-| `load-test-agent` | Run governed load tests from the agent runtime and capture threshold evidence | Deterministic local load-test result | Local k6 CLI against a customer API |
+| `load-test-agent` | Exercise the governed workflow locally or capture measured k6 threshold evidence | Deterministic no-HTTP simulation | Measured local k6 CLI run against a customer API |
 
 ## Config Contract Vs Narrative
 
@@ -156,7 +156,7 @@ npm run fdekit:loadtest:eval
 npm run fdekit:loadtest:console
 ```
 
-The load-test recipe starts in deterministic local mode. To run actual Grafana k6 tests, install the k6 CLI separately and set:
+The load-test recipe starts with a deterministic local simulation. It does not make HTTP requests and is not readiness evidence. To run actual Grafana k6 tests, install the k6 CLI separately and set:
 
 ```bash
 FDEKIT_LOAD_TEST_MODE=k6

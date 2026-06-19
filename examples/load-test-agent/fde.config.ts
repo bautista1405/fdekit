@@ -92,7 +92,7 @@ const loadTestSmokeEval = defineEval({
   maxSteps: 4,
   assertions: [
     expectedToolCall('loadtest.run'),
-    expectedFinalAnswer('Load test passed'),
+    expectedFinalAnswer('Load-test scenario'),
     noPolicyViolation(),
     maxLatency(10000),
   ],
@@ -167,7 +167,7 @@ export default defineDeployment({
   rollout: defineRollout({
     stage: 'local',
     stages: ['local', 'sandbox', 'customer-sample', 'shadow', 'approved-write', 'production-allowlist'],
-    next: 'Run deterministic local mode first, then install k6 and point LOAD_TEST_TARGET_URL at a customer-owned API',
+    next: 'Run the deterministic local simulation first, then install k6 and point LOAD_TEST_TARGET_URL at a customer-owned API for measured evidence',
   }),
   harness: defineHarness({
     name: 'load-test-safety-harness',

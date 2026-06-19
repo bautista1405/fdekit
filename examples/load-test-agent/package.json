@@ -14,7 +14,7 @@
     "fdekit:doctor": "fdekit doctor",
     "fdekit:eval": "fdekit eval run",
     "fdekit:macro": "fdekit eval macro",
-    "fdekit:run": "fdekit run loadTestAgent --input '{\"scenario\":\"smoke\",\"targetUrl\":\"http://localhost:8000\",\"vus\":5,\"duration\":\"10s\"}'",
+    "fdekit:run": "fdekit run loadTestAgent --input '{\"scenario\":\"smoke\",\"vus\":5,\"duration\":\"10s\"}'",
     "fdekit:approvals": "fdekit approvals list",
     "fdekit:audit": "fdekit audit",
     "fdekit:feedback": "fdekit feedback export",

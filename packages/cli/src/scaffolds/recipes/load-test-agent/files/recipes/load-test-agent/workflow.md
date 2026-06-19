@@ -37,7 +37,7 @@ This recipe is useful when a team needs repeatable readiness evidence for a cust
 
 ## Rollout
 
-1. Local deterministic run with no external k6 dependency.
+1. Local deterministic simulation with no HTTP requests or external k6 dependency.
 2. Sandbox run against the bundled customer API.
 3. Customer sample with conservative smoke profile.
 4. Shadow readiness checks during non-production windows.

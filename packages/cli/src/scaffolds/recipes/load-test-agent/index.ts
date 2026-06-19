@@ -49,7 +49,7 @@ export const loadTestRecipe: RecipeSpec = {
     },
     fdekitScripts: {
       namespace: 'loadtest',
-      run: 'fdekit run loadTestAgent --input \'{"scenario":"smoke","targetUrl":"http://localhost:8000","vus":5,"duration":"10s"}\'',
+      run: 'fdekit run loadTestAgent --input \'{"scenario":"smoke","vus":5,"duration":"10s"}\'',
     },
     scripts: {
       demo: 'node scripts/demo.mjs',
@@ -65,7 +65,7 @@ export const loadTestRecipe: RecipeSpec = {
   },
   env: [
     ...providerEnv(),
-    env('FDEKIT_LOAD_TEST_MODE', 'local', 'Use local for deterministic runs or k6 to invoke the local k6 binary'),
+    env('FDEKIT_LOAD_TEST_MODE', 'local', 'Use local for a deterministic no-HTTP simulation or k6 for measured execution'),
     env('LOAD_TEST_TARGET_URL', 'http://localhost:8000', 'Customer API base URL for load testing'),
     env('K6_BINARY', 'k6', 'k6 command or binary path used when FDEKIT_LOAD_TEST_MODE=k6'),
     env('K6_SCRIPT', './load-tests/customer-api-smoke.js', 'k6 JavaScript test file'),

@@ -29,9 +29,9 @@ export const recipeManifests: RecipeManifest[] = [
     kind: 'recipe',
     id: 'load-test-agent',
     displayName: 'Load Test Agent',
-    whatItProves: 'Run governed load tests from the agent runtime and capture threshold evidence',
-    localByDefault: 'Deterministic local load-test result',
-    livePath: 'Local k6 CLI against a customer API',
+    whatItProves: 'Exercise the governed workflow locally or capture measured k6 threshold evidence',
+    localByDefault: 'Deterministic no-HTTP simulation',
+    livePath: 'Measured local k6 CLI run against a customer API',
   },
 ];
 

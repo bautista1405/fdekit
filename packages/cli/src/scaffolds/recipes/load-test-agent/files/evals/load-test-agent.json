@@ -3,7 +3,6 @@
     "name": "customer api smoke load test",
     "input": {
       "scenario": "smoke",
-      "targetUrl": "http://localhost:8000",
       "vus": 5,
       "duration": "10s"
     },

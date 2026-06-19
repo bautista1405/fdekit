@@ -97,7 +97,7 @@ The full docs index is [docs/README.md](./docs/README.md). For symbol lookup, us
 | `support-triage` | Customer API lookup, support escalation, Slack notification, issue creation, approval evidence, report | Local API, local Slack-style message, local GitHub-style issue | Slack API and GitHub API |
 | `codebase-agent` | Search/read a customer repo, create an engineering issue, run codebase evals | Local sample repo and local issue creation | GitHub, Jira, or Linear |
 | `sales-research-agent` | Research an account, gather buyer context, create a CRM note | Local CRM/research dataset and local CRM note | HubSpot or Salesforce |
-| `load-test-agent` | Run governed load tests from the agent runtime and capture threshold evidence | Deterministic local load-test result | Local k6 CLI against a customer API |
+| `load-test-agent` | Exercise the governed workflow locally or capture measured k6 threshold evidence | Deterministic no-HTTP simulation | Measured local k6 CLI run against a customer API |
 <!-- fdekit-catalog:recipe-table:end -->
 
 Install one with:

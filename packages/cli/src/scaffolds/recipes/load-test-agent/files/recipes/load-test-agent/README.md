@@ -3,7 +3,7 @@
 This recipe turns load testing into a governed FDEKit agent workflow.
 It includes a workflow scorecard and rollout plan in `recipes/load-test-agent/workflow.md`.
 
-The first rung is credential-free and deterministic:
+The first rung is a credential-free deterministic simulation. It makes no HTTP requests and does not count as readiness evidence:
 
 ```bash
 npm run fdekit:loadtest:run

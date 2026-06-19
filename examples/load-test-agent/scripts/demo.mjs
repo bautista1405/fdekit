@@ -16,7 +16,7 @@ let apiProcess = null;
 
 try {
   printHeader('FDEKit Load Test Agent Demo');
-  console.log('Story: bounded local load-test run, threshold evals, dashboard, and recipe capture');
+  console.log('Story: bounded local load-test simulation, threshold evals, dashboard, and recipe capture');
 
   apiProcess = await ensureCustomerApi();
 
@@ -27,12 +27,12 @@ try {
   await run('fdekit', ['eval', 'macro']);
   await run('fdekit', ['report']);
   await run('fdekit', ['console']);
-  await run('fdekit', ['recipe', 'capture', 'load-test-local-readiness', '--force']);
+  await run('fdekit', ['recipe', 'capture', 'load-test-local-simulation', '--force']);
 
   printHeader('Demo Ready');
   console.log(`Target API: ${targetUrl}`);
   console.log(`Open dashboard: ${join(process.cwd(), 'artifacts', 'console.html')}`);
-  console.log(`Captured recipe: ${join(process.cwd(), 'recipes', 'load-test-local-readiness')}`);
+  console.log(`Captured recipe: ${join(process.cwd(), 'recipes', 'load-test-local-simulation')}`);
 } finally {
   if (apiProcess) {
     apiProcess.kill('SIGTERM');

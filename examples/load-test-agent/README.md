@@ -2,7 +2,7 @@
 
 This example runs a governed load-test agent against a customer API. It includes a workflow scorecard and rollout plan encoded in `fde.config.ts`.
 
-Start with deterministic local mode:
+Start with deterministic local simulation mode. It exercises the workflow without making HTTP requests or producing readiness evidence:
 
 ```bash
 npm run demo

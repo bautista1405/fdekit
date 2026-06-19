@@ -404,7 +404,9 @@ describe('cli recipe commands', () => {
     expect(packageJson.type).toBe('module');
     expect(packageJson.scripts?.['loadtest:api']).toBe('node customer-api/server.js');
     expect(packageJson.scripts?.demo).toBe('node scripts/demo.mjs');
-    expect(packageJson.scripts?.['fdekit:loadtest:run']).toContain('fdekit run loadTestAgent');
+    expect(packageJson.scripts?.['fdekit:loadtest:run']).toBe(
+      'fdekit run loadTestAgent --input \'{"scenario":"smoke","vus":5,"duration":"10s"}\'',
+    );
     expect(packageJson.scripts?.['fdekit:loadtest:approvals']).toBe('fdekit approvals list');
     expect(packageJson.scripts?.['fdekit:loadtest:audit']).toBe('fdekit audit');
     expect(packageJson.scripts?.['fdekit:loadtest:feedback']).toBe('fdekit feedback export');
@@ -429,7 +431,8 @@ describe('cli recipe commands', () => {
     expect(runOutput.exitCode).toBeUndefined();
     expect(runOutput.stdout).toContain('Agent: loadTestAgent');
     expect(runOutput.stdout).toContain('Tool calls: loadtest.run');
-    expect(runOutput.stdout).toContain('Final answer: Load test passed');
+    expect(runOutput.stdout).toContain('Final answer: Load-test scenario simulated locally');
+    expect(runOutput.stdout).toContain('No HTTP request or k6 run was performed');
 
     const evalOutput = await captureCommand(() => cmdEval({ cwd: projectDir, args: ['run'] }));
     expect(evalOutput.exitCode).toBeUndefined();

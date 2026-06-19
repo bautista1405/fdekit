@@ -21,6 +21,7 @@ import {
   defineAgent,
   defineDeployment,
   defineEval,
+  expectedApprovalOutcome,
   expectedFinalAnswer,
   expectedToolCall,
   providerFromEnv,
@@ -52,6 +53,21 @@ export default defineDeployment({
     }),
   ],
 });
+```
+
+## Approval feedback assertions
+
+`expectedApprovalOutcome()` consumes the `expected.toolName` and `expected.shouldProceed`
+fields written by `fdekit feedback export`. It passes when an approved tool is observed, or
+when a rejected tool is absent:
+
+```ts
+defineEval({
+  name: 'approval-feedback',
+  agent: 'supportTriage',
+  dataset: './artifacts/feedback/eval-cases.json',
+  assertions: [expectedApprovalOutcome()],
+})
 ```
 
 ## Rubric judges

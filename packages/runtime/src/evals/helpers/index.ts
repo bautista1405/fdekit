@@ -54,8 +54,14 @@ export async function runAgentEvalCase(
     }
 
     const toolMetadata = buildToolMetadataIndex(options.deployment);
-    const assertions = await evaluateRunAssertions(evalItem.definition.assertions ?? [], evalCase, runResult);
-    assertions.push(...evaluateExpectedBehavior(evalCase, runResult, toolMetadata));
+    const configuredAssertions = evalItem.definition.assertions ?? [];
+    const assertions = await evaluateRunAssertions(configuredAssertions, evalCase, runResult);
+    assertions.push(...evaluateExpectedBehavior(
+      evalCase,
+      runResult,
+      toolMetadata,
+      !configuredAssertions.some((assertion) => assertion.name === 'expected-approval-outcome'),
+    ));
 
     const status = assertions.every((result) => result.passed) ? 'passed' : 'failed';
 
@@ -134,6 +140,7 @@ function evaluateExpectedBehavior(
   evalCase: MaterializedEvalCase,
   runResult: AgentRunResult,
   toolMetadata: ToolMetadataIndex,
+  includeApprovalOutcome: boolean,
 ): EvalAssertionResult[] {
   const expected = evalCase.expected ?? {};
   const results: EvalAssertionResult[] = [];
@@ -163,7 +170,11 @@ function evaluateExpectedBehavior(
     });
   }
 
-  if (typeof expected.toolName === 'string' && typeof expected.shouldProceed === 'boolean') {
+  if (
+    includeApprovalOutcome
+    && typeof expected.toolName === 'string'
+    && typeof expected.shouldProceed === 'boolean'
+  ) {
     const observedTools = runResult.toolCalls.map((call) => call.name);
     const observed = observedTools.includes(expected.toolName);
     const passed = expected.shouldProceed ? observed : !observed;

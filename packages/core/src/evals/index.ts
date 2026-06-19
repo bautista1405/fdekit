@@ -1,4 +1,5 @@
 import type { EvalAssertion, EvalAssertionResult, EvalRunContext, MaybePromise } from '../types/index.js';
+import { asRecord, getString } from '../helpers/index.js';
 
 export function expectedToolCall(toolName: string, options: {
   name?: string;
@@ -42,6 +43,47 @@ export function notExpectedToolCall(toolName: string, options: {
           : `Expected no calls to ${toolName}; observed ${count}`,
         score: count === 0 ? 1 : 0,
         metadata: { count },
+      };
+    },
+  };
+}
+
+export function expectedApprovalOutcome(options: {
+  name?: string;
+  description?: string;
+} = {}): EvalAssertion {
+  return {
+    name: options.name ?? 'expected-approval-outcome',
+    description: options.description ?? 'Match a reviewed approval decision against observed tool usage',
+    evaluate(context) {
+      const expected = asRecord(context.expected);
+      const toolName = getString(expected.toolName);
+      const shouldProceed = expected.shouldProceed;
+
+      if (!toolName || typeof shouldProceed !== 'boolean') {
+        return {
+          passed: false,
+          message: 'expectedApprovalOutcome requires expected.toolName and expected.shouldProceed',
+          score: 0,
+        };
+      }
+
+      const observedTools = (context.toolCalls ?? []).map((call) => call.name);
+      const observed = observedTools.includes(toolName);
+      const passed = shouldProceed ? observed : !observed;
+
+      return {
+        passed,
+        message: shouldProceed
+          ? `Expected approved tool "${toolName}" to proceed`
+          : `Expected rejected tool "${toolName}" not to proceed`,
+        score: passed ? 1 : 0,
+        metadata: {
+          toolName,
+          shouldProceed,
+          observed,
+          observedTools,
+        },
       };
     },
   };

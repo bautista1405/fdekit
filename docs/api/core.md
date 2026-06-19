@@ -3,7 +3,7 @@
 <!-- Maintained via scripts/generate-api-docs.mjs. -->
 Run `npm run docs:api` to refresh this page after changing public exports.
 
-Applies to `@fdekit/core` v0.4.0.
+Applies to `@fdekit/core` v0.4.2.
 
 Declaration source: `packages/core/dist/index.d.ts`.
 
@@ -27,6 +27,7 @@ Declaration source: `packages/core/dist/index.d.ts`.
 | [`objectArgs`](#objectargs) | Schema builder for typed object arguments at the runtime edge. |
 | [`stringArg`](#stringarg) | Schema builder for common string inputs inside tool schemas. |
 | [`defineEval`](#defineeval) | Eval suite helper for datasets, assertions, and custom runners. |
+| [`expectedApprovalOutcome`](#expectedapprovaloutcome) | Built-in eval assertion for reviewed approval decisions. |
 | [`expectedToolCall`](#expectedtoolcall) | Built-in eval assertion for required tool usage. |
 | [`defineGovernance`](#definegovernance) | Governance helper for approvals, budgets, scopes, audit, and data protection. |
 | [`providerFromEnv`](#providerfromenv) | Select the starter provider and optional model from FDEKIT_PROVIDER and FDEKIT_MODEL. |
@@ -40,7 +41,7 @@ Declaration source: `packages/core/dist/index.d.ts`.
 
 ## Export Count
 
-This page documents 177 public root exports from `@fdekit/core`: 77 functions/values and 100 types/interfaces.
+This page documents 179 public root exports from `@fdekit/core`: 78 functions/values and 101 types/interfaces.
 
 ## Functions And Values
 
@@ -82,6 +83,7 @@ This page documents 177 public root exports from `@fdekit/core`: 77 functions/va
 | <a id="environmentendpoint"></a>`environmentEndpoint` | function | [packages/core/src/definitions/index.ts](../../packages/core/src/definitions/index.ts) |
 | <a id="environmentendpointconfigvalue"></a>`environmentEndpointConfigValue` | function | [packages/core/src/definitions/index.ts](../../packages/core/src/definitions/index.ts) |
 | <a id="escaperegexp"></a>`escapeRegExp` | function | [packages/core/src/helpers/index.ts](../../packages/core/src/helpers/index.ts) |
+| <a id="expectedapprovaloutcome"></a>`expectedApprovalOutcome` | function | [packages/core/src/evals/index.ts](../../packages/core/src/evals/index.ts) |
 | <a id="expectedfinalanswer"></a>`expectedFinalAnswer` | function | [packages/core/src/evals/index.ts](../../packages/core/src/evals/index.ts) |
 | <a id="expectedtoolcall"></a>`expectedToolCall` | function | [packages/core/src/evals/index.ts](../../packages/core/src/evals/index.ts) |
 | <a id="extractproviderjson"></a>`extractProviderJson` | function | [packages/core/src/provider-planner/index.ts](../../packages/core/src/provider-planner/index.ts) |
@@ -158,6 +160,7 @@ This page documents 177 public root exports from `@fdekit/core`: 77 functions/va
 | <a id="environmentservicedefinition"></a>`EnvironmentServiceDefinition` | interface | [packages/core/src/types/environment.ts](../../packages/core/src/types/environment.ts) |
 | <a id="environmentvariablerequirement"></a>`EnvironmentVariableRequirement` | interface | [packages/core/src/types/shared.ts](../../packages/core/src/types/shared.ts) |
 | <a id="evalassertion"></a>`EvalAssertion` | interface | [packages/core/src/types/eval.ts](../../packages/core/src/types/eval.ts) |
+| <a id="evalassertionconfigurationissue"></a>`EvalAssertionConfigurationIssue` | interface | [packages/core/src/types/eval.ts](../../packages/core/src/types/eval.ts) |
 | <a id="evalassertionresult"></a>`EvalAssertionResult` | interface | [packages/core/src/types/eval.ts](../../packages/core/src/types/eval.ts) |
 | <a id="evalcase"></a>`EvalCase` | interface | [packages/core/src/types/eval.ts](../../packages/core/src/types/eval.ts) |
 | <a id="evaldefinition"></a>`EvalDefinition` | interface | [packages/core/src/types/eval.ts](../../packages/core/src/types/eval.ts) |

@@ -3,7 +3,7 @@
 <!-- Maintained via scripts/generate-api-docs.mjs. -->
 Run `npm run docs:api` to refresh this page after changing public exports.
 
-Applies to `@fdekit/runtime` v0.4.0.
+Applies to `@fdekit/runtime` v0.4.2.
 
 Declaration source: `packages/runtime/dist/index.d.ts`.
 
@@ -39,12 +39,13 @@ Declaration source: `packages/runtime/dist/index.d.ts`.
 
 ## Export Count
 
-This page documents 125 public root exports from `@fdekit/runtime`: 47 functions/values and 78 types/interfaces.
+This page documents 126 public root exports from `@fdekit/runtime`: 48 functions/values and 78 types/interfaces.
 
 ## Functions And Values
 
 | Symbol | Kind | Defined in |
 | --- | --- | --- |
+| <a id="agentrunerror"></a>`AgentRunError` | class | [packages/runtime/src/agents/index.ts](../../packages/runtime/src/agents/index.ts) |
 | <a id="appendauditlog"></a>`appendAuditLog` | function | [packages/runtime/src/governance/index.ts](../../packages/runtime/src/governance/index.ts) |
 | <a id="appendjsonlartifact"></a>`appendJsonlArtifact` | function | [packages/runtime/src/artifact-store/operations.ts](../../packages/runtime/src/artifact-store/operations.ts) |
 | <a id="approvalfingerprint"></a>`approvalFingerprint` | function | [packages/runtime/src/governance/index.ts](../../packages/runtime/src/governance/index.ts) |

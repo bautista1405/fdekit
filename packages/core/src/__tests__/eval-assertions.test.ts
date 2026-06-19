@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  expectedApprovalOutcome,
   expectedFinalAnswer,
   expectedToolCall,
   judgeRubric,
@@ -32,6 +33,34 @@ describe('eval assertions', () => {
     expect(await assertion.evaluate({
       toolCalls: [{ name: 'ticket.escalate' }],
     })).toMatchObject({ passed: false });
+  });
+
+  it('checks approval outcomes from exported feedback expectations', async () => {
+    const assertion = expectedApprovalOutcome();
+
+    expect(await assertion.evaluate({
+      expected: { toolName: 'issue.create', shouldProceed: true },
+      toolCalls: [{ name: 'issue.create' }],
+    })).toMatchObject({
+      passed: true,
+      message: 'Expected approved tool "issue.create" to proceed',
+    });
+
+    expect(await assertion.evaluate({
+      expected: { toolName: 'issue.create', shouldProceed: false },
+      toolCalls: [{ name: 'ticket.get' }],
+    })).toMatchObject({
+      passed: true,
+      message: 'Expected rejected tool "issue.create" not to proceed',
+    });
+
+    expect(await assertion.evaluate({
+      expected: {},
+      toolCalls: [],
+    })).toMatchObject({
+      passed: false,
+      message: 'expectedApprovalOutcome requires expected.toolName and expected.shouldProceed',
+    });
   });
 
   it('checks final answers by string, regex, and predicate', async () => {

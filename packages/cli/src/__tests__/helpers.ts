@@ -206,6 +206,7 @@ function renderConfig(options: { requireIssueApproval?: boolean } = {}): string 
   defineDeployment,
   defineEval,
   defineTool,
+  expectedApprovalOutcome,
   expectedToolCall,
   getString,
   noPolicyViolation,

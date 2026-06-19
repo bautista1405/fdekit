@@ -182,6 +182,131 @@ describe('renderConsole', () => {
     expect(parsed.slackMessages).toHaveLength(1);
   });
 
+  it('labels local load-test simulations without counting them as readiness evidence', () => {
+    const loadTestDeployment: DeploymentDefinition = {
+      ...deployment,
+      name: 'load-test-example',
+      connectors: {
+        k6: { name: 'k6' },
+      },
+    };
+    const loadTestTrace: TraceArtifact = {
+      id: 'run_load_test',
+      createdAt: '2026-06-19T12:00:00.000Z',
+      deployment: 'load-test-example',
+      events: [
+        {
+          type: 'tool.call.completed',
+          toolName: 'loadtest.run',
+          result: {
+            mode: 'local',
+            status: 'passed',
+            targetUrl: 'http://127.0.0.1:8788',
+            metrics: {
+              httpReqDurationP95Ms: 210,
+              httpReqFailedRate: 0.0005,
+            },
+            thresholds: {
+              passed: true,
+            },
+          },
+        },
+        {
+          type: 'agent.run.completed',
+          status: 'completed',
+          message: 'Load-test scenario simulated locally. No HTTP request or k6 run was performed.',
+        },
+      ],
+    };
+    const bundle = createConsoleExportBundle({
+      deployment: loadTestDeployment,
+      traces: [loadTestTrace],
+      createdAt: '2026-06-19T12:01:00.000Z',
+    });
+    const parsed = JSON.parse(bundle.dataJson) as {
+      readinessSignals?: Array<{ label?: string; status?: string }>;
+      businessImpact?: Array<{ label?: string; value?: string; status?: string }>;
+      integrationReadiness?: Array<{ label?: string; status?: string; detail?: string }>;
+      connectorEvidence?: Array<{ evidenceKind?: string; title?: string; detail?: string }>;
+    };
+    const html = renderConsolePages({
+      deployment: loadTestDeployment,
+      traces: [loadTestTrace],
+      createdAt: '2026-06-19T12:01:00.000Z',
+    }).map((page) => page.html).join('\n');
+
+    expect(parsed.connectorEvidence).toEqual([
+      expect.objectContaining({
+        evidenceKind: 'simulated',
+        title: 'Simulated local load-test scenario for http://127.0.0.1:8788',
+      }),
+    ]);
+    expect(parsed.readinessSignals?.find((item) => item.label === 'Customer Systems')).toMatchObject({
+      status: 'warn',
+    });
+    expect(parsed.businessImpact?.find((item) => item.label === 'System actions')).toMatchObject({
+      value: '0',
+      status: 'warn',
+    });
+    expect(parsed.integrationReadiness?.find((item) => item.label === 'k6')).toMatchObject({
+      status: 'warn',
+      detail: expect.stringContaining('local simulation is not measured readiness evidence'),
+    });
+    expectTextIncludes(html, [
+      'Simulated local load-test scenario',
+      'No HTTP request or k6 execution',
+      '0 measured action(s)',
+    ]);
+  });
+
+  it('does not treat a failed measured load test as passing readiness evidence', () => {
+    const loadTestDeployment: DeploymentDefinition = {
+      ...deployment,
+      name: 'failed-load-test-example',
+      connectors: {
+        k6: { name: 'k6' },
+      },
+    };
+    const failedTrace: TraceArtifact = {
+      id: 'run_failed_load_test',
+      createdAt: '2026-06-19T12:00:00.000Z',
+      deployment: 'failed-load-test-example',
+      events: [{
+        type: 'tool.call.completed',
+        toolName: 'loadtest.run',
+        result: {
+          mode: 'k6',
+          evidenceKind: 'measured',
+          status: 'failed',
+          targetUrl: 'http://127.0.0.1:8788',
+          metrics: {
+            httpReqDurationP95Ms: 900,
+            httpReqFailedRate: 0.2,
+          },
+          thresholds: {
+            passed: false,
+          },
+        },
+      }],
+    };
+    const parsed = JSON.parse(createConsoleExportBundle({
+      deployment: loadTestDeployment,
+      traces: [failedTrace],
+      createdAt: '2026-06-19T12:01:00.000Z',
+    }).dataJson) as {
+      readinessSignals?: Array<{ label?: string; status?: string }>;
+      integrationReadiness?: Array<{ label?: string; status?: string; detail?: string }>;
+    };
+
+    expect(parsed.readinessSignals?.find((item) => item.label === 'Customer Systems')).toMatchObject({
+      status: 'warn',
+    });
+    expect(parsed.integrationReadiness?.find((item) => item.label === 'k6')).toMatchObject({
+      status: 'warn',
+      detail: expect.stringContaining('no passing readiness evidence yet'),
+    });
+  });
+
   it('scopes dashboard evidence to traces referenced by the latest eval', () => {
     const bundle = createConsoleExportBundle({
       deployment,

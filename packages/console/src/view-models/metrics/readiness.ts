@@ -18,6 +18,7 @@ import type { EvalMetrics } from './evals.js';
 import type { EvidenceMetrics } from './evidence.js';
 import type { GovernanceMetrics } from './governance.js';
 import type { ToolMetrics } from './tools.js';
+import { isProvenConnectorEvidence } from '../traces.js';
 
 type ReadinessMetrics = Pick<
   ConsoleMetrics,
@@ -46,9 +47,10 @@ export function collectReadinessMetrics(input: {
     governanceMetrics,
     toolMetrics,
   } = input;
+  const provenConnectorEvidence = evidenceMetrics.connectorEvidence.filter(isProvenConnectorEvidence);
   const customerSystemEvidenceCount = Math.max(
     evidenceMetrics.createdIssues.length + evidenceMetrics.slackMessages.length,
-    evidenceMetrics.connectorEvidence.length,
+    provenConnectorEvidence.length,
   );
   const readinessSignals = createReadinessSignals({
     evalStatus: context.evalStatus,
@@ -72,7 +74,7 @@ export function collectReadinessMetrics(input: {
       traceCount: context.traces.length,
       toolCallCount: toolMetrics.toolCallCount,
       externalActionCount: evidenceMetrics.createdIssues.length + evidenceMetrics.slackMessages.length,
-      connectorEvidence: evidenceMetrics.connectorEvidence,
+      connectorEvidence: provenConnectorEvidence,
       evalCaseCount: context.evalCases.length,
       evalPassedCases: context.evalPassedCases,
       evalStatus: context.evalStatus,
@@ -99,7 +101,7 @@ export function collectReadinessMetrics(input: {
     }),
     reusablePatterns: createReusablePatterns({
       deployment: context.data.deployment,
-      connectorEvidence: evidenceMetrics.connectorEvidence,
+      connectorEvidence: provenConnectorEvidence,
       history: context.data.history ?? [],
     }),
   };

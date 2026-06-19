@@ -5,6 +5,7 @@ import {
   calculateMetrics,
   escapeHtml,
   formatDate,
+  isProvenConnectorEvidence,
   scriptJson,
   statusPill,
 } from '../view-models/index.js';
@@ -114,10 +115,16 @@ export function renderConsolePages(data: ConsoleData): ConsolePage[] {
 }
 
 function renderOverviewPage(metrics: ConsoleMetrics, navItems: ConsoleNavItem[]): string {
+  const provenEvidenceCount = metrics.connectorEvidence.filter(isProvenConnectorEvidence).length;
+  const failedMeasuredCount = metrics.connectorEvidence.filter((item) => (
+    item.evidenceKind === 'measured' && item.status === 'failed'
+  )).length;
+  const simulatedEvidenceCount = metrics.connectorEvidence.filter((item) => item.evidenceKind === 'simulated').length;
+
   return `<section class="kpis" aria-label="Deployment metrics">
         ${renderKpi('Eval status', metrics.evalStatus, `${metrics.evalPassedCases}/${metrics.evalCaseCount || 0} cases passed`)}
         ${renderKpi('Runs', String(metrics.traceCount), traceScopeDetail(metrics))}
-        ${renderKpi('System evidence', String(metrics.connectorEvidence.length), `${metrics.createdIssues.length} issue(s), ${metrics.slackMessages.length} Slack message(s)`)}
+        ${renderKpi('System evidence', String(provenEvidenceCount), `${failedMeasuredCount} failed measured event(s), ${simulatedEvidenceCount} simulated event(s), ${metrics.createdIssues.length} issue(s), ${metrics.slackMessages.length} Slack message(s)`)}
         ${renderKpi('Governance', String(metrics.policyEvaluations), `${metrics.policyDefinitions.length} policy file item(s), ${metrics.policyViolationCount} violation(s)`)}
         ${renderKpi('Avg latency', `${Math.round(metrics.avgLatencyMs)}ms`, `$${metrics.totalCostUsd.toFixed(4)} total cost`)}
       </section>

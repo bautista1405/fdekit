@@ -4,6 +4,7 @@ import type {
   IntegrationReadinessItem,
 } from '../../interfaces/index.js';
 import { normalizeName } from '../helpers.js';
+import { isProvenConnectorEvidence } from '../traces.js';
 
 export function createIntegrationReadiness(
   deployment: DeploymentDefinition,
@@ -21,10 +22,15 @@ export function createIntegrationReadiness(
 
   return connectors.map(([key, connector]) => {
     const names = [key, connector.name].filter(Boolean).map(normalizeName);
-    const evidenceCount = connectorEvidence.filter((item) => {
+    const matchingEvidence = connectorEvidence.filter((item) => {
       const evidenceName = normalizeName(item.connector);
       return names.some((name) => evidenceName === name || evidenceName.includes(name) || name.includes(evidenceName));
-    }).length;
+    });
+    const provenEvidenceCount = matchingEvidence.filter(isProvenConnectorEvidence).length;
+    const failedMeasuredCount = matchingEvidence.filter((item) => (
+      item.evidenceKind !== 'simulated' && item.status === 'failed'
+    )).length;
+    const simulatedEvidenceCount = matchingEvidence.filter((item) => item.evidenceKind === 'simulated').length;
     const toolCount = connector.tools?.length ?? 0;
     const requiredEnvCount = (connector.env ?? []).filter((requirement) => requirement.required !== false).length;
     const contractParts = [
@@ -34,9 +40,13 @@ export function createIntegrationReadiness(
 
     return {
       label: connector.name,
-      status: evidenceCount > 0 ? 'pass' : 'warn',
-      detail: evidenceCount > 0
-        ? `${evidenceCount} proven call(s); ${contractParts.join(', ')}`
+      status: provenEvidenceCount > 0 ? 'pass' : 'warn',
+      detail: provenEvidenceCount > 0
+        ? `${provenEvidenceCount} successful measured call(s)${failedMeasuredCount > 0 ? `, ${failedMeasuredCount} failed measured call(s)` : ''}${simulatedEvidenceCount > 0 ? `, ${simulatedEvidenceCount} simulated call(s)` : ''}; ${contractParts.join(', ')}`
+        : failedMeasuredCount > 0
+          ? `${failedMeasuredCount} measured call(s) failed; no passing readiness evidence yet; ${contractParts.join(', ')}`
+        : simulatedEvidenceCount > 0
+          ? `${simulatedEvidenceCount} simulated call(s); local simulation is not measured readiness evidence; ${contractParts.join(', ')}`
         : `Configured but no trace evidence yet; ${contractParts.join(', ')}`,
     };
   });

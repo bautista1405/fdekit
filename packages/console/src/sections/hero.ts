@@ -1,5 +1,5 @@
 import type { ConsoleMetrics } from '../interfaces/index.js';
-import { escapeHtml } from '../view-models/index.js';
+import { escapeHtml, isProvenConnectorEvidence } from '../view-models/index.js';
 
 export function renderDemoHero(metrics: ConsoleMetrics): string {
   const nextAction = recommendedNextAction(metrics);
@@ -20,7 +20,7 @@ export function renderDemoHero(metrics: ConsoleMetrics): string {
 }
 
 function commandCenterHeadline(metrics: ConsoleMetrics): string {
-  if (metrics.evalStatus === 'passed' && !hasOpenGovernanceItems(metrics) && metrics.connectorEvidence.length > 0) {
+  if (metrics.evalStatus === 'passed' && !hasOpenGovernanceItems(metrics) && hasMeasuredConnectorEvidence(metrics)) {
     return 'Agent run is demo-ready with governed customer-system evidence';
   }
 
@@ -44,7 +44,7 @@ function recommendedNextAction(metrics: ConsoleMetrics): string {
     return 'Run evals and fix failing cases before using this dashboard as the customer-facing proof point';
   }
 
-  if (metrics.connectorEvidence.length === 0) {
+  if (!hasMeasuredConnectorEvidence(metrics)) {
     return 'Enable at least one connector action, such as Slack or issue creation, so the demo proves real workflow automation';
   }
 
@@ -57,6 +57,10 @@ function recommendedNextAction(metrics: ConsoleMetrics): string {
   }
 
   return 'Use this console as the live demo surface, then export Markdown or PDF for the customer handoff';
+}
+
+function hasMeasuredConnectorEvidence(metrics: ConsoleMetrics): boolean {
+  return metrics.connectorEvidence.some(isProvenConnectorEvidence);
 }
 
 function hasOpenGovernanceItems(metrics: ConsoleMetrics): boolean {

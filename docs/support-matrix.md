@@ -51,7 +51,7 @@ Custom connectors with `defineConnector()` and `defineTool()` are ready for cust
 | Jira | `@fdekit/connector-jira` | Beta | Supports demo/local mode and API mode for issue creation, plus the shared `issue.create` tool pattern |
 | Linear | `@fdekit/connector-linear` | Beta | Supports demo/local mode and API mode for issue creation, plus the shared `issue.create` tool pattern |
 | Postgres | `@fdekit/connector-postgres` | Beta | Governance-first SQL validation, schema discovery, query timeouts, optional pooling, and read-only defaults |
-| k6 load testing | `@fdekit/connector-k6` | Beta | Runs governed load tests through deterministic local mode or a local k6 binary, with VU/duration caps and threshold evidence; real k6 execution requires the Grafana k6 CLI installed separately |
+| k6 load testing | `@fdekit/connector-k6` | Beta | Local mode is a deterministic no-HTTP simulation; measured threshold evidence requires the Grafana k6 CLI installed separately |
 | HubSpot | `@fdekit/connector-hubspot` | Beta | Supports demo/local mode and API mode for sales-research CRM workflows with mocked contract coverage |
 | Salesforce | `@fdekit/connector-salesforce` | Beta | Supports demo/local mode and API mode for sales-research CRM workflows with mocked contract coverage |
 <!-- fdekit-catalog:connector-support:end -->
@@ -115,7 +115,7 @@ This repository uses npm workspaces and Turborepo.
 | Ollama provider | Run Ollama separately and point `OLLAMA_BASE_URL` at it when needed. |
 | Slack, GitHub, Jira, Linear, HubSpot, Salesforce connectors | API mode uses HTTPS plus credentials; local mode is deterministic and credential-free. |
 | Postgres connector | Direct `pg` mode requires the optional peer dependency `pg`. Install `pg`, or pass `postgresConnector({ queryClient })` to use a customer-provided client. |
-| k6 connector | Local mode is deterministic and requires no k6 install. `mode: 'k6'` requires the Grafana k6 CLI on `PATH`, or a custom `k6Command` pointing at a k6-compatible executable. FDEKit does not download, vendor, or install the k6 binary. |
+| k6 connector | Local mode is a deterministic simulation that makes no HTTP requests and does not count as readiness evidence. `mode: 'k6'` requires the Grafana k6 CLI on `PATH`, or a custom `k6Command` pointing at a k6-compatible executable. FDEKit does not download, vendor, or install the k6 binary. |
 | Docker environment | The default command uses the local Docker Compose CLI. |
 | Floci environment | The default command uses local Docker to run the Floci image; custom commands can use Docker Compose or a Floci CLI if the customer stack already has one. |
 

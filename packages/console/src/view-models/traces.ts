@@ -72,6 +72,10 @@ export function collectGenericConnectorEvidence(evidence: ConnectorEvidence[]): 
   return evidence.filter((item) => !isDedicatedCustomerEvidenceTool(item.toolName));
 }
 
+export function isProvenConnectorEvidence(evidence: ConnectorEvidence): boolean {
+  return evidence.evidenceKind !== 'simulated' && evidence.status !== 'failed';
+}
+
 function isDedicatedCustomerEvidenceTool(toolName: string): boolean {
   return isIssueTool(toolName) || toolName === 'slack.message';
 }
@@ -105,6 +109,38 @@ function connectorEvidenceFromEvent(trace: TraceArtifact, event: TraceEvent): Co
       title: `Sent message to ${message.channel}`,
       detail: message.text,
       mode: message.mode,
+      traceId: trace.id,
+      createdAt: trace.createdAt,
+    };
+  }
+
+  if (toolName === 'loadtest.run') {
+    const result = asRecord(event.result);
+    const metrics = asRecord(result.metrics);
+    const thresholds = asRecord(result.thresholds);
+    const mode = getString(result.mode);
+    const reportedEvidenceKind = getString(result.evidenceKind);
+    const evidenceKind = reportedEvidenceKind === 'simulated' || mode === 'local'
+      ? 'simulated'
+      : 'measured';
+    const targetUrl = getString(result.targetUrl) ?? 'configured target';
+    const status = getString(result.status) ?? 'unknown';
+    const p95 = getNumber(metrics.httpReqDurationP95Ms) ?? 0;
+    const errorRate = (getNumber(metrics.httpReqFailedRate) ?? 0) * 100;
+    const thresholdPassed = thresholds.passed === true;
+
+    return {
+      connector: 'k6',
+      toolName,
+      title: evidenceKind === 'simulated'
+        ? `Simulated local load-test scenario for ${targetUrl}`
+        : `Measured k6 load test for ${targetUrl}`,
+      detail: evidenceKind === 'simulated'
+        ? `No HTTP request or k6 execution; deterministic outcome ${status}, p95 ${p95}ms, error rate ${errorRate.toFixed(2)}%, threshold passed: ${thresholdPassed}`
+        : `Measured outcome ${status}, p95 ${p95}ms, error rate ${errorRate.toFixed(2)}%, threshold passed: ${thresholdPassed}`,
+      evidenceKind,
+      status: status === 'failed' ? 'failed' : 'passed',
+      mode,
       traceId: trace.id,
       createdAt: trace.createdAt,
     };

@@ -181,6 +181,8 @@ export interface ConnectorEvidence {
   toolName: string;
   title: string;
   detail: string;
+  evidenceKind?: 'simulated' | 'measured';
+  status?: 'passed' | 'failed';
   mode?: string;
   url?: string;
   traceId: string;

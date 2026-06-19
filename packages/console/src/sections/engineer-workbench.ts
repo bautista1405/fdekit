@@ -16,7 +16,12 @@ import {
   renderRunStory,
 } from './workbench/traces.js';
 import type { ConsoleMetrics } from '../interfaces/index.js';
-import { escapeHtml, selectReviewTraces, statusPill } from '../view-models/index.js';
+import {
+  escapeHtml,
+  isProvenConnectorEvidence,
+  selectReviewTraces,
+  statusPill,
+} from '../view-models/index.js';
 
 export const engineerWorkbenchSection: DashboardSectionStrategy = {
   id: 'engineer-workbench',
@@ -58,6 +63,7 @@ function renderReviewGates(metrics: ConsoleMetrics): string {
   const approvedCount = metrics.approvalQueue.filter((approval) => approval.status === 'approved').length;
   const openApprovals = metrics.approvalQueue.length - approvedCount;
   const productionReady = metrics.productionReadiness.filter((item) => item.status === 'pass').length;
+  const measuredEvidenceCount = metrics.connectorEvidence.filter(isProvenConnectorEvidence).length;
 
   return `<div class="review-gates">
     <div class="review-gate">
@@ -72,8 +78,8 @@ function renderReviewGates(metrics: ConsoleMetrics): string {
     </div>
     <div class="review-gate">
       <span>Evidence</span>
-      ${statusPill(metrics.connectorEvidence.length > 0 ? 'pass' : 'warn')}
-      <strong>${escapeHtml(`${metrics.connectorEvidence.length} action(s)`)}</strong>
+      ${statusPill(measuredEvidenceCount > 0 ? 'pass' : 'warn')}
+      <strong>${escapeHtml(`${measuredEvidenceCount} measured action(s)`)}</strong>
     </div>
     <div class="review-gate">
       <span>Production</span>

@@ -9,6 +9,7 @@ import type { DashboardSectionStrategy } from './types.js';
 import {
   collectGenericConnectorEvidence,
   escapeHtml,
+  isProvenConnectorEvidence,
   linkLabel,
   shortId,
   statusPill,
@@ -22,6 +23,11 @@ export const executiveBriefSection: DashboardSectionStrategy = {
   description: 'Outcome, customer-system proof, and latest handoff.',
   render: ({ metrics }) => {
     const connectorEvidence = collectGenericConnectorEvidence(metrics.connectorEvidence);
+    const provenEvidenceCount = connectorEvidence.filter(isProvenConnectorEvidence).length;
+    const failedMeasuredCount = connectorEvidence.filter((item) => (
+      item.evidenceKind === 'measured' && item.status === 'failed'
+    )).length;
+    const simulatedEvidenceCount = connectorEvidence.filter((item) => item.evidenceKind === 'simulated').length;
 
     return `<div class="section-titlebar">
         <div>
@@ -67,7 +73,7 @@ export const executiveBriefSection: DashboardSectionStrategy = {
           <div class="section-head">
             <div>
               <h2>Connector Evidence</h2>
-              <div class="section-note">${escapeHtml(`${connectorEvidence.length} captured customer-system action(s)`)}</div>
+              <div class="section-note">${escapeHtml(`${provenEvidenceCount} proven action(s), ${failedMeasuredCount} failed measured event(s), ${simulatedEvidenceCount} simulated event(s)`)}</div>
             </div>
           </div>
           ${renderConnectorEvidence(connectorEvidence)}

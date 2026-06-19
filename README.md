@@ -117,7 +117,8 @@ fdekit init [name]
 fdekit recipe install <name>
 fdekit recipe capture <name> [--force]
 fdekit add provider <name>
-fdekit add connector <name>
+fdekit add connector <catalog-name>
+fdekit add connector <project-specific-name> --custom
 fdekit add policy <name>
 fdekit doctor [--live]
 fdekit validate [--json] [--strict]

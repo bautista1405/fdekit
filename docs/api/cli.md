@@ -3,7 +3,7 @@
 <!-- Maintained via scripts/generate-api-docs.mjs. -->
 Run `npm run docs:api` to refresh this page after changing public exports.
 
-Applies to `@fdekit/cli` v0.4.0. The installed binary remains `fdekit`.
+Applies to `@fdekit/cli` v0.4.2. The installed binary remains `fdekit`.
 
 Declaration source: `packages/cli/dist/index.d.ts`; command map source: `scripts/generate-api-docs.mjs`.
 
@@ -28,7 +28,7 @@ Declaration source: `packages/cli/dist/index.d.ts`; command map source: `scripts
 | [`fdekit eval run`](#fdekit-eval-run) | Run configured eval suites. |
 | [`fdekit eval macro [--min-frequency <n>]`](#fdekit-eval-macro-min-frequency-n) | Find repeated behavior patterns across traces. |
 | [`fdekit approvals list`](#fdekit-approvals-list) | Inspect pending approval requests. |
-| [`fdekit feedback export [--json]`](#fdekit-feedback-export-json) | Turn approval and audit decisions into eval candidates. |
+| [`fdekit feedback export [--json]`](#fdekit-feedback-export-json) | Turn decided approvals into replay-ready eval cases. |
 | [`fdekit console`](#fdekit-console) | Generate the local dashboard and exports. |
 | [`fdekit env doctor`](#fdekit-env-doctor) | Check configured runtime environment health. |
 
@@ -42,7 +42,7 @@ The package root exports 3 TypeScript symbols.
 | --- | --- | --- |
 | <a id="fdekit-init-name"></a>`fdekit init [name]` | Scaffold a new FDEKit deployment, defaulting to ./fdekit. | [packages/cli/src/commands/init.ts](../../packages/cli/src/commands/init.ts) |
 | <a id="fdekit-add-provider-name"></a>`fdekit add provider <name>` | Add a provider config and env docs. | [packages/cli/src/commands/add.ts](../../packages/cli/src/commands/add.ts) |
-| <a id="fdekit-add-connector-name"></a>`fdekit add connector <name>` | Add a connector config and env docs. | [packages/cli/src/commands/add.ts](../../packages/cli/src/commands/add.ts) |
+| <a id="fdekit-add-connector-name-custom"></a>`fdekit add connector <name> [--custom]` | Add a catalog connector, or explicitly scaffold a project-specific connector with `--custom`. | [packages/cli/src/commands/add.ts](../../packages/cli/src/commands/add.ts) |
 | <a id="fdekit-add-policy-name"></a>`fdekit add policy <name>` | Add a policy helper to the current deployment. | [packages/cli/src/commands/add.ts](../../packages/cli/src/commands/add.ts) |
 | <a id="fdekit-add-eval-name"></a>`fdekit add eval <name>` | Add a simple eval to the current deployment. | [packages/cli/src/commands/add.ts](../../packages/cli/src/commands/add.ts) |
 | <a id="fdekit-recipe-install-name"></a>`fdekit recipe install <name>` | Install a bundled recipe. | [packages/cli/src/commands/recipe/install.ts](../../packages/cli/src/commands/recipe/install.ts) |
@@ -59,7 +59,7 @@ The package root exports 3 TypeScript symbols.
 | <a id="fdekit-approvals-approve-id"></a>`fdekit approvals approve <id>` | Approve a queued approval request. | [packages/cli/src/commands/approvals.ts](../../packages/cli/src/commands/approvals.ts) |
 | <a id="fdekit-approvals-reject-id"></a>`fdekit approvals reject <id>` | Reject a queued approval request. | [packages/cli/src/commands/approvals.ts](../../packages/cli/src/commands/approvals.ts) |
 | <a id="fdekit-audit-limit-n"></a>`fdekit audit [--limit <n>]` | Show recent audit log entries. | [packages/cli/src/commands/audit.ts](../../packages/cli/src/commands/audit.ts) |
-| <a id="fdekit-feedback-export-json"></a>`fdekit feedback export [--json]` | Export approval and audit feedback into eval candidates. | [packages/cli/src/commands/feedback.ts](../../packages/cli/src/commands/feedback.ts) |
+| <a id="fdekit-feedback-export-json"></a>`fdekit feedback export [--json]` | Export decided approvals into replay-ready eval cases. | [packages/cli/src/commands/feedback.ts](../../packages/cli/src/commands/feedback.ts) |
 | <a id="fdekit-trace"></a>`fdekit trace` | Generate a local HTML trace viewer. | [packages/cli/src/commands/trace.ts](../../packages/cli/src/commands/trace.ts) |
 | <a id="fdekit-report"></a>`fdekit report` | Generate a deployment report. | [packages/cli/src/commands/report.ts](../../packages/cli/src/commands/report.ts) |
 | <a id="fdekit-console"></a>`fdekit console` | Generate the static dashboard and export artifacts. | [packages/cli/src/commands/console.ts](../../packages/cli/src/commands/console.ts) |

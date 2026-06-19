@@ -333,6 +333,35 @@ describe('cli scaffold and setup commands', () => {
     expect(await readEnvExample(projectDir)).toBe(envBefore);
   });
 
+  it('rejects unknown connectors without mutating the project', async () => {
+    const projectDir = await createCliProject();
+    await writeFile(
+      path.join(projectDir, 'package.json'),
+      '{"name":"unknown-connector-test","private":true}\n',
+      'utf8',
+    );
+    await writeFile(path.join(projectDir, '.env.example'), 'FDEKIT_CONNECTOR_MODE=local\n', 'utf8');
+    const configBefore = await readConfig(projectDir);
+    const packageBefore = await readPackageJson(projectDir);
+    const envBefore = await readEnvExample(projectDir);
+
+    const output = await captureAddCommand(projectDir, ['connector', 'crm']);
+
+    expect(output.exitCode).toBe(1);
+    expect(output.stderr).toContain('Error: Unknown connector: crm');
+    expect(output.stderr).toContain('Usage: fdekit add connector <name> [--custom]');
+    expect(output.stderr).toContain(
+      'Next: Choose one of: customer-api, codebase, slack, github, jira, linear, postgres, k6, hubspot, salesforce.',
+    );
+    expect(output.stderr).toContain(
+      'Next: For a project-specific connector stub, rerun with: fdekit add connector crm --custom',
+    );
+    expect(output.stdout).not.toContain('Added connector');
+    expect(await readConfig(projectDir)).toBe(configBefore);
+    expect(await readPackageJson(projectDir)).toEqual(packageBefore);
+    expect(await readEnvExample(projectDir)).toBe(envBefore);
+  });
+
   it('preserves top-level indentation when adding evals and policies', async () => {
     const cwd = await mkProjectRoot('fdekit-cli-add-formatting-');
     await captureCommand(() => cmdInit({ cwd, args: ['formatting-test'] }));
@@ -384,7 +413,7 @@ describe('cli scaffold and setup commands', () => {
     }));
     const customOutput = await captureCommand(() => cmdAdd({
       cwd: projectDir,
-      args: ['connector', 'internal-crm'],
+      args: ['connector', 'internal-crm', '--custom'],
     }));
     const salesforceProjectDir = await createCliProject();
     const salesforceOutput = await captureCommand(() => cmdAdd({
@@ -547,11 +576,11 @@ describe('cli scaffold and setup commands', () => {
     }));
     const firstCustom = await captureCommand(() => cmdAdd({
       cwd: projectDir,
-      args: ['connector', 'internal-crm'],
+      args: ['connector', 'internal-crm', '--custom'],
     }));
     const duplicateCustom = await captureCommand(() => cmdAdd({
       cwd: projectDir,
-      args: ['connector', 'internal-crm'],
+      args: ['connector', 'internal-crm', '--custom'],
     }));
 
     expect(firstPostgres.stdout).toContain('Added connector postgres');

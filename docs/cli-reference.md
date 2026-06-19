@@ -41,7 +41,7 @@ Use `fdekit validate --strict` before customer handoff or production-shaped pilo
 | Command | Purpose |
 | --- | --- |
 | `fdekit add provider <name>` | Add a provider such as `localOllama`, `openai`, `anthropic`, or `google`. |
-| `fdekit add connector <name>` | Add a connector such as `github`, `slack`, `postgres`, `jira`, `linear`, `hubspot`, `salesforce`, or `k6`. |
+| `fdekit add connector <name> [--custom]` | Add a catalog connector such as `github`, `slack`, `postgres`, `jira`, `linear`, `hubspot`, `salesforce`, or `k6`. Unknown names fail unless `--custom` explicitly requests a project-specific connector stub. |
 | `fdekit add policy <name>` | Add a policy helper. |
 | `fdekit add eval <name>` | Add a simple eval to the current deployment. |
 
@@ -90,17 +90,22 @@ approval arguments, rationale, decision, and provenance stay under `metadata`. P
 at that dataset to turn reviewed decisions into regressions:
 
 ```ts
+import { defineEval, expectedApprovalOutcome } from '@fdekit/core';
+
 defineEval({
   name: 'approval-feedback',
   agent: 'supportTriage',
   dataset: './artifacts/feedback/eval-cases.json',
+  assertions: [expectedApprovalOutcome()],
 })
 ```
 
-The runtime automatically interprets each exported case's `expected.toolName` and
+`expectedApprovalOutcome()` interprets each exported case's `expected.toolName` and
 `expected.shouldProceed`: approved decisions require the tool call to occur, while rejected
-decisions require it not to occur. Decisions from legacy artifacts are skipped when neither
-their trace nor audit event contains a recoverable run input.
+decisions require it not to occur. The runtime also recognizes this conventional expected
+shape during agent-backed evals, while the explicit assertion makes the contract visible and
+composable in config. Decisions from legacy artifacts are skipped when neither their trace
+nor audit event contains a recoverable run input.
 
 | Command | Purpose |
 | --- | --- |

@@ -10,7 +10,7 @@ import type { CatalogScaffoldAlias, ConnectorManifest, ProviderManifest } from '
 
 const commandUsages = {
   init: 'fdekit init [name]',
-  add: 'fdekit add <provider|connector|eval|policy> <name>',
+  add: 'fdekit add <provider|connector|eval|policy> <name> [--custom]',
   approvals: 'fdekit approvals [list|approve <id>|reject <id>] [--by <actor>] [--reason <text>]',
   audit: 'fdekit audit [--limit <n>]',
   console: 'fdekit console',
@@ -67,6 +67,7 @@ Targets:
   policy     Add a policy helper
 
 Options:
+  --custom   Allow a project-specific connector stub for an unknown connector name
   -h, --help  Show this command help
 `;
     case 'approvals':

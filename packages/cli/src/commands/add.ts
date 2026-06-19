@@ -5,6 +5,7 @@ import { requireConfigFile } from '@fdekit/runtime';
 import {
   connectorManifest,
   connectorManifests,
+  connectorScaffoldNames,
   providerScaffoldNames,
   type ConnectorManifest,
 } from '../catalog/index.js';
@@ -15,7 +16,7 @@ import { policyExpressionFor } from '../config/policies.js';
 import { CliUserError } from '../errors.js';
 import { escapeSingleQuoted, objectKey } from '../utils/strings.js';
 
-const ADD_CONNECTOR_USAGE = 'fdekit add connector <name>';
+const ADD_CONNECTOR_USAGE = 'fdekit add connector <name> [--custom]';
 const ADD_PROVIDER_USAGE = 'fdekit add provider <name>';
 
 export async function cmdAdd(ctx: CommandContext): Promise<void> {
@@ -51,8 +52,28 @@ export async function cmdAdd(ctx: CommandContext): Promise<void> {
       await applyProjectScaffold(projectDir, scaffold);
     }
   } else if (subcommand === 'connector') {
+    const custom = ctx.args.includes('--custom');
+    const unknownOption = ctx.args.slice(2).find((arg) => arg !== '--custom');
+
+    if (unknownOption) {
+      throw new CliUserError(`Unknown connector option: ${unknownOption}`, {
+        usage: ADD_CONNECTOR_USAGE,
+      });
+    }
+
     const scaffold = connectorScaffold(name);
     const manifest = connectorManifest(name);
+
+    if ((!manifest || !scaffold) && !custom) {
+      throw new CliUserError(`Unknown connector: ${name}`, {
+        usage: ADD_CONNECTOR_USAGE,
+        next: [
+          `Choose one of: ${connectorScaffoldNames().join(', ')}.`,
+          `For a project-specific connector stub, rerun with: fdekit add connector ${name} --custom`,
+        ],
+      });
+    }
+
     const key = scaffold?.key ?? name;
 
     if (hasObjectEntry(config, 'connectors', key)) {

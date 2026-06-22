@@ -1,6 +1,6 @@
 {
   "name": "@fdekit/provider-mock",
-  "version": "0.4.3",
+  "version": "0.4.4",
   "description": "Deterministic local provider adapter for FDEKit demos and tests",
   "main": "dist/index.js",
   "module": "dist/index.js",
@@ -25,7 +25,7 @@
   ],
   "license": "MIT",
   "dependencies": {
-    "@fdekit/core": "0.4.3"
+    "@fdekit/core": "0.4.4"
   },
   "type": "module"
 }

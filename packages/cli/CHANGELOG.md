@@ -1,5 +1,19 @@
 # fdekit
 
+## 0.4.4
+
+### Patch Changes
+
+- d1d9280: validate connectors, polish commands, runs and evidence with k6, s3 client validation
+- Updated dependencies [d1d9280]
+  - @fdekit/console@0.4.4
+  - @fdekit/core@0.4.4
+  - @fdekit/provider-anthropic@0.4.4
+  - @fdekit/provider-google@0.4.4
+  - @fdekit/provider-ollama@0.4.4
+  - @fdekit/provider-openai@0.4.4
+  - @fdekit/runtime@0.4.4
+
 ## 0.4.3
 
 ### Patch Changes

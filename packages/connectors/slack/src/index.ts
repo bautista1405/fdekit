@@ -1,5 +1,5 @@
 import { createHttpReq, defineConnector, defineTool, type ConnectorDefinition } from '@fdekit/core';
-import { asRecord, getString, normalizeBaseUrl, postSlackMessage, requireToken } from './helpers/index.js';
+import { asRecord, getString, normalizeBaseUrl, postSlackMessage, readEnvValue, requireToken } from './helpers/index.js';
 import type { SlackConnectorConfig, SlackConnectorMode, SlackConnectorOptions, SlackMessageArgs, SlackMessageResult } from './interfaces/index.js';
 export type { SlackConnectorConfig, SlackConnectorMode, SlackConnectorOptions, SlackMessageArgs, SlackMessageResult } from './interfaces/index.js';
 
@@ -26,9 +26,9 @@ const slackMessageArgsSchema = {
 
 export function slackConnector(options: SlackConnectorOptions = {}): ConnectorDefinition<SlackConnectorConfig> {
   const mode = options.mode ?? 'local';
-  const defaultChannel = options.defaultChannel ?? '#support-escalations';
   const tokenEnv = options.tokenEnv ?? 'SLACK_BOT_TOKEN';
   const channelEnv = options.channelEnv ?? 'SLACK_CHANNEL_ID';
+  const defaultChannel = options.defaultChannel ?? readEnvValue(channelEnv, options.env) ?? '#support-escalations';
   const apiBaseUrl = normalizeBaseUrl(options.apiBaseUrl ?? 'https://slack.com/api');
   const http = createHttpReq(options.resilience);
   const fetchImpl = ((input, init) => http.request(options.fetch ?? globalThis.fetch, input, init)) as typeof globalThis.fetch;

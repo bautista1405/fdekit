@@ -68,6 +68,40 @@ describe('slackConnector', () => {
     });
   });
 
+  it('defaults the API channel from SLACK_CHANNEL_ID', async () => {
+    const calls: Array<{ input: RequestInfo | URL; init?: RequestInit }> = [];
+    const connector = slackConnector({
+      mode: 'api',
+      apiBaseUrl: 'https://slack.test/api/',
+      env: {
+        SLACK_BOT_TOKEN: 'xoxb-test',
+        SLACK_CHANNEL_ID: 'C999',
+      },
+      fetch: async (input, init) => {
+        calls.push({ input, init });
+        return Response.json({ ok: true, channel: 'C999', ts: '1779479000.000002' });
+      },
+    });
+    const tool = connector.tools?.find((candidate) => candidate.name === 'slack.message');
+
+    expect(connector.config.defaultChannel).toBe('C999');
+    await expect(tool?.handler({
+      text: 'Escalation needed',
+      ticketId: 'tick_1002',
+    }, {})).resolves.toMatchObject({
+      ok: true,
+      mode: 'api',
+      channel: 'C999',
+      text: 'Escalation needed',
+      ticketId: 'tick_1002',
+    });
+
+    expect(JSON.parse(String(calls[0].init?.body))).toEqual({
+      channel: 'C999',
+      text: 'Escalation needed',
+    });
+  });
+
   it('requires a Slack token in API mode', async () => {
     const connector = slackConnector({
       mode: 'api',

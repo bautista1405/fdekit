@@ -5,7 +5,7 @@ import {
   requireEnvValue,
 } from '@fdekit/core';
 
-export { asRecord, getString, normalizeBaseUrl } from '@fdekit/core';
+export { asRecord, getString, normalizeBaseUrl, readEnvValue } from '@fdekit/core';
 
 export async function postSlackMessage(options: {
   apiBaseUrl: string;

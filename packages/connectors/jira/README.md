@@ -38,6 +38,9 @@ export default defineDeployment({
 
 Set `JIRA_BASE_URL`, `JIRA_EMAIL`, `JIRA_API_TOKEN`, and optionally `JIRA_PROJECT_KEY` for API mode.
 
+The common `issue.create` priority field accepts backend-neutral labels such as `low`, `normal`,
+`high`, and `urgent`; the connector maps them to Jira priority names before calling the API.
+
 ## Public API surface
 
 Import from the package root:

@@ -12,6 +12,16 @@ import type { CreateJiraIssueArgs, CreateJiraIssueResult, JiraConnectorConfig, J
 export type { CreateJiraIssueArgs, CreateJiraIssueResult, JiraConnectorConfig, JiraConnectorMode, JiraConnectorOptions } from './interfaces/index.js';
 
 const defaultToolEnvironments = ['local', 'development', 'staging'];
+const jiraPriorityAliases: Record<string, string> = {
+  critical: 'Highest',
+  urgent: 'Highest',
+  highest: 'Highest',
+  high: 'High',
+  normal: 'Medium',
+  medium: 'Medium',
+  low: 'Low',
+  lowest: 'Lowest',
+};
 
 const createJiraIssueArgsSchema = {
   type: 'object',
@@ -47,7 +57,7 @@ const createJiraIssueArgsSchema = {
     },
     priority: {
       type: 'string',
-      description: 'Optional Jira priority name',
+      description: 'Optional Jira priority name or common priority label such as low, normal, high, or urgent',
     },
     ticketId: {
       type: 'string',
@@ -75,6 +85,7 @@ export function jiraConnector(options: JiraConnectorOptions = {}): ConnectorDefi
     localIssueCounter += 1;
     const projectKey = args.projectKey ?? options.projectKey ?? readEnvValue(projectKeyEnv, options.env);
     const summary = args.summary ?? args.title;
+    const priority = normalizeJiraPriority(args.priority);
 
     if (!summary) {
       throw new Error('jira.issue.create requires summary or title');
@@ -102,7 +113,7 @@ export function jiraConnector(options: JiraConnectorOptions = {}): ConnectorDefi
           summary,
           description: toAtlassianDocument(args.description ?? args.body ?? ''),
           labels: args.labels,
-          priority: args.priority ? { name: args.priority } : undefined,
+          priority: priority ? { name: priority } : undefined,
           ...args.fields,
         },
       });
@@ -192,4 +203,14 @@ export function jiraConnector(options: JiraConnectorOptions = {}): ConnectorDefi
       }),
     ],
   });
+}
+
+function normalizeJiraPriority(priority: string | undefined): string | undefined {
+  const value = priority?.trim();
+
+  if (!value) {
+    return undefined;
+  }
+
+  return jiraPriorityAliases[value.toLowerCase()] ?? value;
 }

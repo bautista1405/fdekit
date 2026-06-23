@@ -95,6 +95,42 @@ describe('jiraConnector', () => {
     });
   });
 
+  it('maps common issue.create priority labels to Jira priority names', async () => {
+    const calls: Array<{ input: RequestInfo | URL; init?: RequestInit }> = [];
+    const connector = jiraConnector({
+      mode: 'api',
+      baseUrl: 'https://company.atlassian.net/',
+      env: {
+        JIRA_EMAIL: 'fde@example.com',
+        JIRA_API_TOKEN: 'jira-token',
+        JIRA_PROJECT_KEY: 'SUP',
+      },
+      fetch: async (input, init) => {
+        calls.push({ input, init });
+        return Response.json({
+          id: '10002',
+          key: 'SUP-43',
+        }, { status: 201 });
+      },
+    });
+    const tool = connector.tools?.find((candidate) => candidate.name === 'issue.create');
+
+    await expect(tool?.handler({
+      title: 'Generic priority handoff',
+      body: 'Common issue.create payload',
+      priority: 'normal',
+    }, {})).resolves.toMatchObject({
+      id: '10002',
+      key: 'SUP-43',
+      mode: 'api',
+      projectKey: 'SUP',
+    });
+
+    expect(JSON.parse(String(calls[0].init?.body)).fields).toMatchObject({
+      priority: { name: 'Medium' },
+    });
+  });
+
   it('requires Jira credentials and project settings in API mode', async () => {
     const connector = jiraConnector({
       mode: 'api',

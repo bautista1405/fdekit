@@ -1,5 +1,13 @@
 # @fdekit/environment-floci
 
+## 0.4.5
+
+### Patch Changes
+
+- f1919a1: take connectors variables from .env, search by substring on codebase.search, use the correct labels for jira and linear
+- Updated dependencies [f1919a1]
+  - @fdekit/core@0.4.5
+
 ## 0.4.4
 
 ### Patch Changes

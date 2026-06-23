@@ -26,7 +26,7 @@ export interface CreateLinearIssueArgs {
   description?: string;
   body?: string;
   teamId?: string;
-  priority?: number;
+  priority?: number | string;
   labelIds?: string[];
   assigneeId?: string;
   ticketId?: string;

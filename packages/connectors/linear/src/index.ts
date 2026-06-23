@@ -4,6 +4,16 @@ import type { CreateLinearIssueArgs, CreateLinearIssueResult, LinearConnectorCon
 export type { CreateLinearIssueArgs, CreateLinearIssueResult, LinearConnectorConfig, LinearConnectorMode, LinearConnectorOptions } from './interfaces/index.js';
 
 const defaultToolEnvironments = ['local', 'development', 'staging'];
+const linearPriorityAliases: Record<string, number> = {
+  none: 0,
+  'no priority': 0,
+  urgent: 1,
+  critical: 1,
+  high: 2,
+  normal: 3,
+  medium: 3,
+  low: 4,
+};
 
 const createLinearIssueArgsSchema = {
   type: 'object',
@@ -26,8 +36,10 @@ const createLinearIssueArgsSchema = {
       description: 'Optional Linear team id override',
     },
     priority: {
-      type: 'number',
-      description: 'Optional Linear numeric priority',
+      type: ['number', 'string'],
+      minimum: 0,
+      maximum: 4,
+      description: 'Optional Linear priority number 0-4, or common priority label such as low, normal, high, or urgent',
     },
     labelIds: {
       type: 'array',
@@ -56,6 +68,7 @@ export function linearConnector(options: LinearConnectorOptions = {}): Connector
   const createIssue = async (args: CreateLinearIssueArgs): Promise<CreateLinearIssueResult> => {
     localIssueCounter += 1;
     const teamId = args.teamId ?? options.teamId ?? readEnvValue(teamIdEnv, options.env);
+    const priority = normalizeLinearPriority(args.priority);
 
     if (mode === 'api') {
       if (!teamId) {
@@ -70,7 +83,7 @@ export function linearConnector(options: LinearConnectorOptions = {}): Connector
           title: args.title,
           description: args.description ?? args.body,
           teamId,
-          priority: args.priority,
+          priority,
           labelIds: args.labelIds,
           assigneeId: args.assigneeId,
         },
@@ -148,4 +161,28 @@ export function linearConnector(options: LinearConnectorOptions = {}): Connector
       }),
     ],
   });
+}
+
+function normalizeLinearPriority(priority: number | string | undefined): number | undefined {
+  if (typeof priority === 'number') {
+    return isLinearPriorityNumber(priority) ? priority : undefined;
+  }
+
+  const value = priority?.trim();
+
+  if (!value) {
+    return undefined;
+  }
+
+  const numeric = Number(value);
+
+  if (isLinearPriorityNumber(numeric)) {
+    return numeric;
+  }
+
+  return linearPriorityAliases[value.toLowerCase().replace(/[\s_-]+/g, ' ')];
+}
+
+function isLinearPriorityNumber(value: number): boolean {
+  return Number.isFinite(value) && value >= 0 && value <= 4;
 }

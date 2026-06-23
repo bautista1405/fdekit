@@ -38,6 +38,10 @@ export default defineDeployment({
 
 Set `LINEAR_API_KEY` and optionally `LINEAR_TEAM_ID` for API mode.
 
+The common `issue.create` priority field accepts Linear's numeric priority values and
+backend-neutral labels such as `low`, `normal`, `high`, and `urgent`; labels are mapped to
+Linear's 0-4 priority scale before calling the API.
+
 ## Public API surface
 
 Import from the package root:

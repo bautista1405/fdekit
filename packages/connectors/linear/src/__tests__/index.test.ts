@@ -99,6 +99,57 @@ describe('linearConnector', () => {
     });
   });
 
+  it('maps common issue.create priority labels to Linear priority numbers', async () => {
+    const calls: Array<{ input: RequestInfo | URL; init?: RequestInit }> = [];
+    const connector = linearConnector({
+      mode: 'api',
+      apiBaseUrl: 'https://linear.test/graphql/',
+      env: {
+        LINEAR_API_KEY: 'lin-test',
+        LINEAR_TEAM_ID: 'team_123',
+      },
+      fetch: async (input, init) => {
+        calls.push({ input, init });
+        return Response.json({
+          data: {
+            issueCreate: {
+              success: true,
+              issue: {
+                id: 'issue_124',
+                identifier: 'SUP-43',
+                title: 'Generic priority handoff',
+                url: 'https://linear.app/company/issue/SUP-43',
+              },
+            },
+          },
+        });
+      },
+    });
+    const tool = connector.tools?.find((candidate) => candidate.name === 'issue.create');
+
+    await expect(tool?.handler({
+      title: 'Generic priority handoff',
+      body: 'Common issue.create payload',
+      priority: 'normal',
+    }, {})).resolves.toMatchObject({
+      id: 'issue_124',
+      identifier: 'SUP-43',
+      mode: 'api',
+      teamId: 'team_123',
+    });
+
+    expect(JSON.parse(String(calls[0].init?.body))).toMatchObject({
+      variables: {
+        input: {
+          title: 'Generic priority handoff',
+          description: 'Common issue.create payload',
+          priority: 3,
+          teamId: 'team_123',
+        },
+      },
+    });
+  });
+
   it('requires Linear API key and team id in API mode', async () => {
     const missingTeam = linearConnector({
       mode: 'api',

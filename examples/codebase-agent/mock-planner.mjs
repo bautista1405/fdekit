@@ -56,8 +56,8 @@ export function createCodebaseAgentMockPlanner() {
           `Finding: ${preview}`,
           `File: ${filePath}`,
         ].join('\n'),
+        // Priority is intentionally omitted; Jira and Linear use incompatible priority schemas.
         labels: ['codebase-agent', 'fdekit'],
-        priority: 'normal',
       },
       reason: 'Create an engineering issue for the codebase finding.',
     };

@@ -178,6 +178,15 @@ describe('cli recipe commands', () => {
       'scripts/demo.mjs',
     ]);
 
+    const mockPlanner = await readFile(path.join(projectDir, 'recipes', 'codebase-agent', 'mock-planner.mjs'), 'utf8');
+    expectTextIncludes(mockPlanner, [
+      'Priority is intentionally omitted',
+      "labels: ['codebase-agent', 'fdekit']",
+    ]);
+    expectTextExcludes(mockPlanner, [
+      "priority: 'normal'",
+    ]);
+
     const config = await readConfig(projectDir);
     expectTextIncludes(config, [
       '@fdekit/connector-codebase',

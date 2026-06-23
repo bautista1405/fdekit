@@ -84,6 +84,39 @@ describe('githubConnector', () => {
     });
   });
 
+  it('defaults the API repository from GITHUB_REPOSITORY', async () => {
+    const calls: Array<{ input: RequestInfo | URL; init?: RequestInit }> = [];
+    const connector = githubConnector({
+      mode: 'api',
+      apiBaseUrl: 'https://github.test/api/',
+      env: {
+        GITHUB_TOKEN: 'ghp_test',
+        GITHUB_REPOSITORY: 'acme/live-repo',
+      },
+      fetch: async (input, init) => {
+        calls.push({ input, init });
+        return Response.json({
+          id: 43,
+          number: 8,
+          title: 'Live repo issue',
+          html_url: 'https://github.com/acme/live-repo/issues/8',
+        });
+      },
+    });
+    const tool = connector.tools?.find((candidate) => candidate.name === 'issue.create');
+
+    expect(connector.config.repository).toBe('acme/live-repo');
+    await expect(tool?.handler({
+      title: 'Live repo issue',
+      body: 'Body',
+    }, {})).resolves.toMatchObject({
+      repository: 'acme/live-repo',
+      url: 'https://github.com/acme/live-repo/issues/8',
+    });
+
+    expect(calls[0].input).toBe('https://github.test/api/repos/acme/live-repo/issues');
+  });
+
   it('requires a GitHub token in API mode', async () => {
     const connector = githubConnector({
       mode: 'api',

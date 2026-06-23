@@ -1,5 +1,5 @@
 import { createHttpReq, defineConnector, defineTool, type ConnectorDefinition } from '@fdekit/core';
-import { asRecord, createGitHubIssue, getNumber, getString, normalizeBaseUrl, requireToken } from './helpers/index.js';
+import { asRecord, createGitHubIssue, getNumber, getString, normalizeBaseUrl, readEnvValue, requireToken } from './helpers/index.js';
 import type { CreateIssueArgs, CreateIssueResult, GitHubConnectorConfig, GitHubConnectorMode, GitHubConnectorOptions } from './interfaces/index.js';
 export type { CreateIssueArgs, CreateIssueResult, GitHubConnectorConfig, GitHubConnectorMode, GitHubConnectorOptions } from './interfaces/index.js';
 
@@ -35,9 +35,9 @@ const createIssueArgsSchema = {
 
 export function githubConnector(options: GitHubConnectorOptions = {}): ConnectorDefinition<GitHubConnectorConfig> {
   const mode = options.mode ?? 'local';
-  const repository = options.repository ?? 'company/support-triage';
   const tokenEnv = options.tokenEnv ?? 'GITHUB_TOKEN';
   const repositoryEnv = options.repositoryEnv ?? 'GITHUB_REPOSITORY';
+  const repository = options.repository ?? readEnvValue(repositoryEnv, options.env) ?? 'company/support-triage';
   const apiBaseUrl = normalizeBaseUrl(options.apiBaseUrl ?? 'https://api.github.com');
   const http = createHttpReq(options.resilience);
   const fetchImpl = ((input, init) => http.request(options.fetch ?? globalThis.fetch, input, init)) as typeof globalThis.fetch;

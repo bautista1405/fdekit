@@ -5,7 +5,7 @@ import {
   requireEnvValue,
 } from '@fdekit/core';
 
-export { asRecord, getNumber, getString, normalizeBaseUrl } from '@fdekit/core';
+export { asRecord, getNumber, getString, normalizeBaseUrl, readEnvValue } from '@fdekit/core';
 
 export async function createGitHubIssue(options: {
   apiBaseUrl: string;

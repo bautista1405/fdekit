@@ -13,6 +13,21 @@ describe('codebaseConnector', () => {
     }
   });
 
+  it('documents codebase.search as literal substring matching', () => {
+    const connector = codebaseConnector();
+    const search = connector.tools?.find((tool) => tool.name === 'codebase.search');
+    const argsSchema = search?.argsSchema as {
+      properties?: {
+        query?: {
+          description?: string;
+        };
+      };
+    };
+
+    expect(search?.description).toContain('literal substring');
+    expect(argsSchema.properties?.query?.description).toContain('not a regex');
+  });
+
   it('resolves relative roots from the loaded FDEKit project directory', () => {
     const contained = codebaseConnector({
       env: {

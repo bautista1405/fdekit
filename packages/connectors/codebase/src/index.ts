@@ -43,7 +43,7 @@ const searchArgsSchema = {
   properties: {
     query: {
       type: 'string',
-      description: 'Text to search for, for example the input query',
+      description: 'Literal substring to search for, not a regex; use separate searches for alternatives',
     },
     maxResults: {
       type: 'number',
@@ -120,7 +120,7 @@ export function codebaseConnector(options: CodebaseConnectorOptions = {}): Conne
       }),
       defineTool<CodebaseSearchArgs, { rootDir: string; query: string; matches: CodebaseSearchMatch[] }>({
         name: 'codebase.search',
-        description: 'Search text files under the configured codebase root',
+        description: 'Search text files by literal substring under the configured codebase root',
         scopes: ['codebase:read'],
         environments: defaultToolEnvironments,
         category: 'codebase',

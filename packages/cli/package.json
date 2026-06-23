@@ -1,6 +1,6 @@
 {
   "name": "@fdekit/cli",
-  "version": "0.4.3",
+  "version": "0.4.4",
   "description": "Command line interface for FDEKit",
   "license": "MIT",
   "bin": {
@@ -22,13 +22,13 @@
     "clean": "rm -rf dist *.tsbuildinfo"
   },
   "dependencies": {
-    "@fdekit/console": "0.4.3",
-    "@fdekit/core": "0.4.3",
-    "@fdekit/provider-anthropic": "0.4.3",
-    "@fdekit/provider-google": "0.4.3",
-    "@fdekit/provider-ollama": "0.4.3",
-    "@fdekit/provider-openai": "0.4.3",
-    "@fdekit/runtime": "0.4.3",
+    "@fdekit/console": "0.4.4",
+    "@fdekit/core": "0.4.4",
+    "@fdekit/provider-anthropic": "0.4.4",
+    "@fdekit/provider-google": "0.4.4",
+    "@fdekit/provider-ollama": "0.4.4",
+    "@fdekit/provider-openai": "0.4.4",
+    "@fdekit/runtime": "0.4.4",
     "typescript": "^5.4.5"
   },
   "devDependencies": {},

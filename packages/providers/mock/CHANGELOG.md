@@ -1,5 +1,13 @@
 # @fdekit/provider-mock
 
+## 0.4.4
+
+### Patch Changes
+
+- d1d9280: validate connectors, polish commands, runs and evidence with k6, s3 client validation
+- Updated dependencies [d1d9280]
+  - @fdekit/core@0.4.4
+
 ## 0.4.3
 
 ### Patch Changes

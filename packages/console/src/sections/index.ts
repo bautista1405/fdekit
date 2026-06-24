@@ -9,9 +9,9 @@ export { renderDemoHero } from './hero.js';
 export type { DashboardSectionContext, DashboardSectionStrategy } from './types.js';
 
 export const dashboardSectionStrategies: DashboardSectionStrategy[] = [
-  chartsAndPostureSection,
   executiveBriefSection,
   governanceReadinessSection,
+  chartsAndPostureSection,
   engineerWorkbenchSection,
 ];
 

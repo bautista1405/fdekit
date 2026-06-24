@@ -17,6 +17,11 @@ export const workbenchStyles = `
       background: var(--surface);
       box-shadow: var(--shadow);
       overflow: hidden;
+      transition: border-color 160ms ease, box-shadow 160ms ease;
+    }
+
+    details.detail-panel:hover {
+      border-color: var(--line-strong);
     }
 
     details.detail-panel summary {
@@ -29,6 +34,16 @@ export const workbenchStyles = `
       cursor: pointer;
       font-weight: 760;
       list-style: none;
+      transition: background 160ms ease;
+    }
+
+    details.detail-panel summary:hover {
+      background: var(--surface-alt);
+    }
+
+    details.detail-panel summary:focus-visible {
+      outline: 2px solid var(--ink);
+      outline-offset: -2px;
     }
 
     details.detail-panel summary::-webkit-details-marker { display: none; }
@@ -45,6 +60,7 @@ export const workbenchStyles = `
       font-weight: 800;
       flex: 0 0 auto;
       border: 1px solid var(--line);
+      transition: background 160ms ease, color 160ms ease, transform 160ms ease;
     }
 
     details.detail-panel[open] summary {
@@ -53,6 +69,9 @@ export const workbenchStyles = `
 
     details.detail-panel[open] summary::after {
       content: "-";
+      background: var(--ink);
+      color: var(--surface);
+      transform: rotate(180deg);
     }
 
     .detail-body {
@@ -110,7 +129,8 @@ export const workbenchStyles = `
       display: grid;
       place-items: center;
       border-radius: 50%;
-      background: conic-gradient(var(--green) var(--donut-pass), var(--red-soft) 0);
+      background: conic-gradient(var(--ink) var(--donut-pass), var(--surface-alt) 0);
+      border: 1px solid var(--line);
     }
 
     .donut::after {
@@ -136,9 +156,9 @@ export const workbenchStyles = `
     }
 
     .stacked-segment { min-width: 2px; }
-    .stacked-segment.issues { background: var(--violet); }
-    .stacked-segment.slack { background: var(--teal); }
-    .stacked-segment.tools { background: var(--blue); }
+    .stacked-segment.issues { background: var(--ink); }
+    .stacked-segment.slack { background: #737373; }
+    .stacked-segment.tools { background: #d4d4d4; }
 
     .legend {
       display: flex;
@@ -158,12 +178,12 @@ export const workbenchStyles = `
       width: 9px;
       height: 9px;
       border-radius: 50%;
-      background: var(--blue);
+      background: var(--ink);
     }
 
-    .legend-dot.issues { background: var(--violet); }
-    .legend-dot.slack { background: var(--teal); }
-    .legend-dot.tools { background: var(--blue); }
+    .legend-dot.issues { background: var(--ink); }
+    .legend-dot.slack { background: #737373; }
+    .legend-dot.tools { background: #d4d4d4; border: 1px solid var(--line-strong); }
     .sparkline {
       width: 100%;
       min-height: 118px;
@@ -171,7 +191,7 @@ export const workbenchStyles = `
 
     .sparkline path, .sparkline polyline {
       fill: none;
-      stroke: var(--blue);
+      stroke: var(--ink);
       stroke-width: 3;
       stroke-linecap: round;
       stroke-linejoin: round;

@@ -55,7 +55,7 @@ export const traceAndReportStyles = `    .timeline {
 
     .bar {
       height: 100%;
-      background: var(--teal);
+      background: var(--ink);
       border-radius: inherit;
     }
 
@@ -89,5 +89,6 @@ export const traceAndReportStyles = `    .timeline {
       overflow-wrap: anywhere;
       color: var(--ink);
       font-size: 13px;
+      line-height: 1.55;
     }
 `;

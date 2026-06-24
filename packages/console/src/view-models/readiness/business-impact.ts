@@ -40,7 +40,7 @@ export function createBusinessImpact(input: {
       value: workflow,
       detail: input.traceCount > 0
         ? `${input.traceCount} run(s) captured against this workflow`
-        : 'Run the agent to capture workflow evidence',
+        : 'No workflow execution evidence has been captured yet',
       status: input.traceCount > 0 ? 'pass' : 'warn',
     },
     {
@@ -54,7 +54,7 @@ export function createBusinessImpact(input: {
     {
       label: 'Time-saving proxy',
       value: `${Math.round(estimatedMinutes)} min`,
-      detail: 'Demo estimate from tool and handoff volume; replace with customer baseline during rollout',
+      detail: 'Estimate from tool and handoff volume; replace with customer baseline during rollout',
       status: actionCount > 0 || input.toolCallCount > 0 ? 'pass' : 'warn',
     },
     {

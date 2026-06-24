@@ -42,7 +42,7 @@ export interface ConsolePage {
 export interface ConsoleMetrics {
   traceCount: number;
   allTraceCount: number;
-  traceScope: 'latest_eval' | 'all_traces';
+  traceScope: 'latest_eval' | 'latest_run' | 'all_traces';
   evalStatus: string;
   evalCaseCount: number;
   evalPassedCases: number;

@@ -11,14 +11,14 @@ import { escapeHtml } from '../view-models/index.js';
 
 export const governanceReadinessSection: DashboardSectionStrategy = {
   id: 'governance-readiness',
-  title: 'Governance & Readiness',
+  title: 'Readiness',
   navLabel: 'Readiness',
   fileName: 'readiness.html',
-  description: 'Workflow map, integration status, and production controls.',
+  description: 'Workflow, integration status, and production controls.',
   render: ({ metrics }) => `<div class="section-titlebar">
         <div>
-          <h2>Governance & Readiness</h2>
-          <p>Whether the deployment is wired, governed, and explainable enough for a regulated customer environment.</p>
+          <h2>Readiness</h2>
+          <p>Whether the deployment is wired, governed, and explainable enough for a customer environment.</p>
         </div>
         <span class="pill">${escapeHtml(`${metrics.productionReadiness.filter((item) => item.status === 'pass').length}/${metrics.productionReadiness.length} ready`)}</span>
       </div>

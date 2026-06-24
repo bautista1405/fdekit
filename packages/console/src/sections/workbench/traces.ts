@@ -12,7 +12,7 @@ import {
 
 export function renderRunStory(trace: TraceArtifact | null): string {
   if (!trace || trace.events.length === 0) {
-    return '<p class="subtle">Run the agent to generate a story from trace events.</p>';
+    return '<p class="subtle">No reviewed execution steps have been captured yet.</p>';
   }
 
   const storyEvents = trace.events
@@ -20,7 +20,7 @@ export function renderRunStory(trace: TraceArtifact | null): string {
     .slice(-8);
 
   if (storyEvents.length === 0) {
-    return '<p class="subtle">No completed agent steps captured yet.</p>';
+    return '<p class="subtle">No completed execution steps captured yet.</p>';
   }
 
   return `<div>

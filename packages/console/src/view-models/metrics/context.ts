@@ -17,7 +17,7 @@ export interface MetricsContext {
   approvals: ApprovalArtifact[];
   auditLog: AuditLogEntry[];
   allTraceCount: number;
-  traceScope: 'latest_eval' | 'all_traces';
+  traceScope: 'latest_eval' | 'latest_run' | 'all_traces';
   events: TraceEvent[];
   toolEvents: TraceEvent[];
   policyEvents: TraceEvent[];

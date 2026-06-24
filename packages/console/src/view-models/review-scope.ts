@@ -12,7 +12,7 @@ export interface ReviewArtifactScope {
   approvals: ApprovalArtifact[];
   auditLog: AuditLogEntry[];
   allTraceCount: number;
-  traceScope: 'latest_eval' | 'all_traces';
+  traceScope: 'latest_eval' | 'latest_run' | 'all_traces';
 }
 
 export function createReviewArtifactScope(data: ConsoleData): ReviewArtifactScope {
@@ -22,19 +22,32 @@ export function createReviewArtifactScope(data: ConsoleData): ReviewArtifactScop
     ? allTraces.filter((trace) => latestEvalTraceIds.has(trace.id))
     : [];
 
-  if (activeTraces.length === 0) {
-    const allTraceIds = new Set(allTraces.map((trace) => trace.id));
-
-    return {
-      traces: allTraces,
-      traceIds: allTraceIds,
-      approvals: data.approvals ?? [],
-      auditLog: data.auditLog ?? [],
-      allTraceCount: allTraces.length,
-      traceScope: 'all_traces',
-    };
+  if (activeTraces.length > 0) {
+    return createScopedArtifacts(data, allTraces, activeTraces, 'latest_eval');
   }
 
+  const latestRunTrace = findLatestCompletedTrace(allTraces) ?? allTraces.at(-1);
+
+  if (latestRunTrace) {
+    return createScopedArtifacts(data, allTraces, [latestRunTrace], 'latest_run');
+  }
+
+  return {
+    traces: allTraces,
+    traceIds: new Set(),
+    approvals: data.approvals ?? [],
+    auditLog: data.auditLog ?? [],
+    allTraceCount: allTraces.length,
+    traceScope: 'all_traces',
+  };
+}
+
+function createScopedArtifacts(
+  data: ConsoleData,
+  allTraces: TraceArtifact[],
+  activeTraces: TraceArtifact[],
+  traceScope: 'latest_eval' | 'latest_run',
+): ReviewArtifactScope {
   const activeTraceIds = new Set(activeTraces.map((trace) => trace.id));
 
   return {
@@ -43,7 +56,7 @@ export function createReviewArtifactScope(data: ConsoleData): ReviewArtifactScop
     approvals: (data.approvals ?? []).filter((approval) => artifactMatchesTraceScope(approval, activeTraceIds)),
     auditLog: (data.auditLog ?? []).filter((entry) => artifactMatchesTraceScope(entry, activeTraceIds)),
     allTraceCount: allTraces.length,
-    traceScope: 'latest_eval',
+    traceScope,
   };
 }
 
@@ -59,6 +72,12 @@ function collectLatestEvalTraceIds(data: ConsoleData): Set<string> {
 
 function sortTracesByCreatedAt(traces: TraceArtifact[]): TraceArtifact[] {
   return [...traces].sort((left, right) => left.createdAt.localeCompare(right.createdAt));
+}
+
+function findLatestCompletedTrace(traces: TraceArtifact[]): TraceArtifact | undefined {
+  return [...traces]
+    .reverse()
+    .find((trace) => (trace.events ?? []).some((event) => event.type === 'agent.run.completed'));
 }
 
 function artifactMatchesTraceScope(

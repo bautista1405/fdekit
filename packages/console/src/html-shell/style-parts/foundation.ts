@@ -3,23 +3,25 @@ export const foundationStyles = `    :root {
       --bg: #fafafa;
       --surface: #ffffff;
       --surface-alt: #f6f6f6;
+      --surface-hover: #f1f1f1;
       --ink: #0a0a0a;
+      --ink-soft: #262626;
       --muted: #707070;
       --line: #e6e6e6;
       --line-strong: #cfcfcf;
-      --blue: #0070f3;
-      --blue-soft: #edf6ff;
-      --teal: #0d9488;
-      --teal-soft: #e7f8f6;
-      --green: #16a34a;
-      --green-soft: #ecfdf3;
-      --amber: #b45309;
-      --amber-soft: #fff7ed;
-      --red: #dc2626;
-      --red-soft: #fef2f2;
-      --violet: #7c3aed;
-      --violet-soft: #f3efff;
-      --shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+      --blue: #111111;
+      --blue-soft: #f5f5f5;
+      --teal: #404040;
+      --teal-soft: #f5f5f5;
+      --green: #111111;
+      --green-soft: #f7f7f7;
+      --amber: #525252;
+      --amber-soft: #f4f4f5;
+      --red: #111111;
+      --red-soft: #ededed;
+      --violet: #2f2f2f;
+      --violet-soft: #f5f5f5;
+      --shadow: 0 1px 1px rgba(0, 0, 0, 0.03), 0 8px 24px rgba(0, 0, 0, 0.04);
     }
 
     * { box-sizing: border-box; }
@@ -29,22 +31,44 @@ export const foundationStyles = `    :root {
       color: var(--ink);
       font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
     }
 
     .app {
       min-height: 100vh;
       display: grid;
-      grid-template-columns: 272px minmax(0, 1fr);
+      grid-template-columns: 284px minmax(0, 1fr);
     }
 
     aside {
       background: var(--surface);
       border-right: 1px solid var(--line);
-      padding: 20px 14px;
+      padding: 18px 12px;
       position: sticky;
       top: 0;
       height: 100vh;
       overflow: auto;
+    }
+
+    .skip-link {
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      z-index: 20;
+      transform: translateY(-160%);
+      border: 1px solid var(--ink);
+      border-radius: 6px;
+      background: var(--ink);
+      color: var(--surface);
+      padding: 8px 10px;
+      font-size: 13px;
+      transition: transform 160ms ease;
+    }
+
+    .skip-link:focus {
+      transform: translateY(0);
+      outline: none;
     }
 
     .brand {
@@ -69,9 +93,53 @@ export const foundationStyles = `    :root {
       line-height: 1;
     }
 
+    .sidebar-review {
+      display: grid;
+      gap: 1px;
+      margin: 0 6px 18px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+      background: var(--line);
+    }
+
+    .sidebar-review-row {
+      min-width: 0;
+      display: grid;
+      grid-template-columns: minmax(62px, .7fr) minmax(0, 1fr);
+      align-items: center;
+      gap: 8px;
+      padding: 9px 10px;
+      background: var(--surface);
+    }
+
+    .sidebar-review-row span {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 760;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    .sidebar-review-row strong {
+      min-width: 0;
+      justify-self: end;
+      color: var(--ink);
+      font-size: 13px;
+      font-weight: 720;
+      overflow-wrap: anywhere;
+      text-align: right;
+    }
+
+    .sidebar-review-row .pill {
+      height: 24px;
+      padding: 0 8px;
+      font-size: 11px;
+    }
+
     .page-nav {
       display: grid;
-      gap: 4px;
+      gap: 5px;
       margin-bottom: 18px;
     }
 
@@ -83,11 +151,19 @@ export const foundationStyles = `    :root {
       color: var(--ink);
       text-decoration: none;
       border: 1px solid transparent;
+      transition: background 160ms ease, border-color 160ms ease, color 160ms ease;
     }
 
     .nav-link:hover {
-      background: var(--surface-alt);
+      background: var(--surface-hover);
       text-decoration: none;
+    }
+
+    .nav-link:focus-visible,
+    button.export-button:focus-visible,
+    .section-card:focus-visible {
+      outline: 2px solid var(--ink);
+      outline-offset: 2px;
     }
 
     .nav-link.active {
@@ -113,7 +189,7 @@ export const foundationStyles = `    :root {
 
     .sidebar-meta {
       border-top: 1px solid var(--line);
-      padding: 2px 6px 0;
+      padding: 2px 6px 18px;
     }
 
     .nav-group { margin-top: 20px; }
@@ -139,6 +215,7 @@ export const foundationStyles = `    :root {
       min-width: 0;
       width: min(100%, 1420px);
       padding: 30px;
+      margin: 0 auto;
     }
 
     .topbar {
@@ -194,6 +271,26 @@ export const foundationStyles = `    :root {
       font-size: 14px;
     }
 
+    .page-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .page-meta span {
+      display: inline-flex;
+      align-items: center;
+      min-height: 26px;
+      padding: 0 9px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: var(--surface);
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 660;
+    }
+
     .pill {
       display: inline-flex;
       align-items: center;
@@ -208,10 +305,10 @@ export const foundationStyles = `    :root {
       font-weight: 680;
     }
 
-    .pill.pass { background: var(--green-soft); color: var(--green); border-color: #bbf7d0; }
-    .pill.fail { background: var(--red-soft); color: var(--red); border-color: #fecaca; }
-    .pill.warn { background: var(--amber-soft); color: var(--amber); border-color: #fed7aa; }
-    .pill.info { background: var(--blue-soft); color: var(--blue); border-color: #bfdbfe; }
+    .pill.pass { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+    .pill.fail { background: var(--surface); color: var(--ink); border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
+    .pill.warn { background: var(--surface-alt); color: var(--ink); border-color: var(--line-strong); }
+    .pill.info { background: var(--surface-alt); color: var(--ink); border-color: var(--line); }
 
     .topbar-actions {
       display: grid;
@@ -237,10 +334,12 @@ export const foundationStyles = `    :root {
       font-size: 13px;
       font-weight: 680;
       cursor: pointer;
+      transition: background 160ms ease, border-color 160ms ease, color 160ms ease, transform 160ms ease;
     }
 
     button.export-button:hover {
       border-color: var(--ink);
       color: var(--surface);
       background: var(--ink);
+      transform: translateY(-1px);
     }`;

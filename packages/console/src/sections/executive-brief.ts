@@ -17,10 +17,10 @@ import {
 
 export const executiveBriefSection: DashboardSectionStrategy = {
   id: 'executive-brief',
-  title: 'Executive Brief',
+  title: 'Customer Brief',
   navLabel: 'Brief',
   fileName: 'brief.html',
-  description: 'Outcome, customer-system proof, and latest handoff.',
+  description: 'Outcome, customer proof, and latest handoff.',
   render: ({ metrics }) => {
     const connectorEvidence = collectGenericConnectorEvidence(metrics.connectorEvidence);
     const provenEvidenceCount = connectorEvidence.filter(isProvenConnectorEvidence).length;
@@ -31,7 +31,7 @@ export const executiveBriefSection: DashboardSectionStrategy = {
 
     return `<div class="section-titlebar">
         <div>
-          <h2>Executive Brief</h2>
+          <h2>Customer Brief</h2>
           <p>Outcome, handoff, and customer-system proof for the business and technical sponsor.</p>
         </div>
         <span class="pill info">${escapeHtml(`${metrics.createdIssues.length + metrics.slackMessages.length} actions`)}</span>

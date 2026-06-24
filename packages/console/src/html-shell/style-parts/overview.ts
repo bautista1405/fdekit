@@ -1,4 +1,48 @@
 export const overviewStyles = `
+    .story-strip {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 1px;
+      margin-bottom: 16px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+      background: var(--line);
+      box-shadow: var(--shadow);
+    }
+
+    .story-step {
+      min-width: 0;
+      display: grid;
+      align-content: start;
+      gap: 5px;
+      min-height: 104px;
+      padding: 14px;
+      background: var(--surface);
+    }
+
+    .story-step span {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 780;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    .story-step strong {
+      color: var(--ink);
+      font-size: 18px;
+      line-height: 1.2;
+      overflow-wrap: anywhere;
+    }
+
+    .story-step small {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+      overflow-wrap: anywhere;
+    }
+
     .kpis {
       display: grid;
       grid-template-columns: repeat(5, minmax(0, 1fr));
@@ -14,7 +58,14 @@ export const overviewStyles = `
     }
 
     .kpi { padding: 15px; min-height: 104px; }
-    .kpi .label { color: var(--muted); font-size: 13px; margin-bottom: 8px; }
+    .kpi .label {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 760;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
     .kpi .value { font-size: 25px; font-weight: 780; letter-spacing: 0; }
     .kpi .note { color: var(--muted); font-size: 12px; margin-top: 5px; overflow-wrap: anywhere; }
 
@@ -40,7 +91,7 @@ export const overviewStyles = `
 
     .hero-title {
       margin: 0;
-      font-size: 22px;
+      font-size: 21px;
       line-height: 1.18;
       letter-spacing: 0;
     }
@@ -103,11 +154,13 @@ export const overviewStyles = `
       background: var(--surface);
       color: var(--ink);
       box-shadow: var(--shadow);
+      transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
     }
 
     .section-card:hover {
       border-color: var(--ink);
       text-decoration: none;
+      transform: translateY(-1px);
     }
 
     .section-card span {
@@ -121,6 +174,12 @@ export const overviewStyles = `
     .section-card strong {
       font-size: 15px;
       line-height: 1.35;
+      font-weight: 680;
+    }
+
+    .section-card small {
+      color: var(--muted);
+      font-size: 12px;
       font-weight: 680;
     }
 

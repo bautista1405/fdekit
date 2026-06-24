@@ -46,13 +46,26 @@ export const cardAndTableStyles = `    .handoff {
       border: 1px solid var(--line-strong);
     }
 
-    .step-mark.issue { background: var(--violet-soft); color: var(--violet); }
-    .step-mark.slack { background: var(--teal-soft); color: var(--teal); }
-    .step-mark.policy { background: var(--green-soft); color: var(--green); }
-    .step-mark.final { background: var(--amber-soft); color: var(--amber); }
-    .step-mark.pass { background: var(--green-soft); color: var(--green); }
-    .step-mark.warn { background: var(--amber-soft); color: var(--amber); }
-    .step-mark.fail { background: var(--red-soft); color: var(--red); }
+    .step-mark.issue,
+    .step-mark.slack,
+    .step-mark.tool,
+    .step-mark.fail {
+      background: var(--ink);
+      border-color: var(--ink);
+      color: var(--surface);
+    }
+
+    .step-mark.policy,
+    .step-mark.pass {
+      background: var(--surface);
+      color: var(--ink);
+    }
+
+    .step-mark.final,
+    .step-mark.warn {
+      background: var(--surface-alt);
+      color: var(--ink);
+    }
 
     .evidence-row {
       grid-template-columns: 96px minmax(0, 1fr);
@@ -64,7 +77,7 @@ export const cardAndTableStyles = `    .handoff {
       justify-content: center;
       min-width: 72px;
       padding: 5px 8px;
-      border-radius: 999px;
+      border-radius: 6px;
       background: var(--surface-alt);
       color: var(--ink);
       border: 1px solid var(--line-strong);
@@ -83,7 +96,7 @@ export const cardAndTableStyles = `    .handoff {
       padding: 10px;
       border: 1px solid var(--line);
       border-radius: 8px;
-      background: var(--surface-alt);
+      background: var(--surface);
       min-width: 0;
     }
 
@@ -107,7 +120,7 @@ export const cardAndTableStyles = `    .handoff {
       padding: 12px;
       border: 1px solid var(--line);
       border-radius: 8px;
-      background: var(--surface-alt);
+      background: var(--surface);
     }
 
     .review-gate span:first-child {
@@ -138,7 +151,7 @@ export const cardAndTableStyles = `    .handoff {
       min-width: 0;
       border: 1px solid var(--line);
       border-radius: 8px;
-      background: var(--surface-alt);
+      background: var(--surface);
       padding: 10px;
     }
 
@@ -171,7 +184,7 @@ export const cardAndTableStyles = `    .handoff {
       padding: 10px;
       border: 1px solid var(--line);
       border-radius: 8px;
-      background: var(--surface-alt);
+      background: var(--surface);
     }
 
     .workflow {
@@ -193,7 +206,7 @@ export const cardAndTableStyles = `    .handoff {
       min-width: 0;
       border: 1px solid var(--line);
       border-radius: 8px;
-      background: var(--surface-alt);
+      background: var(--surface);
       padding: 12px;
     }
 
@@ -237,6 +250,8 @@ export const cardAndTableStyles = `    .handoff {
       font-size: 12px;
       padding: 9px 8px;
       border-bottom: 1px solid var(--line-strong);
+      letter-spacing: .03em;
+      text-transform: uppercase;
     }
 
     td {

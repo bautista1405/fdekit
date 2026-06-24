@@ -26,9 +26,9 @@ describe('renderConsole', () => {
 
     expect(pages.map((page) => page.fileName)).toEqual([
       'console.html',
-      'charts.html',
       'brief.html',
       'readiness.html',
+      'charts.html',
       'workbench.html',
     ]);
     expectTextIncludes(html, [
@@ -38,15 +38,19 @@ describe('renderConsole', () => {
       'href="brief.html"',
       'href="readiness.html"',
       'href="workbench.html"',
-      'Eval status',
+      'Review snapshot',
+      'Run story',
+      'Key results',
+      'Latest eval scope',
+      'Eval',
       'ticket.get',
       'customer.get',
       'enterprise billing escalation',
       'Policy evaluations',
-      'Deployment Charts',
-      'Deployment Command Center',
-      'Governance Posture',
-      'Executive Brief',
+      'Signals',
+      'Execution Summary',
+      'Controls',
+      'Customer Brief',
       'Business Impact',
       'Field Method',
       'Support triage escalation',
@@ -95,7 +99,7 @@ describe('renderConsole', () => {
 
     expectTextIncludes(bundle.dashboardCsv, [
       'record_type,id,created_at,status,title',
-      'issue,local_jira_1',
+      'issue,ENG-1',
       'slack,2026-05-22T12:00:01.000Z',
       'workflow_scorecard',
       'data_layer',
@@ -339,7 +343,7 @@ describe('renderConsole', () => {
     expect(parsed.runs).toHaveLength(1);
     expect(parsed.runs?.[0]?.traceId).toBe('run_1');
     expect(parsed.connectorEvidence).toHaveLength(2);
-    expect(parsed.createdIssues).toEqual([expect.objectContaining({ id: 'local_jira_1' })]);
+    expect(parsed.createdIssues).toEqual([expect.objectContaining({ id: 'ENG-1' })]);
     expect(parsed.slackMessages).toHaveLength(1);
     expect(parsed.approvalQueue).toHaveLength(1);
     expect(parsed.auditLog).toHaveLength(2);
@@ -350,7 +354,7 @@ describe('renderConsole', () => {
     expect(countCsvRecords(bundle.dashboardCsv, 'issue')).toBe(1);
     expect(countCsvRecords(bundle.dashboardCsv, 'slack')).toBe(1);
     expect(countCsvRecords(bundle.dashboardCsv, 'audit')).toBe(2);
-    expect(bundle.dashboardCsv).not.toContain('local_jira_old');
+    expect(bundle.dashboardCsv).not.toContain('ENG-0');
     expect(bundle.summaryMarkdown).not.toContain('Historical duplicate billing issue');
 
     const workbench = renderConsolePages({
@@ -367,7 +371,7 @@ describe('renderConsole', () => {
     expect(workbench).not.toContain('Historical duplicate billing issue');
   });
 
-  it('falls back to all stored traces when no latest eval trace ids exist', () => {
+  it('falls back to the latest run when no latest eval trace ids exist', () => {
     const bundle = createConsoleExportBundle({
       deployment,
       traces: [historicalTrace, trace],
@@ -385,26 +389,28 @@ describe('renderConsole', () => {
     };
 
     expect(parsed.metrics).toMatchObject({
-      traceCount: 2,
+      traceCount: 1,
       allTraceCount: 2,
-      traceScope: 'all_traces',
+      traceScope: 'latest_run',
     });
-    expect(parsed.runs).toHaveLength(2);
-    expect(parsed.createdIssues).toHaveLength(2);
-    expect(parsed.slackMessages).toHaveLength(2);
+    expect(parsed.runs).toHaveLength(1);
+    expect(parsed.createdIssues).toEqual([expect.objectContaining({ id: 'ENG-1' })]);
+    expect(parsed.slackMessages).toHaveLength(1);
+    expect(bundle.summaryMarkdown).toContain('- Trace scope: latest run (2 stored trace artifacts)');
+    expect(bundle.summaryMarkdown).not.toContain('Historical duplicate billing issue');
   });
 
   it('keeps dashboard sections as ordered rendering strategies', () => {
     expect(dashboardSectionStrategies.map((strategy) => strategy.id)).toEqual([
-      'charts-and-governance-posture',
       'executive-brief',
       'governance-readiness',
+      'charts-and-governance-posture',
       'engineer-workbench',
     ]);
     expect(dashboardSectionStrategies.map((strategy) => strategy.fileName)).toEqual([
-      'charts.html',
       'brief.html',
       'readiness.html',
+      'charts.html',
       'workbench.html',
     ]);
   });

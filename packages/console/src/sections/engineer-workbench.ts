@@ -28,7 +28,7 @@ export const engineerWorkbenchSection: DashboardSectionStrategy = {
   title: 'Engineer Review',
   navLabel: 'Review',
   fileName: 'workbench.html',
-  description: 'Latest run, evals, governance, customer evidence, and report.',
+  description: 'Trace, eval, governance, evidence, and report.',
   render: ({ data, metrics }) => `<div class="section-titlebar">
         <div>
           <h2>Engineer Review</h2>
@@ -54,6 +54,10 @@ export const engineerWorkbenchSection: DashboardSectionStrategy = {
 function reviewTraceLabel(metrics: ConsoleMetrics): string {
   if (metrics.traceScope === 'latest_eval') {
     return `${metrics.traceCount} latest eval run(s)`;
+  }
+
+  if (metrics.traceScope === 'latest_run') {
+    return `${metrics.traceCount} latest run`;
   }
 
   return `${metrics.traceCount} run artifacts`;

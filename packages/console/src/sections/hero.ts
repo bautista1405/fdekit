@@ -6,7 +6,7 @@ export function renderDemoHero(metrics: ConsoleMetrics): string {
 
   return `<section class="demo-hero" aria-label="Deployment command center">
     <div class="hero-copy">
-      <div class="hero-kicker">Deployment Command Center</div>
+      <div class="hero-kicker">Execution Summary</div>
       <h2 class="hero-title">${escapeHtml(commandCenterHeadline(metrics))}</h2>
       <p>${escapeHtml(nextAction)}</p>
       <div class="signal-grid">
@@ -21,42 +21,42 @@ export function renderDemoHero(metrics: ConsoleMetrics): string {
 
 function commandCenterHeadline(metrics: ConsoleMetrics): string {
   if (metrics.evalStatus === 'passed' && !hasOpenGovernanceItems(metrics) && hasMeasuredConnectorEvidence(metrics)) {
-    return 'Agent run is demo-ready with governed customer-system evidence';
+    return 'Run is ready for stakeholder review with governed system evidence';
   }
 
   if (hasOpenGovernanceItems(metrics)) {
-    return 'Agent run needs governance review before customer handoff';
+    return 'Governance review is required before stakeholder handoff';
   }
 
   if (metrics.traceCount === 0) {
-    return 'Run an agent to populate the deployment story';
+    return 'No reviewed execution has been captured yet';
   }
 
-  return 'Deployment is captured; add eval and connector evidence to complete the story';
+  return 'Execution evidence is captured; eval and connector proof are incomplete';
 }
 
 function recommendedNextAction(metrics: ConsoleMetrics): string {
   if (metrics.traceCount === 0) {
-    return 'Run the recipe once, then rebuild the console to show trace evidence, tool behavior, and artifact outputs';
+    return 'Complete a governed execution and refresh this report to show trace evidence, tool behavior, and artifact outputs';
   }
 
   if (metrics.evalStatus !== 'passed') {
-    return 'Run evals and fix failing cases before using this dashboard as the customer-facing proof point';
+    return 'Resolve missing or failing eval results before presenting this report as stakeholder evidence';
   }
 
   if (!hasMeasuredConnectorEvidence(metrics)) {
-    return 'Enable at least one connector action, such as Slack or issue creation, so the demo proves real workflow automation';
+    return 'Capture at least one verified system action, such as issue creation or Slack notification, before handoff';
   }
 
   if (hasOpenGovernanceItems(metrics)) {
-    return 'Review approval and policy items, then re-run to demonstrate governance closure';
+    return 'Resolve approval and policy items, then refresh the report to show governance closure';
   }
 
   if (!metrics.reportReady) {
-    return 'Generate the deployment report so the export bundle includes a customer-ready narrative';
+    return 'Generate the deployment report so the export bundle includes a stakeholder-ready narrative';
   }
 
-  return 'Use this console as the live demo surface, then export Markdown or PDF for the customer handoff';
+  return 'Use the exports or print view for stakeholder handoff';
 }
 
 function hasMeasuredConnectorEvidence(metrics: ConsoleMetrics): boolean {

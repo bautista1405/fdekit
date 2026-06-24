@@ -13,7 +13,7 @@ export function issueFromEvent(traceId: string, createdAt: string, event: TraceE
   const number = getNumber(result.number);
   const key = getString(result.key);
   const identifier = getString(result.identifier);
-  const id = getString(result.id) ?? key ?? identifier ?? (number ? String(number) : 'unknown');
+  const id = key ?? identifier ?? (typeof number === 'number' ? `#${number}` : undefined) ?? getString(result.id) ?? 'unknown';
   const url = getString(result.url);
 
   return {

@@ -19,7 +19,7 @@ export function renderExportMarkdown(
     `- Eval status: ${metrics.evalStatus}`,
     `- Eval cases: ${metrics.evalPassedCases}/${metrics.evalCaseCount || 0} passed`,
     `- Runs captured: ${metrics.traceCount}`,
-    `- Trace scope: ${metrics.traceScope === 'latest_eval' ? `latest eval (${metrics.allTraceCount} stored trace artifacts)` : 'all stored traces'}`,
+    `- Trace scope: ${traceScopeSummary(metrics)}`,
     `- Tool calls: ${metrics.toolCallCount}`,
     `- Created issues: ${metrics.createdIssues.length}`,
     `- Slack notifications: ${metrics.slackMessages.length}`,
@@ -307,6 +307,18 @@ export function renderExportMarkdown(
   ];
 
   return `${lines.join('\n')}\n`;
+}
+
+function traceScopeSummary(metrics: ConsoleMetrics): string {
+  if (metrics.traceScope === 'latest_eval') {
+    return `latest eval (${metrics.allTraceCount} stored trace artifacts)`;
+  }
+
+  if (metrics.traceScope === 'latest_run') {
+    return `latest run (${metrics.allTraceCount} stored trace artifacts)`;
+  }
+
+  return 'all stored traces';
 }
 
 function markdownTable(headers: string[], rows: string[][]): string[] {

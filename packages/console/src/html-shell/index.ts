@@ -40,7 +40,7 @@ const overviewNavItem: ConsoleNavItem = {
   id: 'overview',
   label: 'Overview',
   fileName: 'console.html',
-  description: 'Command center, KPIs, and next action.',
+  description: 'Run story, key results, and next action.',
 };
 
 export function renderConsole(data: ConsoleData): string {
@@ -120,13 +120,16 @@ function renderOverviewPage(metrics: ConsoleMetrics, navItems: ConsoleNavItem[])
     item.evidenceKind === 'measured' && item.status === 'failed'
   )).length;
   const simulatedEvidenceCount = metrics.connectorEvidence.filter((item) => item.evidenceKind === 'simulated').length;
+  const actionCount = metrics.createdIssues.length + metrics.slackMessages.length;
 
-  return `<section class="kpis" aria-label="Deployment metrics">
-        ${renderKpi('Eval status', metrics.evalStatus, `${metrics.evalPassedCases}/${metrics.evalCaseCount || 0} cases passed`)}
+  return `${renderReviewStory(metrics)}
+
+      <section class="kpis" aria-label="Key results">
+        ${renderKpi('Eval', metrics.evalStatus, `${metrics.evalPassedCases}/${metrics.evalCaseCount || 0} cases passed`)}
         ${renderKpi('Runs', String(metrics.traceCount), traceScopeDetail(metrics))}
-        ${renderKpi('System evidence', String(provenEvidenceCount), `${failedMeasuredCount} failed measured event(s), ${simulatedEvidenceCount} simulated event(s), ${metrics.createdIssues.length} issue(s), ${metrics.slackMessages.length} Slack message(s)`)}
+        ${renderKpi('Evidence', String(provenEvidenceCount), `${failedMeasuredCount} failed measured event(s), ${simulatedEvidenceCount} simulated event(s)`)}
         ${renderKpi('Governance', String(metrics.policyEvaluations), `${metrics.policyDefinitions.length} policy file item(s), ${metrics.policyViolationCount} violation(s)`)}
-        ${renderKpi('Avg latency', `${Math.round(metrics.avgLatencyMs)}ms`, `$${metrics.totalCostUsd.toFixed(4)} total cost`)}
+        ${renderKpi('Handoff', String(actionCount), `${metrics.reportReady ? 'report ready' : 'report pending'}, ${Math.round(metrics.avgLatencyMs)}ms avg latency`)}
       </section>
 
       ${renderDemoHero(metrics)}
@@ -135,13 +138,38 @@ function renderOverviewPage(metrics: ConsoleMetrics, navItems: ConsoleNavItem[])
         ${navItems.slice(1).map((item) => `<a class="section-card" href="${escapeHtml(item.fileName)}">
           <span>${escapeHtml(item.label)}</span>
           <strong>${escapeHtml(item.description)}</strong>
+          <small>Open page</small>
         </a>`).join('')}
       </section>`;
+}
+
+function renderReviewStory(metrics: ConsoleMetrics): string {
+  const actionCount = metrics.createdIssues.length + metrics.slackMessages.length;
+  const reportStatus = metrics.reportReady ? 'report ready' : 'report pending';
+
+  return `<section class="story-strip" aria-label="Run story">
+    ${renderStoryStep('Ran', `${metrics.traceCount} reviewed run(s)`, traceScopeDetail(metrics))}
+    ${renderStoryStep('Traced', `${metrics.toolCallCount} tool call(s)`, `${metrics.connectorEvidence.length} connector evidence item(s)`)}
+    ${renderStoryStep('Evaluated', `${metrics.evalPassedCases}/${metrics.evalCaseCount || 0} cases`, metrics.evalStatus)}
+    ${renderStoryStep('Result', `${actionCount} handoff action(s)`, reportStatus)}
+  </section>`;
+}
+
+function renderStoryStep(label: string, value: string, detail: string): string {
+  return `<article class="story-step">
+    <span>${escapeHtml(label)}</span>
+    <strong>${escapeHtml(value)}</strong>
+    <small>${escapeHtml(detail)}</small>
+  </article>`;
 }
 
 function traceScopeDetail(metrics: ConsoleMetrics): string {
   if (metrics.traceScope === 'latest_eval') {
     return `${metrics.allTraceCount} total trace artifacts retained`;
+  }
+
+  if (metrics.traceScope === 'latest_run') {
+    return `${metrics.allTraceCount} stored trace artifacts available`;
   }
 
   return 'trace artifacts captured';
@@ -162,12 +190,14 @@ function renderConsoleShell(options: ConsoleShellOptions): string {
   <style>${dashboardStyles}</style>
 </head>
 <body>
+  <a class="skip-link" href="#main-content">Skip to content</a>
   <div class="app">
     <aside>
       <div class="brand">
         <span class="brand-mark">F</span>
         <span>FDEKit Console</span>
       </div>
+      ${renderSidebarReview(options.metrics)}
       ${renderPageNavigation(options.navItems, options.activeId)}
       <div class="sidebar-meta">
         ${renderNavGroup('Deployment', [deployment.name, deployment.environment ?? 'local'])}
@@ -176,12 +206,16 @@ function renderConsoleShell(options: ConsoleShellOptions): string {
         ${renderNavGroup('Agents', agentNames)}
       </div>
     </aside>
-    <main>
+    <main id="main-content">
       <div class="topbar">
         <div class="page-heading">
           <div class="page-kicker">${escapeHtml(deployment.name)}</div>
           <h1>${escapeHtml(options.pageTitle)}</h1>
-          <p class="subtle">${escapeHtml(options.pageDescription)} Created ${escapeHtml(formatDate(options.createdAt))}.</p>
+          <p class="subtle">${escapeHtml(options.pageDescription)}</p>
+          <div class="page-meta">
+            <span>Created ${escapeHtml(formatDate(options.createdAt))}</span>
+            <span>${escapeHtml(reviewScopeLabel(options.metrics))}</span>
+          </div>
         </div>
         <div class="topbar-actions">
           ${statusPill(options.metrics.evalStatus)}
@@ -217,6 +251,36 @@ function renderConsoleShell(options: ConsoleShellOptions): string {
 </body>
 </html>
 `;
+}
+
+function renderSidebarReview(metrics: ConsoleMetrics): string {
+  const actionCount = metrics.createdIssues.length + metrics.slackMessages.length;
+
+  return `<div class="sidebar-review" aria-label="Review snapshot">
+    ${renderSidebarReviewRow('Scope', escapeHtml(reviewScopeLabel(metrics)))}
+    ${renderSidebarReviewRow('Runs', escapeHtml(String(metrics.traceCount)))}
+    ${renderSidebarReviewRow('Eval', statusPill(metrics.evalStatus))}
+    ${renderSidebarReviewRow('Actions', escapeHtml(String(actionCount)))}
+  </div>`;
+}
+
+function renderSidebarReviewRow(label: string, valueHtml: string): string {
+  return `<div class="sidebar-review-row">
+    <span>${escapeHtml(label)}</span>
+    <strong>${valueHtml}</strong>
+  </div>`;
+}
+
+function reviewScopeLabel(metrics: ConsoleMetrics): string {
+  if (metrics.traceScope === 'latest_eval') {
+    return 'Latest eval scope';
+  }
+
+  if (metrics.traceScope === 'latest_run') {
+    return 'Latest run scope';
+  }
+
+  return 'All traces scope';
 }
 
 function renderPageNavigation(items: ConsoleNavItem[], activeId: string): string {

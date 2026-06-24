@@ -394,7 +394,7 @@ describe('cli runtime commands', () => {
     expect(consoleHtml).toContain('href="charts.html"');
     expect(consoleHtml).toContain('href="workbench.html"');
     const chartsHtml = await readFile(path.join(projectDir, 'artifacts', 'charts.html'), 'utf8');
-    expect(chartsHtml).toContain('Deployment Charts');
+    expect(chartsHtml).toContain('Signals');
     const workbenchHtml = await readFile(path.join(projectDir, 'artifacts', 'workbench.html'), 'utf8');
     expect(workbenchHtml).toContain('support-triage-dataset');
     expect(workbenchHtml).toContain('Review Gates');

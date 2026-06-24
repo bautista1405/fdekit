@@ -5,6 +5,7 @@ import {
   defineGovernance,
   defineHarness,
 } from '@fdekit/core';
+import type { TraceArtifact } from '../traces/index.js';
 import { collectReportPolicyNames, renderReport } from '../reports.js';
 
 describe('deployment reports', () => {
@@ -80,5 +81,94 @@ describe('deployment reports', () => {
       'limit-tool-scopes, limit-cost, agent-tool-limit',
     ].join(' '));
     expect(report).not.toContain('- Deployment policies: none');
+  });
+
+  it('surfaces latest run evidence and created issue links', () => {
+    const deployment = defineDeployment({
+      name: 'codebase-agent-example',
+      environment: 'local',
+      providers: {
+        localOllama: { name: 'localOllama' },
+      },
+      connectors: {
+        codebase: { name: 'codebase' },
+        issues: { name: 'github' },
+      },
+      agents: {
+        codebaseAgent: defineAgent({
+          provider: 'localOllama',
+          instructions: './agents/codebase-agent.md',
+        }),
+      },
+    });
+    const trace: TraceArtifact = {
+      id: 'run_latest',
+      createdAt: '2026-06-23T23:28:55.706Z',
+      deployment: 'codebase-agent-example',
+      events: [
+        { type: 'agent.run.started', agent: 'codebaseAgent', provider: 'localOllama' },
+        {
+          type: 'tool.call.completed',
+          toolName: 'codebase.search',
+          result: {
+            matches: [
+              {
+                filePath: 'src/billing.ts',
+                line: 8,
+                preview: '// TODO(fdekit): add retry and idempotency handling.',
+              },
+            ],
+          },
+        },
+        {
+          type: 'tool.call.completed',
+          toolName: 'codebase.readFile',
+          result: {
+            filePath: 'src/billing.ts',
+            startLine: 1,
+            endLine: 16,
+          },
+        },
+        {
+          type: 'policy.evaluated',
+          policy: 'limit-tool-scopes',
+          toolName: 'issue.create',
+          allowed: true,
+        },
+        {
+          type: 'tool.call.completed',
+          toolName: 'issue.create',
+          args: {
+            title: 'Add retry and idempotency to billing sync',
+          },
+          result: {
+            id: '4730299904',
+            number: 8,
+            mode: 'api',
+            repository: 'bautista1405/Calculator-made-with-React',
+            title: 'Add retry and idempotency to billing sync',
+            url: 'https://github.com/bautista1405/Calculator-made-with-React/issues/8',
+          },
+        },
+        {
+          type: 'agent.run.completed',
+          status: 'completed',
+          message: 'Issue created: https://github.com/bautista1405/Calculator-made-with-React/issues/8',
+        },
+      ],
+    };
+
+    const report = renderReport(deployment, null, [trace]);
+
+    expect(report).toContain('## Run Reviewed');
+    expect(report).toContain('- Trace: run_latest');
+    expect(report).toContain('- Agent: codebaseAgent');
+    expect(report).toContain('- Tool calls: codebase.search, codebase.readFile, issue.create');
+    expect(report).toContain('src/billing.ts:8');
+    expect(report).toContain('src/billing.ts:1-16');
+    expect(report).toContain('Add retry and idempotency to billing sync [#8]');
+    expect(report).toContain('https://github.com/bautista1405/Calculator-made-with-React/issues/8');
+    expect(report).toContain('- Policy checks: 1');
+    expect(report).toContain('- Policy violations: 0');
   });
 });

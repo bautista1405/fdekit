@@ -1,6 +1,13 @@
-import type { DeploymentDefinition, GovernanceDefinition, HarnessDefinition } from '@fdekit/core';
+import {
+  asRecord,
+  getNumber,
+  getString,
+  type DeploymentDefinition,
+  type GovernanceDefinition,
+  type HarnessDefinition,
+} from '@fdekit/core';
 import { collectEvals, type EvalArtifact } from './evals/index.js';
-import type { TraceArtifact } from './traces/index.js';
+import type { TraceArtifact, TraceEvent } from './traces/index.js';
 import { joinNames } from './utils.js';
 
 export function renderReport(
@@ -11,6 +18,13 @@ export function renderReport(
   const providerNames = Object.keys(deployment.providers ?? {});
   const connectorNames = Object.keys(deployment.connectors ?? {});
   const agentNames = Object.keys(deployment.agents ?? {});
+  const sortedTraces = sortTracesByCreatedAt(traces);
+  const latestTrace = sortedTraces.at(-1) ?? null;
+  const runSummary = latestTrace ? collectRunSummary(latestTrace) : null;
+  const toolCalls = latestTrace ? collectCompletedToolNames(latestTrace) : [];
+  const codeEvidence = latestTrace ? collectCodeEvidence(latestTrace) : [];
+  const createdIssues = latestTrace ? collectCreatedIssues(latestTrace) : [];
+  const policySummary = latestTrace ? collectPolicySummary(latestTrace) : { checks: 0, violations: 0 };
 
   return `# ${deployment.name} Deployment Report
 
@@ -23,9 +37,24 @@ Created: ${new Date().toISOString()}
 - Connectors: ${joinNames(connectorNames)}
 - Agents: ${joinNames(agentNames)}
 
+## Run Reviewed
+
+- Trace: ${latestTrace?.id ?? 'none'}
+- Status: ${runSummary?.status ?? 'not run'}
+- Agent: ${runSummary?.agent ?? joinNames(agentNames)}
+- Final answer: ${runSummary?.finalAnswer ?? 'No final answer captured yet'}
+
+## Evidence
+
+- Tool calls: ${joinNames(toolCalls)}
+- Code evidence: ${formatCodeEvidence(codeEvidence)}
+- Created issues: ${formatCreatedIssues(createdIssues)}
+
 ## Governance
 
 - Deployment policies: ${joinNames(collectReportPolicyNames(deployment))}
+- Policy checks: ${policySummary.checks}
+- Policy violations: ${policySummary.violations}
 - Evals configured: ${collectEvals(deployment).length}
 
 ## Latest Eval
@@ -36,8 +65,204 @@ Created: ${new Date().toISOString()}
 ## Observability
 
 - Traces captured: ${traces.length}
-- Latest trace: ${traces.length > 0 ? traces[traces.length - 1]?.id ?? 'none' : 'none'}
+- Latest trace: ${latestTrace?.id ?? 'none'}
 `;
+}
+
+interface ReportRunSummary {
+  agent?: string;
+  status: string;
+  finalAnswer?: string;
+}
+
+interface ReportCodeEvidence {
+  filePath: string;
+  line?: number;
+  preview?: string;
+  startLine?: number;
+  endLine?: number;
+}
+
+interface ReportCreatedIssue {
+  id: string;
+  title: string;
+  destination?: string;
+  mode?: string;
+  url?: string;
+}
+
+function sortTracesByCreatedAt(traces: TraceArtifact[]): TraceArtifact[] {
+  return [...traces].sort((left, right) => left.createdAt.localeCompare(right.createdAt));
+}
+
+function collectRunSummary(trace: TraceArtifact): ReportRunSummary {
+  const started = trace.events.find((event) => event.type === 'agent.run.started');
+  const completed = findLastEvent(trace.events, 'agent.run.completed');
+  const completedRecord = asRecord(completed);
+
+  return {
+    agent: getString(started?.agent) ?? getString(completedRecord.agent),
+    status: getString(completedRecord.status) ?? 'unknown',
+    finalAnswer: firstParagraph(getString(completedRecord.message)),
+  };
+}
+
+function collectCompletedToolNames(trace: TraceArtifact): string[] {
+  const names: string[] = [];
+
+  for (const event of trace.events) {
+    if (event.type !== 'tool.call.completed') {
+      continue;
+    }
+
+    const toolName = getString(event.toolName);
+    if (toolName) {
+      names.push(toolName);
+    }
+  }
+
+  return names;
+}
+
+function collectCodeEvidence(trace: TraceArtifact): ReportCodeEvidence[] {
+  const evidence: ReportCodeEvidence[] = [];
+
+  for (const event of trace.events) {
+    if (event.type !== 'tool.call.completed') {
+      continue;
+    }
+
+    const toolName = getString(event.toolName);
+    const result = asRecord(event.result);
+
+    if (toolName === 'codebase.search' && Array.isArray(result.matches)) {
+      for (const match of result.matches) {
+        const matchRecord = asRecord(match);
+        const filePath = getString(matchRecord.filePath);
+        if (!filePath) {
+          continue;
+        }
+
+        evidence.push({
+          filePath,
+          line: getNumber(matchRecord.line),
+          preview: getString(matchRecord.preview),
+        });
+      }
+    }
+
+    if (toolName === 'codebase.readFile') {
+      const filePath = getString(result.filePath);
+      if (!filePath) {
+        continue;
+      }
+
+      evidence.push({
+        filePath,
+        startLine: getNumber(result.startLine),
+        endLine: getNumber(result.endLine),
+      });
+    }
+  }
+
+  return dedupeCodeEvidence(evidence);
+}
+
+function collectCreatedIssues(trace: TraceArtifact): ReportCreatedIssue[] {
+  return trace.events
+    .filter((event) => event.type === 'tool.call.completed' && isIssueTool(event.toolName))
+    .map((event) => {
+      const result = asRecord(event.result);
+      const args = asRecord(event.args);
+      const number = getNumber(result.number);
+      const id = getString(result.key)
+        ?? getString(result.identifier)
+        ?? (typeof number === 'number' ? `#${number}` : undefined)
+        ?? getString(result.id)
+        ?? 'unknown';
+
+      return {
+        id,
+        title: getString(result.title) ?? getString(result.summary) ?? getString(args.title) ?? getString(args.summary) ?? 'Untitled issue',
+        destination: getString(result.repository) ?? getString(result.destination) ?? getString(result.projectKey) ?? getString(result.teamId),
+        mode: getString(result.mode),
+        url: getString(result.url),
+      };
+    });
+}
+
+function collectPolicySummary(trace: TraceArtifact): { checks: number; violations: number } {
+  const policyEvents = trace.events.filter((event) => event.type === 'policy.evaluated');
+
+  return {
+    checks: policyEvents.length,
+    violations: policyEvents.filter((event) => event.allowed === false).length,
+  };
+}
+
+function formatCodeEvidence(evidence: ReportCodeEvidence[]): string {
+  if (evidence.length === 0) {
+    return 'none captured';
+  }
+
+  return evidence.map((item) => {
+    const location = typeof item.line === 'number'
+      ? `${item.filePath}:${item.line}`
+      : typeof item.startLine === 'number' && typeof item.endLine === 'number'
+        ? `${item.filePath}:${item.startLine}-${item.endLine}`
+        : item.filePath;
+    const preview = item.preview ? ` (${item.preview})` : '';
+
+    return `${location}${preview}`;
+  }).join('; ');
+}
+
+function formatCreatedIssues(issues: ReportCreatedIssue[]): string {
+  if (issues.length === 0) {
+    return 'none captured';
+  }
+
+  return issues.map((issue) => {
+    const destination = issue.destination ? ` in ${issue.destination}` : '';
+    const mode = issue.mode ? ` via ${issue.mode}` : '';
+    const link = issue.url ? ` (${issue.url})` : '';
+
+    return `${issue.title} [${issue.id}]${destination}${mode}${link}`;
+  }).join('; ');
+}
+
+function dedupeCodeEvidence(evidence: ReportCodeEvidence[]): ReportCodeEvidence[] {
+  const seen = new Set<string>();
+  const deduped: ReportCodeEvidence[] = [];
+
+  for (const item of evidence) {
+    const key = `${item.filePath}:${item.line ?? item.startLine ?? ''}:${item.endLine ?? ''}`;
+    if (seen.has(key)) {
+      continue;
+    }
+    seen.add(key);
+    deduped.push(item);
+  }
+
+  return deduped;
+}
+
+function firstParagraph(value: string | undefined): string | undefined {
+  return value?.split(/\n\s*\n/)[0]?.replace(/\s+/g, ' ').trim();
+}
+
+function findLastEvent(events: TraceEvent[], type: string): TraceEvent | undefined {
+  for (let index = events.length - 1; index >= 0; index -= 1) {
+    if (events[index]?.type === type) {
+      return events[index];
+    }
+  }
+
+  return undefined;
+}
+
+function isIssueTool(toolName: unknown): boolean {
+  return typeof toolName === 'string' && (toolName === 'issue.create' || toolName.endsWith('.issue.create'));
 }
 
 export function collectReportPolicyNames(deployment: DeploymentDefinition): string[] {

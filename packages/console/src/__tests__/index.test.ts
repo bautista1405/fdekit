@@ -57,6 +57,7 @@ describe('renderConsole', () => {
       'Support triage escalation',
       'Workflow Map',
       'Integration Readiness',
+      'Deployment Harness',
       'Production Readiness',
       'Enforcement Posture',
       'Engineer Review',
@@ -551,6 +552,33 @@ describe('renderConsole', () => {
     expect(bundle.summaryMarkdown).toContain('- Policy violations: 0 (advisory mode - not enforced)');
     expect(bundle.summaryMarkdown).toContain('## Enforcement Posture');
     expect(bundle.dashboardCsv).toContain('enforcement_posture,Strict mode');
+  });
+
+  it('renders the deployment harness phases, refs, and run-limit evidence', () => {
+    const limitTrace = runTrace(
+      'run_tool_limit',
+      '2026-06-26T12:00:00.000Z',
+      'failed',
+      'Policy "limit-tool-use" blocked codebase.search: Tool call limit exceeded',
+    );
+    const readiness = renderConsolePages({
+      deployment,
+      traces: [trace, limitTrace],
+      createdAt: '2026-06-26T12:01:00.000Z',
+    }).find((page) => page.fileName === 'readiness.html')?.html ?? '';
+
+    expectTextIncludes(readiness, [
+      'Deployment Harness',
+      'support-triage-governed-loop',
+      'Context, decision, approved action, and review phases for governed support escalation',
+      'max 2 step(s)',
+      'max 3 step(s)',
+      'configured; evals: support-triage-dataset; artifacts: report, dashboard',
+      'enabled; 1 attempt(s); on support-triage-dataset, deny-pii-leak',
+      'issue.create',
+      'restrict-environments',
+      'Run history includes 1 harness/tool-limit stop(s); compare against max 8 step(s) and phase limits below.',
+    ]);
   });
 
   it('scopes dashboard evidence to traces referenced by the latest eval', () => {

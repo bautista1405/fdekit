@@ -9,12 +9,6 @@ export function renderDemoHero(metrics: ConsoleMetrics): string {
       <div class="hero-kicker">Execution Summary</div>
       <h2 class="hero-title">${escapeHtml(commandCenterHeadline(metrics))}</h2>
       <p>${escapeHtml(nextAction)}</p>
-      <div class="signal-grid">
-        ${metrics.readinessSignals.map((signal) => `<div class="signal ${escapeHtml(signal.status)}">
-          <div class="signal-title">${escapeHtml(signal.label)}</div>
-          <div class="signal-detail">${escapeHtml(signal.detail)}</div>
-        </div>`).join('')}
-      </div>
     </div>
   </section>`;
 }

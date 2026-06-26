@@ -291,6 +291,12 @@ export const foundationStyles = `    :root {
       font-weight: 660;
     }
 
+    .page-meta .page-meta-badge {
+      color: var(--ink);
+      border-color: var(--line-strong);
+      font-weight: 720;
+    }
+
     .pill {
       display: inline-flex;
       align-items: center;

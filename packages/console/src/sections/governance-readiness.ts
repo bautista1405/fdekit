@@ -15,14 +15,8 @@ export const governanceReadinessSection: DashboardSectionStrategy = {
   navLabel: 'Readiness',
   fileName: 'readiness.html',
   description: 'Workflow, integration status, and production controls.',
-  render: ({ metrics }) => `<div class="section-titlebar">
-        <div>
-          <h2>Readiness</h2>
-          <p>Whether the deployment is wired, governed, and explainable enough for a customer environment.</p>
-        </div>
-        <span class="pill">${escapeHtml(`${metrics.productionReadiness.filter((item) => item.status === 'pass').length}/${metrics.productionReadiness.length} ready`)}</span>
-      </div>
-      <section class="brief-grid" aria-label="Governance and readiness">
+  badge: (metrics) => `${metrics.productionReadiness.filter((item) => item.status === 'pass').length}/${metrics.productionReadiness.length} controls ready`,
+  render: ({ metrics }) => `<section class="brief-grid" aria-label="Governance and readiness">
         <section class="panel compact-panel">
           <div class="section-head">
             <div>

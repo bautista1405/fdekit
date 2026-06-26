@@ -1,48 +1,4 @@
 export const overviewStyles = `
-    .story-strip {
-      display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 1px;
-      margin-bottom: 16px;
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      overflow: hidden;
-      background: var(--line);
-      box-shadow: var(--shadow);
-    }
-
-    .story-step {
-      min-width: 0;
-      display: grid;
-      align-content: start;
-      gap: 5px;
-      min-height: 104px;
-      padding: 14px;
-      background: var(--surface);
-    }
-
-    .story-step span {
-      color: var(--muted);
-      font-size: 11px;
-      font-weight: 780;
-      letter-spacing: .08em;
-      text-transform: uppercase;
-    }
-
-    .story-step strong {
-      color: var(--ink);
-      font-size: 18px;
-      line-height: 1.2;
-      overflow-wrap: anywhere;
-    }
-
-    .story-step small {
-      color: var(--muted);
-      font-size: 12px;
-      line-height: 1.35;
-      overflow-wrap: anywhere;
-    }
-
     .kpis {
       display: grid;
       grid-template-columns: repeat(5, minmax(0, 1fr));
@@ -58,13 +14,25 @@ export const overviewStyles = `
     }
 
     .kpi { padding: 15px; min-height: 104px; }
+    .kpi-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
     .kpi .label {
       color: var(--muted);
       font-size: 12px;
       font-weight: 760;
       letter-spacing: .08em;
       text-transform: uppercase;
-      margin-bottom: 8px;
+    }
+    .kpi-head .pill {
+      height: 22px;
+      padding: 0 8px;
+      font-size: 11px;
+      flex: 0 0 auto;
     }
     .kpi .value { font-size: 25px; font-weight: 780; letter-spacing: 0; }
     .kpi .note { color: var(--muted); font-size: 12px; margin-top: 5px; overflow-wrap: anywhere; }
@@ -100,41 +68,6 @@ export const overviewStyles = `
       margin: 0;
       color: var(--muted);
       max-width: 780px;
-    }
-
-    .signal-grid {
-      display: grid;
-      grid-template-columns: repeat(5, minmax(0, 1fr));
-      gap: 8px;
-      margin-top: 2px;
-    }
-
-    .signal {
-      min-width: 0;
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      padding: 10px;
-      background: var(--surface-alt);
-    }
-
-    .signal.pass { border-color: var(--line-strong); background: var(--surface); }
-    .signal.warn { border-color: var(--line-strong); background: var(--surface-alt); }
-    .signal.fail { border-color: var(--ink); background: var(--ink); color: var(--surface); }
-
-    .signal-title {
-      font-weight: 760;
-      font-size: 13px;
-      margin-bottom: 3px;
-    }
-
-    .signal-detail {
-      color: var(--muted);
-      font-size: 12px;
-      overflow-wrap: anywhere;
-    }
-
-    .signal.fail .signal-detail {
-      color: #d4d4d4;
     }
 
     .section-cards {
@@ -192,25 +125,6 @@ export const overviewStyles = `
 
     .panel { padding: 16px; }
     .panel + .panel { margin-top: 12px; }
-
-    .section-titlebar {
-      display: flex;
-      align-items: end;
-      justify-content: space-between;
-      gap: 14px;
-      margin: 0 0 12px;
-    }
-
-    .section-titlebar h2 {
-      margin-bottom: 3px;
-      font-size: 18px;
-    }
-
-    .section-titlebar p {
-      margin: 0;
-      color: var(--muted);
-      font-size: 13px;
-    }
 
     .brief-grid {
       display: grid;

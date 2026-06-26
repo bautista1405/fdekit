@@ -31,6 +31,7 @@ interface ConsoleShellOptions {
   activeId: string;
   pageTitle: string;
   pageDescription: string;
+  pageBadge?: string;
   content: string;
   navItems: ConsoleNavItem[];
   exportPayload: string;
@@ -40,7 +41,7 @@ const overviewNavItem: ConsoleNavItem = {
   id: 'overview',
   label: 'Overview',
   fileName: 'console.html',
-  description: 'Run story, key results, and next action.',
+  description: 'Status verdict, key results, and next action.',
 };
 
 export function renderConsole(data: ConsoleData): string {
@@ -106,6 +107,7 @@ export function renderConsolePages(data: ConsoleData): ConsolePage[] {
         activeId: section.id,
         pageTitle: section.title,
         pageDescription: section.description,
+        pageBadge: section.badge?.(metrics),
         content: section.render(context),
         navItems,
         exportPayload,
@@ -121,18 +123,19 @@ function renderOverviewPage(metrics: ConsoleMetrics, navItems: ConsoleNavItem[])
   )).length;
   const simulatedEvidenceCount = metrics.connectorEvidence.filter((item) => item.evidenceKind === 'simulated').length;
   const actionCount = metrics.createdIssues.length + metrics.slackMessages.length;
+  const signalStatus = (label: string): 'pass' | 'warn' | 'fail' | undefined => (
+    metrics.readinessSignals.find((signal) => signal.label === label)?.status
+  );
 
-  return `${renderReviewStory(metrics)}
+  return `${renderDemoHero(metrics)}
 
       <section class="kpis" aria-label="Key results">
-        ${renderKpi('Eval', metrics.evalStatus, `${metrics.evalPassedCases}/${metrics.evalCaseCount || 0} cases passed`)}
-        ${renderKpi('Runs', String(metrics.traceCount), traceScopeDetail(metrics))}
-        ${renderKpi('Evidence', String(provenEvidenceCount), `${failedMeasuredCount} failed measured event(s), ${simulatedEvidenceCount} simulated event(s)`)}
-        ${renderKpi('Governance', String(metrics.policyEvaluations), `${metrics.policyDefinitions.length} policy file item(s), ${metrics.policyViolationCount} violation(s)`)}
-        ${renderKpi('Handoff', String(actionCount), `${metrics.reportReady ? 'report ready' : 'report pending'}, ${Math.round(metrics.avgLatencyMs)}ms avg latency`)}
+        ${renderKpi('Eval', metrics.evalStatus, `${metrics.evalPassedCases}/${metrics.evalCaseCount || 0} cases passed`, signalStatus('Evals'))}
+        ${renderKpi('Runs', String(metrics.traceCount), traceScopeDetail(metrics), signalStatus('Trace Evidence'))}
+        ${renderKpi('Evidence', String(provenEvidenceCount), `${failedMeasuredCount} failed measured event(s), ${simulatedEvidenceCount} simulated event(s)`, signalStatus('Customer Systems'))}
+        ${renderKpi('Governance', String(metrics.policyEvaluations), `${metrics.policyDefinitions.length} policy file item(s), ${metrics.policyViolationCount} violation(s)`, signalStatus('Governance'))}
+        ${renderKpi('Handoff', String(actionCount), `${metrics.reportReady ? 'report ready' : 'report pending'}, ${Math.round(metrics.avgLatencyMs)}ms avg latency`, signalStatus('Customer Report'))}
       </section>
-
-      ${renderDemoHero(metrics)}
 
       <section class="section-cards" aria-label="Console pages">
         ${navItems.slice(1).map((item) => `<a class="section-card" href="${escapeHtml(item.fileName)}">
@@ -141,26 +144,6 @@ function renderOverviewPage(metrics: ConsoleMetrics, navItems: ConsoleNavItem[])
           <small>Open page</small>
         </a>`).join('')}
       </section>`;
-}
-
-function renderReviewStory(metrics: ConsoleMetrics): string {
-  const actionCount = metrics.createdIssues.length + metrics.slackMessages.length;
-  const reportStatus = metrics.reportReady ? 'report ready' : 'report pending';
-
-  return `<section class="story-strip" aria-label="Run story">
-    ${renderStoryStep('Ran', `${metrics.traceCount} reviewed run(s)`, traceScopeDetail(metrics))}
-    ${renderStoryStep('Traced', `${metrics.toolCallCount} tool call(s)`, `${metrics.connectorEvidence.length} connector evidence item(s)`)}
-    ${renderStoryStep('Evaluated', `${metrics.evalPassedCases}/${metrics.evalCaseCount || 0} cases`, metrics.evalStatus)}
-    ${renderStoryStep('Result', `${actionCount} handoff action(s)`, reportStatus)}
-  </section>`;
-}
-
-function renderStoryStep(label: string, value: string, detail: string): string {
-  return `<article class="story-step">
-    <span>${escapeHtml(label)}</span>
-    <strong>${escapeHtml(value)}</strong>
-    <small>${escapeHtml(detail)}</small>
-  </article>`;
 }
 
 function traceScopeDetail(metrics: ConsoleMetrics): string {
@@ -215,6 +198,7 @@ function renderConsoleShell(options: ConsoleShellOptions): string {
           <div class="page-meta">
             <span>Created ${escapeHtml(formatDate(options.createdAt))}</span>
             <span>${escapeHtml(reviewScopeLabel(options.metrics))}</span>
+            ${options.pageBadge ? `<span class="page-meta-badge">${escapeHtml(options.pageBadge)}</span>` : ''}
           </div>
         </div>
         <div class="topbar-actions">

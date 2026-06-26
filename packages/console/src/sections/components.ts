@@ -8,9 +8,19 @@ export function renderNavGroup(label: string, values: string[]): string {
   return `<div class="nav-group"><div class="nav-label">${escapeHtml(label)}</div>${content}</div>`;
 }
 
-export function renderKpi(label: string, value: string, note: string): string {
-  return `<article class="kpi">
-    <div class="label">${escapeHtml(label)}</div>
+export function renderKpi(
+  label: string,
+  value: string,
+  note: string,
+  status?: 'pass' | 'warn' | 'fail',
+): string {
+  const flag = status && status !== 'pass' ? statusPill(status) : '';
+
+  return `<article class="kpi${status ? ` ${status}` : ''}">
+    <div class="kpi-head">
+      <div class="label">${escapeHtml(label)}</div>
+      ${flag}
+    </div>
     <div class="value">${escapeHtml(value)}</div>
     <div class="note">${escapeHtml(note)}</div>
   </article>`;

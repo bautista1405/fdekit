@@ -39,7 +39,6 @@ describe('renderConsole', () => {
       'href="readiness.html"',
       'href="workbench.html"',
       'Review snapshot',
-      'Run story',
       'Key results',
       'Latest eval scope',
       'Eval',

@@ -21,6 +21,7 @@ export const executiveBriefSection: DashboardSectionStrategy = {
   navLabel: 'Brief',
   fileName: 'brief.html',
   description: 'Outcome, customer proof, and latest handoff.',
+  badge: (metrics) => `${metrics.createdIssues.length + metrics.slackMessages.length} handoff action(s)`,
   render: ({ metrics }) => {
     const connectorEvidence = collectGenericConnectorEvidence(metrics.connectorEvidence);
     const provenEvidenceCount = connectorEvidence.filter(isProvenConnectorEvidence).length;
@@ -29,14 +30,7 @@ export const executiveBriefSection: DashboardSectionStrategy = {
     )).length;
     const simulatedEvidenceCount = connectorEvidence.filter((item) => item.evidenceKind === 'simulated').length;
 
-    return `<div class="section-titlebar">
-        <div>
-          <h2>Customer Brief</h2>
-          <p>Outcome, handoff, and customer-system proof for the business and technical sponsor.</p>
-        </div>
-        <span class="pill info">${escapeHtml(`${metrics.createdIssues.length + metrics.slackMessages.length} actions`)}</span>
-      </div>
-      <section class="brief-grid" aria-label="Executive brief">
+    return `<section class="brief-grid" aria-label="Executive brief">
         <section class="panel compact-panel">
           <div class="section-head">
             <div>

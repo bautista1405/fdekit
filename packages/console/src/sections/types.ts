@@ -11,5 +11,7 @@ export interface DashboardSectionStrategy {
   navLabel: string;
   fileName: string;
   description: string;
+  /** Optional short status summary shown in the page header meta (e.g. "5/6 ready"). */
+  badge?: (metrics: ConsoleMetrics) => string;
   render: (context: DashboardSectionContext) => string;
 }

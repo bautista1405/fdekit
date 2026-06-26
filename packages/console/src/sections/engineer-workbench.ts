@@ -31,14 +31,8 @@ export const engineerWorkbenchSection: DashboardSectionStrategy = {
   navLabel: 'Review',
   fileName: 'workbench.html',
   description: 'Trace, eval, governance, evidence, and report.',
-  render: ({ data, metrics }) => `<div class="section-titlebar">
-        <div>
-          <h2>Engineer Review</h2>
-          <p>The minimum set an engineer needs to trust the run and explain it to a customer.</p>
-        </div>
-        <span class="pill">${escapeHtml(reviewTraceLabel(metrics))}</span>
-      </div>
-      <section class="workbench" aria-label="Engineer workbench">
+  badge: (metrics) => reviewTraceLabel(metrics),
+  render: ({ data, metrics }) => `<section class="workbench" aria-label="Engineer workbench">
         <div class="detail-stack">
           ${renderDetailPanel('Review Gates', renderReviewGates(metrics), true)}
           ${renderDetailPanel('Latest Run Story', renderRunStory(metrics.latestTrace), true)}

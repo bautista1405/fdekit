@@ -5,9 +5,7 @@ export const responsiveStyles = `    @media (max-width: 1120px) {
       .sidebar-review { grid-template-columns: repeat(4, minmax(0, 1fr)); }
       .sidebar-review-row { grid-template-columns: 1fr; }
       .sidebar-review-row strong { justify-self: start; text-align: left; }
-      .story-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .nav-group { display: inline-block; min-width: 180px; margin-right: 20px; vertical-align: top; }
-      .signal-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .control-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .section-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -30,11 +28,8 @@ export const responsiveStyles = `    @media (max-width: 1120px) {
       .topbar-actions { justify-items: start; margin-top: 12px; }
       .export-actions { justify-content: flex-start; }
       h1 { font-size: 23px; }
-      .section-titlebar { display: block; }
-      .section-titlebar .pill { margin-top: 8px; }
       .sidebar-review { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-      .story-strip { grid-template-columns: 1fr; }
-      .signal-grid, .mini-metrics { grid-template-columns: 1fr; }
+      .mini-metrics { grid-template-columns: 1fr; }
       .impact-grid { grid-template-columns: 1fr; }
       .control-grid { grid-template-columns: 1fr; }
       .kpis { grid-template-columns: 1fr; }

@@ -10,6 +10,7 @@ import type { ApprovalArtifact, TraceArtifact } from '@fdekit/runtime';
 import type {
   ApprovalQueueItem,
   BudgetCapItem,
+  EnforcementPostureItem,
   GovernancePostureItem,
   PolicyDefinitionItem,
   PolicyEventItem,
@@ -148,6 +149,132 @@ export function collectGovernancePosture(
         : 'no cost ceiling configured',
     },
   ];
+}
+
+export function collectEnforcementPosture(traces: TraceArtifact[]): {
+  enforcementPosture: EnforcementPostureItem[];
+  enforcementMode: 'enforced' | 'advisory' | 'unknown';
+} {
+  const edgeProfile = latestEventOfType(traces, 'runtime.edge.profile');
+  const governanceProfile = latestEventOfType(traces, 'governance.profile');
+  const edge = asRecord(edgeProfile);
+  const governance = asRecord(governanceProfile);
+  const dataProtection = asRecord(governance.dataProtection);
+  const strict = getBoolean(edge.strict);
+  const requireToolArgsSchema = getBoolean(edge.requireToolArgsSchema);
+  const requireToolScopes = getBoolean(edge.requireToolScopes);
+  const requireToolEnvironments = getBoolean(edge.requireToolEnvironments);
+  const auditEnabled = getBoolean(governance.auditEnabled);
+  const denyPII = getBoolean(dataProtection.denyPII);
+  const redactSecrets = getBoolean(dataProtection.redactSecrets);
+  const policyCount = getNumber(governance.policyCount);
+  const allowedScopes = stringArray(governance.allowedScopes);
+  const budgetCaps = Array.isArray(governance.budgetCaps) ? governance.budgetCaps.length : 0;
+  const enforcementMode = strict === undefined
+    ? 'unknown'
+    : strict
+      ? 'enforced'
+      : 'advisory';
+
+  return {
+    enforcementMode,
+    enforcementPosture: [
+      enforcementItem(
+        'Strict mode',
+        strict,
+        'Runtime edge gates enforced',
+        'advisory mode - not enforced',
+        'No runtime.edge.profile event captured',
+      ),
+      enforcementItem(
+        'Argument schemas',
+        requireToolArgsSchema,
+        'Tool argsSchema metadata required',
+        'schema metadata advisory - not enforced',
+        'No runtime edge schema posture captured',
+      ),
+      enforcementItem(
+        'Permission scopes',
+        requireToolScopes,
+        'Tool permission scopes required',
+        'scope metadata advisory - not enforced',
+        'No runtime edge scope posture captured',
+      ),
+      enforcementItem(
+        'Environment gates',
+        requireToolEnvironments,
+        'Tool environment metadata required',
+        'environment metadata advisory - not enforced',
+        'No runtime edge environment posture captured',
+      ),
+      {
+        label: 'Data protection',
+        status: denyPII && redactSecrets ? 'pass' : 'warn',
+        detail: [
+          denyPII ? 'PII denial enabled' : 'PII denial not captured',
+          redactSecrets ? 'secret redaction enabled' : 'secret redaction not captured',
+        ].join(', '),
+      },
+      {
+        label: 'Audit logging',
+        status: auditEnabled === true ? 'pass' : auditEnabled === false ? 'fail' : 'warn',
+        detail: auditEnabled === true
+          ? profileInventoryDetail(policyCount, allowedScopes, budgetCaps)
+          : auditEnabled === false
+            ? 'audit disabled in governance profile'
+            : 'No governance.profile audit posture captured',
+      },
+    ],
+  };
+}
+
+function enforcementItem(
+  label: string,
+  enabled: boolean | undefined,
+  enabledDetail: string,
+  disabledDetail: string,
+  missingDetail: string,
+): EnforcementPostureItem {
+  if (enabled === undefined) {
+    return {
+      label,
+      status: 'warn',
+      detail: missingDetail,
+    };
+  }
+
+  return {
+    label,
+    status: enabled ? 'pass' : 'warn',
+    detail: enabled ? enabledDetail : disabledDetail,
+  };
+}
+
+function profileInventoryDetail(policyCount: number | undefined, allowedScopes: string[], budgetCaps: number): string {
+  return [
+    'audit enabled',
+    policyCount === undefined ? '' : `${policyCount} policy item(s)`,
+    allowedScopes.length > 0 ? `scopes: ${allowedScopes.join(', ')}` : '',
+    budgetCaps > 0 ? `${budgetCaps} budget cap(s)` : '',
+  ].filter(Boolean).join(', ');
+}
+
+function latestEventOfType(traces: TraceArtifact[], type: string): Record<string, unknown> | undefined {
+  const sorted = [...traces].sort((left, right) => right.createdAt.localeCompare(left.createdAt));
+
+  for (const trace of sorted) {
+    for (const event of [...(trace.events ?? [])].reverse()) {
+      if (event.type === type) {
+        return event;
+      }
+    }
+  }
+
+  return undefined;
+}
+
+function getBoolean(value: unknown): boolean | undefined {
+  return typeof value === 'boolean' ? value : undefined;
 }
 
 export function collectApprovalQueue(

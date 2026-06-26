@@ -64,6 +64,7 @@ export function collectReadinessMetrics(input: {
     policyViolationCount: context.latestPolicyViolationCount,
     approvalQueueCount: governanceMetrics.openApprovalCount,
     reportReady: context.reportReady,
+    enforcementMode: governanceMetrics.enforcementMode,
   });
 
   return {
@@ -101,6 +102,7 @@ export function collectReadinessMetrics(input: {
       snapshotTrend: evalMetrics.snapshotTrend,
       reportReady: context.reportReady,
       policyBlockedRunCount,
+      enforcementMode: governanceMetrics.enforcementMode,
     }),
     reusablePatterns: createReusablePatterns({
       deployment: context.data.deployment,

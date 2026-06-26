@@ -134,7 +134,7 @@ function renderOverviewPage(metrics: ConsoleMetrics, navItems: ConsoleNavItem[])
         ${renderKpi('Reviewed run', String(metrics.traceCount), traceScopeDetail(metrics), signalStatus('Trace Evidence'))}
         ${renderKpi('Reliability', reliabilityValue(metrics), reliabilityDetail(metrics), metrics.reliabilityStatus)}
         ${renderKpi('Evidence', String(provenEvidenceCount), `${failedMeasuredCount} failed measured event(s), ${simulatedEvidenceCount} simulated event(s)`, signalStatus('Customer Systems'))}
-        ${renderKpi('Governance', String(metrics.policyEvaluations), `${metrics.policyDefinitions.length} policy file item(s), ${metrics.policyViolationCount} violation(s)`, signalStatus('Governance'))}
+        ${renderKpi('Governance', String(metrics.policyEvaluations), governanceDetail(metrics), signalStatus('Governance'))}
         ${renderKpi('Handoff', String(actionCount), `${metrics.reportReady ? 'report ready' : 'report pending'}, ${Math.round(metrics.avgLatencyMs)}ms avg latency`, signalStatus('Customer Report'))}
       </section>
 
@@ -169,6 +169,14 @@ function reliabilityDetail(metrics: ConsoleMetrics): string {
   }
 
   return `${Math.round(metrics.successRate * 100)}% completed or guardrail-stopped; ${metrics.policyBlockedRunCount} governance stop(s)`;
+}
+
+function governanceDetail(metrics: ConsoleMetrics): string {
+  const qualifier = metrics.enforcementMode === 'advisory'
+    ? ', advisory mode - not enforced'
+    : '';
+
+  return `${metrics.policyDefinitions.length} policy file item(s), ${metrics.policyViolationCount} violation(s)${qualifier}`;
 }
 
 function renderConsoleShell(options: ConsoleShellOptions): string {

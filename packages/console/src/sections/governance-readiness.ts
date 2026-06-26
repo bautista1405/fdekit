@@ -1,4 +1,5 @@
 import type {
+  EnforcementPostureItem,
   IntegrationReadinessItem,
   ProductionReadinessItem,
   WorkflowStepItem,
@@ -40,6 +41,16 @@ export const governanceReadinessSection: DashboardSectionStrategy = {
         <section class="panel compact-panel">
           <div class="section-head">
             <div>
+              <h2>Enforcement Posture</h2>
+              <div class="section-note">Runtime edge and governance profile from the reviewed trace.</div>
+            </div>
+          </div>
+          ${renderEnforcementPosture(metrics.enforcementPosture)}
+        </section>
+
+        <section class="panel compact-panel">
+          <div class="section-head">
+            <div>
               <h2>Production Readiness</h2>
               <div class="section-note">Eval, governance, budget, and operational controls.</div>
             </div>
@@ -62,6 +73,10 @@ function renderWorkflowMap(steps: WorkflowStepItem[]): string {
 }
 
 function renderIntegrationReadiness(items: IntegrationReadinessItem[]): string {
+  return renderReadinessList(items);
+}
+
+function renderEnforcementPosture(items: EnforcementPostureItem[]): string {
   return renderReadinessList(items);
 }
 

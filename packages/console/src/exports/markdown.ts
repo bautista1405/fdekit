@@ -27,7 +27,7 @@ export function renderExportMarkdown(
     `- Approval queue: ${metrics.approvalQueue.length}`,
     `- Policy-as-code items: ${metrics.policyDefinitions.length}`,
     `- Policy checks: ${metrics.policyEvaluations}`,
-    `- Policy violations: ${metrics.policyViolationCount}`,
+    `- Policy violations: ${policyViolationSummary(metrics)}`,
     `- Average latency: ${Math.round(metrics.avgLatencyMs)}ms`,
     `- P95 latency: ${Math.round(metrics.p95LatencyMs)}ms`,
     `- Total cost: $${metrics.totalCostUsd.toFixed(4)}`,
@@ -187,6 +187,17 @@ export function renderExportMarkdown(
       ]),
     ),
     '',
+    '## Enforcement Posture',
+    '',
+    ...markdownTable(
+      ['Control', 'Status', 'Detail'],
+      metrics.enforcementPosture.map((item) => [
+        item.label,
+        item.status,
+        item.detail,
+      ]),
+    ),
+    '',
     '## Pattern Reuse',
     '',
     ...markdownTable(
@@ -333,6 +344,14 @@ function reliabilitySummary(metrics: ConsoleMetrics): string {
 
   return `${protectedCount}/${metrics.totalRunCount} completed or guardrail-stopped (${successPercent}%); `
     + `${metrics.policyBlockedRunCount} governance stop(s), ${metrics.reliabilityFailureCount} reliability failure(s)`;
+}
+
+function policyViolationSummary(metrics: ConsoleMetrics): string {
+  const qualifier = metrics.enforcementMode === 'advisory'
+    ? ' (advisory mode - not enforced)'
+    : '';
+
+  return `${metrics.policyViolationCount}${qualifier}`;
 }
 
 function markdownTable(headers: string[], rows: string[][]): string[] {

@@ -10,7 +10,12 @@ export function createReadinessSignals(input: {
   policyViolationCount: number;
   approvalQueueCount: number;
   reportReady: boolean;
+  enforcementMode: 'enforced' | 'advisory' | 'unknown';
 }): ReadinessSignal[] {
+  const enforcementQualifier = input.enforcementMode === 'advisory'
+    ? ', advisory mode - not enforced'
+    : '';
+
   return [
     {
       label: 'Evals',
@@ -34,7 +39,7 @@ export function createReadinessSignals(input: {
       status: input.policyViolationCount === 0 && input.approvalQueueCount === 0
         ? input.policyEvaluations > 0 ? 'pass' : 'warn'
         : 'fail',
-      detail: `${input.policyEvaluations} checks, ${input.policyViolationCount} violation(s), ${input.approvalQueueCount} approval item(s)`,
+      detail: `${input.policyEvaluations} checks, ${input.policyViolationCount} violation(s)${enforcementQualifier}, ${input.approvalQueueCount} approval item(s)`,
     },
     {
       label: 'Customer Report',

@@ -74,7 +74,7 @@ function renderReviewGates(metrics: ConsoleMetrics): string {
     <div class="review-gate">
       <span>Governance</span>
       ${statusPill(metrics.policyViolationCount > 0 || openApprovals > 0 ? 'warn' : 'pass')}
-      <strong>${escapeHtml(`${metrics.policyViolationCount} violation(s)`)}</strong>
+      <strong>${escapeHtml(governanceGateDetail(metrics))}</strong>
     </div>
     <div class="review-gate">
       <span>Evidence</span>
@@ -87,6 +87,14 @@ function renderReviewGates(metrics: ConsoleMetrics): string {
       <strong>${escapeHtml(`${productionReady}/${metrics.productionReadiness.length}`)}</strong>
     </div>
   </div>`;
+}
+
+function governanceGateDetail(metrics: ConsoleMetrics): string {
+  const qualifier = metrics.enforcementMode === 'advisory'
+    ? '; advisory'
+    : '';
+
+  return `${metrics.policyViolationCount} violation(s)${qualifier}`;
 }
 
 function renderEvalDetail(

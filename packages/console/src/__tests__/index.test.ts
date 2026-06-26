@@ -58,6 +58,7 @@ describe('renderConsole', () => {
       'Workflow Map',
       'Integration Readiness',
       'Production Readiness',
+      'Enforcement Posture',
       'Engineer Review',
       'Review Gates',
       'Permission Scopes',
@@ -107,6 +108,7 @@ describe('renderConsole', () => {
       'outcome_metric',
       'harness_phase',
       'harness_reference',
+      'enforcement_posture',
     ]);
     expectTextIncludes(bundle.summaryMarkdown, [
       '# support-triage-example Dashboard Export',
@@ -124,6 +126,7 @@ describe('renderConsole', () => {
       '## Pattern Reuse',
       '## Policy-as-Code',
       '## Budget Caps',
+      '## Enforcement Posture',
       '## Created Issues',
     ]);
     const parsed = JSON.parse(bundle.dataJson) as {
@@ -147,6 +150,7 @@ describe('renderConsole', () => {
       productionReadiness?: unknown[];
       reusablePatterns?: unknown[];
       governancePosture?: unknown[];
+      enforcementPosture?: unknown[];
       connectorEvidence?: unknown[];
       policyDefinitions?: unknown[];
       budgetCaps?: unknown[];
@@ -175,6 +179,7 @@ describe('renderConsole', () => {
     expect(parsed.productionReadiness).toHaveLength(6);
     expect(parsed.reusablePatterns).toHaveLength(5);
     expect(parsed.governancePosture).toHaveLength(5);
+    expect(parsed.enforcementPosture).toHaveLength(6);
     expect(parsed.connectorEvidence).toHaveLength(2);
     expect(parsed.policyDefinitions).toHaveLength(2);
     expect(parsed.budgetCaps).toHaveLength(1);
@@ -434,6 +439,100 @@ describe('renderConsole', () => {
     ]);
     expect(bundle.summaryMarkdown).toContain('- Reviewed runs: 1');
     expect(bundle.summaryMarkdown).toContain('- Fleet reliability: 4/6 completed or guardrail-stopped (67%); 2 governance stop(s), 2 reliability failure(s)');
+  });
+
+  it('surfaces runtime enforcement posture from reviewed trace profiles', () => {
+    const advisoryTrace: TraceArtifact = {
+      id: 'run_advisory_governance',
+      createdAt: '2026-06-26T12:00:00.000Z',
+      deployment: 'support-triage-example',
+      events: [
+        {
+          type: 'governance.profile',
+          auditEnabled: true,
+          environment: 'local',
+          agent: 'supportTriage',
+          policyCount: 6,
+          budgetCaps: [{ scope: 'deployment', maxUsd: 0.25, name: 'limit-cost' }],
+          allowedScopes: ['codebase:read', 'issues:write'],
+          dataProtection: {
+            denyPII: true,
+            redactSecrets: true,
+          },
+        },
+        {
+          type: 'runtime.edge.profile',
+          strict: false,
+          requireToolArgsSchema: false,
+          requireToolScopes: false,
+          requireToolEnvironments: false,
+          toolCount: 4,
+        },
+        {
+          type: 'agent.run.completed',
+          status: 'completed',
+          latencyMs: 25,
+          costUsd: 0,
+          message: 'Completed in advisory governance mode',
+          policyViolations: [],
+        },
+      ],
+    };
+    const bundle = createConsoleExportBundle({
+      deployment,
+      traces: [advisoryTrace],
+      createdAt: '2026-06-26T12:01:00.000Z',
+    });
+    const parsed = JSON.parse(bundle.dataJson) as {
+      metrics?: { enforcementMode?: string; policyViolationCount?: number };
+      enforcementPosture?: Array<{ label?: string; status?: string; detail?: string }>;
+      readinessSignals?: Array<{ label?: string; detail?: string }>;
+      productionReadiness?: Array<{ label?: string; detail?: string }>;
+    };
+    const pages = renderConsolePages({
+      deployment,
+      traces: [advisoryTrace],
+      createdAt: '2026-06-26T12:01:00.000Z',
+    });
+    const overview = pages.find((page) => page.fileName === 'console.html')?.html ?? '';
+    const readiness = pages.find((page) => page.fileName === 'readiness.html')?.html ?? '';
+
+    expect(parsed.metrics).toMatchObject({
+      enforcementMode: 'advisory',
+      policyViolationCount: 0,
+    });
+    expect(parsed.enforcementPosture?.find((item) => item.label === 'Strict mode')).toMatchObject({
+      status: 'warn',
+      detail: 'advisory mode - not enforced',
+    });
+    expect(parsed.enforcementPosture?.find((item) => item.label === 'Permission scopes')).toMatchObject({
+      status: 'warn',
+      detail: 'scope metadata advisory - not enforced',
+    });
+    expect(parsed.enforcementPosture?.find((item) => item.label === 'Audit logging')).toMatchObject({
+      status: 'pass',
+      detail: 'audit enabled, 6 policy item(s), scopes: codebase:read, issues:write, 1 budget cap(s)',
+    });
+    expect(parsed.readinessSignals?.find((item) => item.label === 'Governance')?.detail)
+      .toContain('0 violation(s), advisory mode - not enforced');
+    expect(parsed.productionReadiness?.find((item) => item.label === 'Governance controls')?.detail)
+      .toContain('0 latest violation(s), advisory mode - not enforced');
+    expectTextIncludes(overview, [
+      '0 violation(s), advisory mode - not enforced',
+    ]);
+    expectTextIncludes(readiness, [
+      'Enforcement Posture',
+      'Strict mode',
+      'advisory mode - not enforced',
+      'schema metadata advisory - not enforced',
+      'scope metadata advisory - not enforced',
+      'environment metadata advisory - not enforced',
+      'PII denial enabled, secret redaction enabled',
+      'audit enabled, 6 policy item(s), scopes: codebase:read, issues:write, 1 budget cap(s)',
+    ]);
+    expect(bundle.summaryMarkdown).toContain('- Policy violations: 0 (advisory mode - not enforced)');
+    expect(bundle.summaryMarkdown).toContain('## Enforcement Posture');
+    expect(bundle.dashboardCsv).toContain('enforcement_posture,Strict mode');
   });
 
   it('scopes dashboard evidence to traces referenced by the latest eval', () => {

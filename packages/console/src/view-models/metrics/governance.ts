@@ -2,6 +2,7 @@ import type { ConsoleMetrics } from '../../interfaces/index.js';
 import {
   collectApprovalQueue,
   collectBudgetCaps,
+  collectEnforcementPosture,
   collectGovernancePosture,
   collectPolicyDefinitions,
   collectPolicyEvents,
@@ -13,6 +14,8 @@ export type GovernanceMetrics = Pick<
   | 'policyEvaluations'
   | 'policyDefinitions'
   | 'governancePosture'
+  | 'enforcementPosture'
+  | 'enforcementMode'
   | 'budgetCaps'
   | 'approvalQueue'
   | 'auditLog'
@@ -28,11 +31,13 @@ export function collectGovernanceMetrics(context: MetricsContext): GovernanceMet
   const policyEventItems = collectPolicyEvents(context.traces);
   const approvalQueue = collectApprovalQueue(policyEventItems, context.approvals);
   const auditLog = [...context.auditLog].sort((left, right) => left.createdAt.localeCompare(right.createdAt));
+  const enforcementMetrics = collectEnforcementPosture(context.traces);
 
   return {
     policyEvaluations: context.policyEvents.length,
     policyDefinitions,
     governancePosture: collectGovernancePosture(context.data.deployment, policyDefinitions, budgetCaps, auditLog.length),
+    ...enforcementMetrics,
     budgetCaps,
     approvalQueue,
     auditLog,

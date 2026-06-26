@@ -52,6 +52,8 @@ export interface ConsoleMetrics {
   policyViolationCount: number;
   policyDefinitions: PolicyDefinitionItem[];
   governancePosture: GovernancePostureItem[];
+  enforcementPosture: EnforcementPostureItem[];
+  enforcementMode: 'enforced' | 'advisory' | 'unknown';
   budgetCaps: BudgetCapItem[];
   approvalQueue: ApprovalQueueItem[];
   auditLog: AuditLogEntry[];
@@ -228,6 +230,12 @@ export interface PolicyDefinitionItem {
 }
 
 export interface GovernancePostureItem {
+  label: string;
+  status: 'pass' | 'warn' | 'fail';
+  detail: string;
+}
+
+export interface EnforcementPostureItem {
   label: string;
   status: 'pass' | 'warn' | 'fail';
   detail: string;

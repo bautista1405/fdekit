@@ -108,8 +108,16 @@ function renderHandoff(metrics: ConsoleMetrics): string {
     ${renderHandoffRow('Slack', latestSlack
       ? `${latestSlack.channel}: ${latestSlack.text}`
       : 'No Slack notification captured yet')}
-    ${renderHandoffRow('Quality', `${metrics.evalStatus}; ${metrics.policyViolationCount} policy violation(s)`)}
+    ${renderHandoffRow('Quality', handoffQuality(metrics))}
   </div>`;
+}
+
+function handoffQuality(metrics: ConsoleMetrics): string {
+  const qualifier = metrics.enforcementMode === 'advisory'
+    ? '; advisory mode - not enforced'
+    : '';
+
+  return `${metrics.evalStatus}; ${metrics.policyViolationCount} policy violation(s)${qualifier}`;
 }
 
 function renderConnectorEvidence(evidence: ConnectorEvidence[]): string {

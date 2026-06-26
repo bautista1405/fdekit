@@ -1,5 +1,13 @@
 # @fdekit/console
 
+## 0.4.6
+
+### Patch Changes
+
+- e523d60: harness, failed runs, policy enforcement mode, duplication issues, other ui changes
+  - @fdekit/core@0.4.6
+  - @fdekit/runtime@0.4.6
+
 ## 0.4.5
 
 ### Patch Changes

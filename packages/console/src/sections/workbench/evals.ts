@@ -30,12 +30,14 @@ export function renderEvalResults(evalArtifact: EvalArtifact | null): string {
     }
   }
 
-  return `<table>
+  return `${renderAssertionCoverage(rows)}
+  <table>
     <thead>
       <tr>
         <th>Suite</th>
         <th>Case</th>
         <th>Status</th>
+        <th>Assertions</th>
         <th>Tool calls</th>
       </tr>
     </thead>
@@ -44,10 +46,44 @@ export function renderEvalResults(evalArtifact: EvalArtifact | null): string {
         <td>${escapeHtml(suite.name)}</td>
         <td>${escapeHtml(evalCase?.name ?? 'suite-level')}</td>
         <td>${statusPill(evalCase?.status ?? suite.status)}</td>
+        <td>${renderAssertionCell(evalCase, suite)}</td>
         <td>${escapeHtml((evalCase?.toolCalls ?? []).join(', ') || 'none')}</td>
       </tr>`).join('')}
     </tbody>
   </table>`;
+}
+
+function renderAssertionCoverage(rows: Array<{ suite: EvalSuiteResult; evalCase: EvalCaseResult | null }>): string {
+  const cases = rows.map((row) => row.evalCase).filter((evalCase): evalCase is EvalCaseResult => Boolean(evalCase));
+
+  if (cases.length === 0) {
+    const suiteAssertions = rows.reduce((total, row) => total + (row.suite.assertions ?? []).length, 0);
+
+    return `<p class="subtle">${escapeHtml(`${suiteAssertions} suite-level assertion(s) captured; no case-level coverage yet.`)}</p>`;
+  }
+
+  const casesWithAssertions = cases.filter((evalCase) => (evalCase.assertions ?? []).length > 0).length;
+  const emptyPassedCases = cases.filter((evalCase) => evalCase.status === 'passed' && (evalCase.assertions ?? []).length === 0).length;
+  const caveat = emptyPassedCases > 0
+    ? `; ${emptyPassedCases} passed case(s) have no assertions`
+    : '';
+
+  return `<p class="subtle">${escapeHtml(`${casesWithAssertions} of ${cases.length} cases assert tool usage / output${caveat}`)}</p>`;
+}
+
+function renderAssertionCell(evalCase: EvalCaseResult | null, suite: EvalSuiteResult): string {
+  const assertions = evalCase?.assertions ?? suite.assertions ?? [];
+  const passed = assertions.filter((assertion) => assertion.passed).length;
+
+  if (assertions.length === 0) {
+    return `<div class="status-stack">
+      <span>${escapeHtml('0/0 assertions')}</span>
+      <span>${statusPill('no assertions')}</span>
+      <span class="event-meta">not a real check</span>
+    </div>`;
+  }
+
+  return escapeHtml(`${passed}/${assertions.length} assertions`);
 }
 
 export function renderMacroEvalResults(macroEval: MacroEvalArtifact | null): string {

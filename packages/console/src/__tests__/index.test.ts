@@ -88,6 +88,24 @@ describe('renderConsole', () => {
     expect(html).not.toContain('Dashboard History');
   });
 
+  it('flags passing eval cases that have zero assertions', () => {
+    const workbench = renderConsolePages({
+      deployment,
+      traces: [trace],
+      latestEval: evalArtifact,
+      createdAt: '2026-05-22T12:00:00.000Z',
+    }).find((page) => page.fileName === 'workbench.html')?.html ?? '';
+
+    expectTextIncludes(workbench, [
+      'Eval Results',
+      '0 of 1 cases assert tool usage / output; 1 passed case(s) have no assertions',
+      'Assertions',
+      '0/0 assertions',
+      'no assertions',
+      'not a real check',
+    ]);
+  });
+
   it('renders CSV, Markdown, and JSON export payloads', () => {
     const bundle = createConsoleExportBundle({
       deployment,

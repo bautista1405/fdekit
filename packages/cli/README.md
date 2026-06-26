@@ -10,20 +10,22 @@ Use the CLI when you want the standard workflow from a terminal. Use `@fdekit/ru
 
 Package page: [@fdekit/cli](https://www.npmjs.com/package/@fdekit/cli)
 
-Install the package in a deployment project:
+Install the CLI once for your shell:
 
 ```bash
-npm install -D @fdekit/cli
+npm install -g @fdekit/cli
 ```
 
 The package installs the `fdekit` binary, so commands stay unscoped:
 
 ```bash
-npx fdekit init
+fdekit init
 cd fdekit
+fdekit recipe install support-triage
 npm install
-npx fdekit recipe install support-triage
 ```
+
+Scaffolded deployment projects also keep `@fdekit/cli` in `devDependencies` so npm scripts use a pinned project version. A local-only install exposes `fdekit` inside `npm run` and at `./node_modules/.bin/fdekit`; it does not put `fdekit` on your shell `PATH`.
 
 Bare `fdekit init` creates `./fdekit`. Commands can run from there or from the containing customer project; config, package/env edits, recipes, and the `artifacts/` directory stay inside the contained project.
 
@@ -49,11 +51,11 @@ For an installed project, the CLI primitives look like:
 ```bash
 mkdir support-demo
 cd support-demo
-npm install -D @fdekit/cli@latest
-npx fdekit init
+npm install -g @fdekit/cli@latest
+fdekit init
 cd fdekit
+fdekit recipe install support-triage
 npm install
-npx fdekit recipe install support-triage
 npm run demo
 ```
 

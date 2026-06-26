@@ -7,13 +7,15 @@ Start with a recipe when you want a complete runnable deployment. Use `fdekit ad
 ## Install A Recipe
 
 ```bash
-npm install -D @fdekit/cli
-npx fdekit init
+npm install -g @fdekit/cli
+fdekit init
 cd fdekit
+fdekit recipe install <name>
 npm install
-npx fdekit recipe install <name>
 cp .env.example .env
 ```
+
+The global install is what makes `fdekit` available as a bare shell command. Scaffolded projects also pin `@fdekit/cli` locally so the installed npm scripts run against the project version.
 
 Recipe installation uses the discovered FDEKit project. From an uninitialized customer root, it creates and writes into `./fdekit`; relative local-recipe paths remain relative to the directory where the command was invoked.
 
@@ -48,7 +50,7 @@ npm run demo
 For an installed support-triage project, or when debugging one stage at a time:
 
 ```bash
-npx fdekit recipe install support-triage
+fdekit recipe install support-triage
 npm install
 npm run demo
 ```
@@ -87,7 +89,7 @@ SLACK_CHANNEL_ID=C0123456789
 ## Codebase Agent
 
 ```bash
-npx fdekit recipe install codebase-agent
+fdekit recipe install codebase-agent
 npm install
 npm run fdekit:codebase:doctor
 npm run fdekit:codebase:run
@@ -117,7 +119,7 @@ Jira uses `JIRA_BASE_URL`, `JIRA_EMAIL`, `JIRA_API_TOKEN`, and `JIRA_PROJECT_KEY
 ## Sales Research Agent
 
 ```bash
-npx fdekit recipe install sales-research-agent
+fdekit recipe install sales-research-agent
 npm install
 npm run fdekit:sales:doctor
 npm run fdekit:sales:run
@@ -146,7 +148,7 @@ npm run fdekit:sales:run
 ## Load-Test Agent
 
 ```bash
-npx fdekit recipe install load-test-agent
+fdekit recipe install load-test-agent
 npm install
 npm run loadtest:api
 npm run fdekit:loadtest:doctor
@@ -171,13 +173,13 @@ Keep `K6_BINARY` unset when `k6` is already on `PATH`.
 After customizing a deployment, capture it for reuse:
 
 ```bash
-npx fdekit recipe capture renewal-risk-triage
+fdekit recipe capture renewal-risk-triage
 ```
 
 That writes `recipes/renewal-risk-triage/` with config, agents, evals, workflow docs, env example, package metadata, and deployment snapshot. Install it again with:
 
 ```bash
-npx fdekit recipe install /path/to/recipes/renewal-risk-triage
+fdekit recipe install /path/to/recipes/renewal-risk-triage
 ```
 
 ## Next Step

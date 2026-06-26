@@ -29,10 +29,10 @@ discover workflow -> score ROI/risk -> split deterministic/agent/human work -> c
 ## Install
 
 ```bash
-npm install -D @fdekit/cli
+npm install -g @fdekit/cli
 ```
 
-The package installs the `fdekit` command. See [@fdekit/cli on npm](https://www.npmjs.com/package/@fdekit/cli).
+See [@fdekit/cli on npm](https://www.npmjs.com/package/@fdekit/cli).
 
 ## Quickstart
 
@@ -66,15 +66,14 @@ For a fresh project using the npm package:
 ```bash
 mkdir support-demo
 cd support-demo
-npm install -D @fdekit/cli
-npx fdekit init
+fdekit init
 cd fdekit
+fdekit recipe install support-triage
 npm install
-npx fdekit recipe install support-triage
 npm run demo
 ```
 
-The npm package is `@fdekit/cli`; it installs the `fdekit` binary used by the commands below.
+The npm package is `@fdekit/cli`; its global install makes `fdekit` available as a bare shell command, while the scaffold pins `@fdekit/cli` locally for the project's npm scripts.
 Bare `fdekit init` keeps deployment source and runtime artifacts under `./fdekit`; commands launched from the containing customer project discover that folder automatically.
 
 The installed recipe's `npm run demo` script starts the local customer API on `127.0.0.1:8787`, waits for `/health`, runs the same governed loop, captures `recipes/support-renewal-risk/`, and shuts the API down when it finishes.
@@ -103,7 +102,7 @@ The full docs index is [docs/README.md](./docs/README.md). For symbol lookup, us
 Install one with:
 
 ```bash
-npx fdekit recipe install <support-triage|codebase-agent|sales-research-agent|load-test-agent>
+fdekit recipe install <support-triage|codebase-agent|sales-research-agent|load-test-agent>
 ```
 
 See [Recipes](./docs/recipes.md) for commands, env vars, and live connector paths.

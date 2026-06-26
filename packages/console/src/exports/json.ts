@@ -27,6 +27,8 @@ export function renderExportDataJson(
       readinessScore: metrics.readinessScore,
       totalRunCount: metrics.totalRunCount,
       completedRunCount: metrics.completedRunCount,
+      policyBlockedRunCount: metrics.policyBlockedRunCount,
+      reliabilityFailureCount: metrics.reliabilityFailureCount,
       successRate: metrics.successRate,
       reliabilityStatus: metrics.reliabilityStatus,
       policyEvaluations: metrics.policyEvaluations,

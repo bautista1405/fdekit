@@ -327,7 +327,12 @@ function reliabilitySummary(metrics: ConsoleMetrics): string {
     return 'no stored run history captured';
   }
 
-  return `${metrics.completedRunCount}/${metrics.totalRunCount} runs completed (${Math.round(metrics.successRate * 100)}%)`;
+  const protectedCount = metrics.completedRunCount + metrics.policyBlockedRunCount;
+
+  const successPercent = Math.round(metrics.successRate * 100);
+
+  return `${protectedCount}/${metrics.totalRunCount} completed or guardrail-stopped (${successPercent}%); `
+    + `${metrics.policyBlockedRunCount} governance stop(s), ${metrics.reliabilityFailureCount} reliability failure(s)`;
 }
 
 function markdownTable(headers: string[], rows: string[][]): string[] {

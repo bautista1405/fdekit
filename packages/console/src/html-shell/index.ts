@@ -132,7 +132,7 @@ function renderOverviewPage(metrics: ConsoleMetrics, navItems: ConsoleNavItem[])
       <section class="kpis" aria-label="Key results">
         ${renderKpi('Eval', metrics.evalStatus, `${metrics.evalPassedCases}/${metrics.evalCaseCount || 0} cases passed`, signalStatus('Evals'))}
         ${renderKpi('Reviewed run', String(metrics.traceCount), traceScopeDetail(metrics), signalStatus('Trace Evidence'))}
-        ${renderKpi('Reliability', `${metrics.completedRunCount}/${metrics.totalRunCount}`, reliabilityDetail(metrics), metrics.reliabilityStatus)}
+        ${renderKpi('Reliability', reliabilityValue(metrics), reliabilityDetail(metrics), metrics.reliabilityStatus)}
         ${renderKpi('Evidence', String(provenEvidenceCount), `${failedMeasuredCount} failed measured event(s), ${simulatedEvidenceCount} simulated event(s)`, signalStatus('Customer Systems'))}
         ${renderKpi('Governance', String(metrics.policyEvaluations), `${metrics.policyDefinitions.length} policy file item(s), ${metrics.policyViolationCount} violation(s)`, signalStatus('Governance'))}
         ${renderKpi('Handoff', String(actionCount), `${metrics.reportReady ? 'report ready' : 'report pending'}, ${Math.round(metrics.avgLatencyMs)}ms avg latency`, signalStatus('Customer Report'))}
@@ -159,12 +159,16 @@ function traceScopeDetail(metrics: ConsoleMetrics): string {
   return 'trace artifacts captured';
 }
 
+function reliabilityValue(metrics: ConsoleMetrics): string {
+  return `${metrics.completedRunCount + metrics.policyBlockedRunCount}/${metrics.totalRunCount}`;
+}
+
 function reliabilityDetail(metrics: ConsoleMetrics): string {
   if (metrics.totalRunCount === 0) {
     return 'No stored run history captured';
   }
 
-  return `${Math.round(metrics.successRate * 100)}% runs completed across stored history`;
+  return `${Math.round(metrics.successRate * 100)}% completed or guardrail-stopped; ${metrics.policyBlockedRunCount} governance stop(s)`;
 }
 
 function renderConsoleShell(options: ConsoleShellOptions): string {

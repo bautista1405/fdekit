@@ -39,6 +39,7 @@ export function collectReadinessMetrics(input: {
   evidenceMetrics: EvidenceMetrics;
   governanceMetrics: GovernanceMetrics;
   toolMetrics: ToolMetrics;
+  policyBlockedRunCount: number;
 }): ReadinessMetrics {
   const {
     context,
@@ -46,6 +47,7 @@ export function collectReadinessMetrics(input: {
     evidenceMetrics,
     governanceMetrics,
     toolMetrics,
+    policyBlockedRunCount,
   } = input;
   const provenConnectorEvidence = evidenceMetrics.connectorEvidence.filter(isProvenConnectorEvidence);
   const customerSystemEvidenceCount = Math.max(
@@ -98,6 +100,7 @@ export function collectReadinessMetrics(input: {
       auditLog: governanceMetrics.auditLog,
       snapshotTrend: evalMetrics.snapshotTrend,
       reportReady: context.reportReady,
+      policyBlockedRunCount,
     }),
     reusablePatterns: createReusablePatterns({
       deployment: context.data.deployment,

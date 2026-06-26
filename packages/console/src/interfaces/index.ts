@@ -70,6 +70,8 @@ export interface ConsoleMetrics {
   allRunHistory: RunHistoryItem[];
   totalRunCount: number;
   completedRunCount: number;
+  policyBlockedRunCount: number;
+  reliabilityFailureCount: number;
   successRate: number;
   reliabilityStatus: 'pass' | 'warn' | 'fail';
   evalSuites: EvalSuiteSummary[];

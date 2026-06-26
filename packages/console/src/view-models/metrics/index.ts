@@ -24,6 +24,7 @@ export function calculateMetrics(data: ConsoleData): ConsoleMetrics {
     evidenceMetrics,
     governanceMetrics: governanceWithInternals,
     toolMetrics,
+    policyBlockedRunCount: reliabilityMetrics.policyBlockedRunCount,
   });
 
   return {
@@ -44,15 +45,27 @@ export function calculateMetrics(data: ConsoleData): ConsoleMetrics {
 
 function collectReliabilityMetrics(allRunHistory: ConsoleMetrics['allRunHistory']): Pick<
   ConsoleMetrics,
-  'totalRunCount' | 'completedRunCount' | 'successRate' | 'reliabilityStatus'
+  | 'totalRunCount'
+  | 'completedRunCount'
+  | 'policyBlockedRunCount'
+  | 'reliabilityFailureCount'
+  | 'successRate'
+  | 'reliabilityStatus'
 > {
   const totalRunCount = allRunHistory.length;
   const completedRunCount = allRunHistory.filter((run) => isCompletedStatus(run.status)).length;
-  const successRate = totalRunCount > 0 ? completedRunCount / totalRunCount : 0;
+  const policyBlockedRunCount = allRunHistory.filter((run) => run.failureCategory === 'policy-block').length;
+  const reliabilityFailureCount = allRunHistory
+    .filter((run) => !isCompletedStatus(run.status) && run.failureCategory !== 'policy-block')
+    .length;
+  const reliableOutcomeCount = completedRunCount + policyBlockedRunCount;
+  const successRate = totalRunCount > 0 ? reliableOutcomeCount / totalRunCount : 0;
 
   return {
     totalRunCount,
     completedRunCount,
+    policyBlockedRunCount,
+    reliabilityFailureCount,
     successRate,
     reliabilityStatus: reliabilityStatus(totalRunCount, successRate),
   };

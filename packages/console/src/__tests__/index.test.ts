@@ -358,14 +358,16 @@ describe('renderConsole', () => {
     }).find((page) => page.fileName === 'charts.html')?.html ?? '';
 
     expectTextIncludes(charts, [
-      'Failure breakdown',
+      'Run outcome breakdown',
       'Infrastructure failure',
-      'Policy block failure',
+      'Governance stop',
+      'Governance stopped',
       'Tool error failure',
       'Ollama request failed at http://127.0.0.1:11434',
       'Policy &quot;limit-tool-use&quot; blocked codebase.search: Tool call limit exceeded',
       'Tool &quot;codebase.readFile&quot; args $.filePath: Required property is missing',
     ]);
+    expect(charts).not.toContain('Policy block failure');
   });
 
   it('shows fleet reliability separately from the reviewed run scope', () => {
@@ -388,32 +390,50 @@ describe('renderConsole', () => {
         allTraceCount?: number;
         totalRunCount?: number;
         completedRunCount?: number;
+        policyBlockedRunCount?: number;
+        reliabilityFailureCount?: number;
         successRate?: number;
         reliabilityStatus?: string;
       };
+      productionReadiness?: Array<{ label?: string; status?: string; detail?: string }>;
     };
     const overview = renderConsolePages({
       deployment,
       traces,
       createdAt: '2026-06-26T12:06:00.000Z',
     }).find((page) => page.fileName === 'console.html')?.html ?? '';
+    const readiness = renderConsolePages({
+      deployment,
+      traces,
+      createdAt: '2026-06-26T12:06:00.000Z',
+    }).find((page) => page.fileName === 'readiness.html')?.html ?? '';
 
     expect(parsed.metrics).toMatchObject({
       traceCount: 1,
       allTraceCount: 6,
       totalRunCount: 6,
       completedRunCount: 2,
+      policyBlockedRunCount: 2,
+      reliabilityFailureCount: 2,
       reliabilityStatus: 'fail',
     });
-    expect(parsed.metrics?.successRate).toBeCloseTo(2 / 6);
+    expect(parsed.metrics?.successRate).toBeCloseTo(4 / 6);
+    expect(parsed.productionReadiness?.find((item) => item.label === 'Guardrail stops')).toMatchObject({
+      status: 'pass',
+      detail: 'Governance stopped 2 policy-blocked run(s)',
+    });
     expectTextIncludes(overview, [
       'Reviewed run',
       'Reliability',
-      '2/6',
-      '33% runs completed across stored history',
+      '4/6',
+      '67% completed or guardrail-stopped; 2 governance stop(s)',
+    ]);
+    expectTextIncludes(readiness, [
+      'Guardrail stops',
+      'Governance stopped 2 policy-blocked run(s)',
     ]);
     expect(bundle.summaryMarkdown).toContain('- Reviewed runs: 1');
-    expect(bundle.summaryMarkdown).toContain('- Fleet reliability: 2/6 runs completed (33%)');
+    expect(bundle.summaryMarkdown).toContain('- Fleet reliability: 4/6 completed or guardrail-stopped (67%); 2 governance stop(s), 2 reliability failure(s)');
   });
 
   it('scopes dashboard evidence to traces referenced by the latest eval', () => {

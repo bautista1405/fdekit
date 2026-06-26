@@ -84,20 +84,27 @@ function renderFailureBreakdown(history: RunHistoryItem[]): string {
     .map((category) => failures.filter((run) => run.failureCategory === category))
     .filter((runs) => runs.length > 0);
 
-  return `<div class="chart-title">Failure breakdown</div>
+  return `<div class="chart-title">Run outcome breakdown</div>
   <div class="mini-metrics">
     ${categories.map((runs) => {
       const sample = runs[0];
 
       return `<div class="mini-metric">
         <strong>${escapeHtml(String(runs.length))}</strong>
-        <span class="subtle">${escapeHtml(sample?.failureLabel ?? 'Other')} failure${runs.length === 1 ? '' : 's'}</span>
+        <span class="subtle">${escapeHtml(outcomeBreakdownLabel(sample, runs.length))}</span>
       </div>`;
     }).join('')}
   </div>`;
 }
 
 function renderRunStatus(run: RunHistoryItem): string {
+  if (run.failureCategory === 'policy-block') {
+    return `<div class="status-stack">
+      <div><span class="pill info">Governance stopped</span> <span class="pill info">${escapeHtml(run.failureLabel ?? 'Policy block')}</span></div>
+      <div class="event-meta">${escapeHtml(run.failureReason ?? 'Policy blocked this run')}</div>
+    </div>`;
+  }
+
   if (!run.failureReason) {
     return statusPill(run.status);
   }
@@ -106,4 +113,14 @@ function renderRunStatus(run: RunHistoryItem): string {
     <div>${statusPill(run.status)} <span class="pill info">${escapeHtml(run.failureLabel ?? 'Other')}</span></div>
     <div class="event-meta">${escapeHtml(run.failureReason)}</div>
   </div>`;
+}
+
+function outcomeBreakdownLabel(run: RunHistoryItem | undefined, count: number): string {
+  const suffix = count === 1 ? '' : 's';
+
+  if (run?.failureCategory === 'policy-block') {
+    return `Governance stop${suffix}`;
+  }
+
+  return `${run?.failureLabel ?? 'Other'} failure${suffix}`;
 }

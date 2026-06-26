@@ -16,6 +16,7 @@ export function createProductionReadiness(input: {
   auditLog: AuditLogEntry[];
   snapshotTrend: SnapshotTrendItem[];
   reportReady: boolean;
+  policyBlockedRunCount: number;
 }): ProductionReadinessItem[] {
   const failedAuditCount = input.auditLog.filter((entry) => entry.outcome === 'failed').length;
   const maxBudget = input.budgetCaps.length > 0
@@ -23,6 +24,14 @@ export function createProductionReadiness(input: {
     : undefined;
   const budgetExceeded = maxBudget !== undefined && input.totalCostUsd > maxBudget;
   const passingControls = input.governancePosture.filter((item) => item.status === 'pass').length;
+
+  const guardrailStops: ProductionReadinessItem[] = input.policyBlockedRunCount > 0
+    ? [{
+      label: 'Guardrail stops',
+      status: 'pass',
+      detail: `Governance stopped ${input.policyBlockedRunCount} policy-blocked run(s)`,
+    }]
+    : [];
 
   return [
     {
@@ -35,6 +44,7 @@ export function createProductionReadiness(input: {
       status: input.policyViolationCount === 0 && passingControls > 0 ? 'pass' : input.policyViolationCount > 0 ? 'fail' : 'warn',
       detail: `${passingControls}/${input.governancePosture.length} controls passing, ${input.policyViolationCount} latest violation(s)`,
     },
+    ...guardrailStops,
     {
       label: 'Human approvals',
       status: input.approvalQueueCount === 0 ? 'pass' : 'warn',

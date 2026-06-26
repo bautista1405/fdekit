@@ -18,7 +18,8 @@ export function renderExportMarkdown(
     `- Deployment health score: ${metrics.readinessScore}/100`,
     `- Eval status: ${metrics.evalStatus}`,
     `- Eval cases: ${metrics.evalPassedCases}/${metrics.evalCaseCount || 0} passed`,
-    `- Runs captured: ${metrics.traceCount}`,
+    `- Reviewed runs: ${metrics.traceCount}`,
+    `- Fleet reliability: ${reliabilitySummary(metrics)}`,
     `- Trace scope: ${traceScopeSummary(metrics)}`,
     `- Tool calls: ${metrics.toolCallCount}`,
     `- Created issues: ${metrics.createdIssues.length}`,
@@ -319,6 +320,14 @@ function traceScopeSummary(metrics: ConsoleMetrics): string {
   }
 
   return 'all stored traces';
+}
+
+function reliabilitySummary(metrics: ConsoleMetrics): string {
+  if (metrics.totalRunCount === 0) {
+    return 'no stored run history captured';
+  }
+
+  return `${metrics.completedRunCount}/${metrics.totalRunCount} runs completed (${Math.round(metrics.successRate * 100)}%)`;
 }
 
 function markdownTable(headers: string[], rows: string[][]): string[] {

@@ -131,7 +131,8 @@ function renderOverviewPage(metrics: ConsoleMetrics, navItems: ConsoleNavItem[])
 
       <section class="kpis" aria-label="Key results">
         ${renderKpi('Eval', metrics.evalStatus, `${metrics.evalPassedCases}/${metrics.evalCaseCount || 0} cases passed`, signalStatus('Evals'))}
-        ${renderKpi('Runs', String(metrics.traceCount), traceScopeDetail(metrics), signalStatus('Trace Evidence'))}
+        ${renderKpi('Reviewed run', String(metrics.traceCount), traceScopeDetail(metrics), signalStatus('Trace Evidence'))}
+        ${renderKpi('Reliability', `${metrics.completedRunCount}/${metrics.totalRunCount}`, reliabilityDetail(metrics), metrics.reliabilityStatus)}
         ${renderKpi('Evidence', String(provenEvidenceCount), `${failedMeasuredCount} failed measured event(s), ${simulatedEvidenceCount} simulated event(s)`, signalStatus('Customer Systems'))}
         ${renderKpi('Governance', String(metrics.policyEvaluations), `${metrics.policyDefinitions.length} policy file item(s), ${metrics.policyViolationCount} violation(s)`, signalStatus('Governance'))}
         ${renderKpi('Handoff', String(actionCount), `${metrics.reportReady ? 'report ready' : 'report pending'}, ${Math.round(metrics.avgLatencyMs)}ms avg latency`, signalStatus('Customer Report'))}
@@ -156,6 +157,14 @@ function traceScopeDetail(metrics: ConsoleMetrics): string {
   }
 
   return 'trace artifacts captured';
+}
+
+function reliabilityDetail(metrics: ConsoleMetrics): string {
+  if (metrics.totalRunCount === 0) {
+    return 'No stored run history captured';
+  }
+
+  return `${Math.round(metrics.successRate * 100)}% runs completed across stored history`;
 }
 
 function renderConsoleShell(options: ConsoleShellOptions): string {
@@ -242,7 +251,7 @@ function renderSidebarReview(metrics: ConsoleMetrics): string {
 
   return `<div class="sidebar-review" aria-label="Review snapshot">
     ${renderSidebarReviewRow('Scope', escapeHtml(reviewScopeLabel(metrics)))}
-    ${renderSidebarReviewRow('Runs', escapeHtml(String(metrics.traceCount)))}
+    ${renderSidebarReviewRow('Reviewed', escapeHtml(String(metrics.traceCount)))}
     ${renderSidebarReviewRow('Eval', statusPill(metrics.evalStatus))}
     ${renderSidebarReviewRow('Actions', escapeHtml(String(actionCount)))}
   </div>`;

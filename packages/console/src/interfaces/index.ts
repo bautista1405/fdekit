@@ -68,6 +68,10 @@ export interface ConsoleMetrics {
   connectorEvidence: ConnectorEvidence[];
   runHistory: RunHistoryItem[];
   allRunHistory: RunHistoryItem[];
+  totalRunCount: number;
+  completedRunCount: number;
+  successRate: number;
+  reliabilityStatus: 'pass' | 'warn' | 'fail';
   evalSuites: EvalSuiteSummary[];
   snapshotTrend: SnapshotTrendItem[];
   reportReady: boolean;

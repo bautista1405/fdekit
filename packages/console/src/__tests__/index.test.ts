@@ -42,6 +42,8 @@ describe('renderConsole', () => {
       'Key results',
       'Latest eval scope',
       'Eval',
+      'Reviewed run',
+      'Reliability',
       'ticket.get',
       'customer.get',
       'enterprise billing escalation',
@@ -366,6 +368,54 @@ describe('renderConsole', () => {
     ]);
   });
 
+  it('shows fleet reliability separately from the reviewed run scope', () => {
+    const traces = [
+      runTrace('run_failed_1', '2026-06-26T12:00:00.000Z', 'failed', 'Ollama request failed'),
+      runTrace('run_failed_2', '2026-06-26T12:01:00.000Z', 'failed', 'Policy "limit-tool-use" blocked codebase.search'),
+      runTrace('run_failed_3', '2026-06-26T12:02:00.000Z', 'failed', 'Tool "codebase.readFile" args $.filePath: Required property is missing'),
+      runTrace('run_failed_4', '2026-06-26T12:03:00.000Z', 'failed', 'Policy "limit-tool-use" blocked codebase.search'),
+      runTrace('run_completed_1', '2026-06-26T12:04:00.000Z', 'completed', 'Completed first reviewed run'),
+      runTrace('run_completed_2', '2026-06-26T12:05:00.000Z', 'completed', 'Completed latest reviewed run'),
+    ];
+    const bundle = createConsoleExportBundle({
+      deployment,
+      traces,
+      createdAt: '2026-06-26T12:06:00.000Z',
+    });
+    const parsed = JSON.parse(bundle.dataJson) as {
+      metrics?: {
+        traceCount?: number;
+        allTraceCount?: number;
+        totalRunCount?: number;
+        completedRunCount?: number;
+        successRate?: number;
+        reliabilityStatus?: string;
+      };
+    };
+    const overview = renderConsolePages({
+      deployment,
+      traces,
+      createdAt: '2026-06-26T12:06:00.000Z',
+    }).find((page) => page.fileName === 'console.html')?.html ?? '';
+
+    expect(parsed.metrics).toMatchObject({
+      traceCount: 1,
+      allTraceCount: 6,
+      totalRunCount: 6,
+      completedRunCount: 2,
+      reliabilityStatus: 'fail',
+    });
+    expect(parsed.metrics?.successRate).toBeCloseTo(2 / 6);
+    expectTextIncludes(overview, [
+      'Reviewed run',
+      'Reliability',
+      '2/6',
+      '33% runs completed across stored history',
+    ]);
+    expect(bundle.summaryMarkdown).toContain('- Reviewed runs: 1');
+    expect(bundle.summaryMarkdown).toContain('- Fleet reliability: 2/6 runs completed (33%)');
+  });
+
   it('scopes dashboard evidence to traces referenced by the latest eval', () => {
     const bundle = createConsoleExportBundle({
       deployment,
@@ -519,6 +569,21 @@ function expectTextIncludes(value: string, fragments: string[]): void {
 
 function countCsvRecords(value: string, recordType: string): number {
   return value.split('\n').filter((line) => line.startsWith(`${recordType},`)).length;
+}
+
+function runTrace(id: string, createdAt: string, status: string, message: string): TraceArtifact {
+  return {
+    id,
+    createdAt,
+    deployment: 'support-triage-example',
+    events: [{
+      type: 'agent.run.completed',
+      status,
+      latencyMs: 20,
+      costUsd: 0,
+      message,
+    }],
+  };
 }
 
 const deployment: DeploymentDefinition = {

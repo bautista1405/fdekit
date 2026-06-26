@@ -16,7 +16,7 @@ export function renderCharts(metrics: ConsoleMetrics): string {
       ${renderEvalDonut(metrics)}
     </div>
     <div class="chart-block">
-      <div class="chart-title">Action Mix</div>
+      <div class="chart-title">Tool Mix</div>
       ${renderActionMix(metrics)}
     </div>
     <div class="chart-block">
@@ -41,12 +41,23 @@ export function renderGovernancePosture(items: GovernancePostureItem[]): string 
 function renderEvalDonut(metrics: ConsoleMetrics): string {
   const total = Math.max(metrics.evalCaseCount, 0);
   const passed = Math.max(metrics.evalPassedCases, 0);
-  const percent = total > 0 ? Math.round((passed / total) * 100) : 0;
+
+  if (total === 0) {
+    return `<div class="donut-wrap">
+      <div class="donut empty" data-label="–"></div>
+      <div>
+        <strong>Not run</strong>
+        <div class="event-meta">Run <span class="mono">fdekit eval</span> to measure pass rate</div>
+      </div>
+    </div>`;
+  }
+
+  const percent = Math.round((passed / total) * 100);
 
   return `<div class="donut-wrap">
     <div class="donut" style="--donut-pass: ${percent}%;" data-label="${escapeHtml(`${percent}%`)}"></div>
     <div>
-      <strong>${escapeHtml(`${passed}/${total || 0} cases passed`)}</strong>
+      <strong>${escapeHtml(`${passed}/${total} cases passed`)}</strong>
       <div class="event-meta">${escapeHtml(`${metrics.evalStatus} eval status`)}</div>
     </div>
   </div>`;

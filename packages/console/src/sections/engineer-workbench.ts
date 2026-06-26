@@ -79,7 +79,7 @@ function renderReviewGates(metrics: ConsoleMetrics): string {
     <div class="review-gate">
       <span>Evidence</span>
       ${statusPill(measuredEvidenceCount > 0 ? 'pass' : 'warn')}
-      <strong>${escapeHtml(`${measuredEvidenceCount} measured action(s)`)}</strong>
+      <strong>${escapeHtml(`${measuredEvidenceCount} verified system call(s)`)}</strong>
     </div>
     <div class="review-gate">
       <span>Production</span>

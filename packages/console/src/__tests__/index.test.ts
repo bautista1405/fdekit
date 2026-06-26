@@ -258,7 +258,7 @@ describe('renderConsole', () => {
     expectTextIncludes(html, [
       'Simulated local load-test scenario',
       'No HTTP request or k6 execution',
-      '0 measured action(s)',
+      '0 verified system call(s)',
     ]);
   });
 

@@ -34,6 +34,8 @@ export const overviewStyles = `
       font-size: 11px;
       flex: 0 0 auto;
     }
+    .kpi.warn { border-color: var(--amber-line); }
+    .kpi.fail { border-color: var(--red-line); }
     .kpi .value { font-size: 25px; font-weight: 780; letter-spacing: 0; }
     .kpi .note { color: var(--muted); font-size: 12px; margin-top: 5px; overflow-wrap: anywhere; }
 

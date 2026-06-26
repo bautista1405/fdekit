@@ -146,6 +146,16 @@ export const workbenchStyles = `
       font-size: 18px;
     }
 
+    .donut.empty {
+      background: var(--surface-alt);
+      border: 1px dashed var(--line-strong);
+    }
+
+    .donut.empty::after {
+      color: var(--muted);
+      font-weight: 760;
+    }
+
     .stacked-bar {
       display: flex;
       height: 16px;

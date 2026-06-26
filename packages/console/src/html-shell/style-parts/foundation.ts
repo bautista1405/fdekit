@@ -13,12 +13,15 @@ export const foundationStyles = `    :root {
       --blue-soft: #f5f5f5;
       --teal: #404040;
       --teal-soft: #f5f5f5;
-      --green: #111111;
-      --green-soft: #f7f7f7;
-      --amber: #525252;
-      --amber-soft: #f4f4f5;
-      --red: #111111;
-      --red-soft: #ededed;
+      --green: #15803d;
+      --green-soft: #f0fdf4;
+      --green-line: #bbf7d0;
+      --amber: #b45309;
+      --amber-soft: #fffbeb;
+      --amber-line: #fcd34d;
+      --red: #b91c1c;
+      --red-soft: #fef2f2;
+      --red-line: #fca5a5;
       --violet: #2f2f2f;
       --violet-soft: #f5f5f5;
       --shadow: 0 1px 1px rgba(0, 0, 0, 0.03), 0 8px 24px rgba(0, 0, 0, 0.04);
@@ -311,9 +314,9 @@ export const foundationStyles = `    :root {
       font-weight: 680;
     }
 
-    .pill.pass { background: var(--ink); color: var(--surface); border-color: var(--ink); }
-    .pill.fail { background: var(--surface); color: var(--ink); border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
-    .pill.warn { background: var(--surface-alt); color: var(--ink); border-color: var(--line-strong); }
+    .pill.pass { background: var(--green-soft); color: var(--green); border-color: var(--green-line); }
+    .pill.warn { background: var(--amber-soft); color: var(--amber); border-color: var(--amber-line); font-weight: 720; }
+    .pill.fail { background: var(--red-soft); color: var(--red); border-color: var(--red-line); font-weight: 740; }
     .pill.info { background: var(--surface-alt); color: var(--ink); border-color: var(--line); }
 
     .topbar-actions {

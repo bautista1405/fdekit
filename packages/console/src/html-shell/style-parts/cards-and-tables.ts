@@ -155,9 +155,9 @@ export const cardAndTableStyles = `    .handoff {
       padding: 10px;
     }
 
-    .impact-card.pass { border-color: var(--line-strong); background: var(--surface); }
-    .impact-card.warn { border-color: var(--line-strong); background: var(--surface-alt); }
-    .impact-card.fail { border-color: var(--ink); background: var(--ink); color: var(--surface); }
+    .impact-card.pass { border-color: var(--green-line); background: var(--green-soft); }
+    .impact-card.warn { border-color: var(--amber-line); background: var(--amber-soft); }
+    .impact-card.fail { border-color: var(--red-line); background: var(--red-soft); }
 
     .impact-value {
       display: block;
@@ -167,9 +167,8 @@ export const cardAndTableStyles = `    .handoff {
       margin: 3px 0;
     }
 
-    .impact-card.fail .event-meta {
-      color: #d4d4d4;
-    }
+    .impact-card.warn .impact-value { color: var(--amber); }
+    .impact-card.fail .impact-value { color: var(--red); }
 
     .readiness-list {
       display: grid;

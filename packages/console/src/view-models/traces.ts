@@ -17,6 +17,7 @@ import {
   lastEventOfType,
   slackFromEvent,
 } from './trace-events.js';
+import { classifyRunFailure } from './run-failures.js';
 
 export function latestTrace(traces: TraceArtifact[]): TraceArtifact | null {
   return [...traces].sort((left, right) => left.createdAt.localeCompare(right.createdAt)).at(-1) ?? null;
@@ -42,6 +43,9 @@ export function collectRunHistory(traces: TraceArtifact[]): RunHistoryItem[] {
     .map((trace) => {
       const completed = lastEventOfType(trace.events ?? [], 'agent.run.completed');
       const completedRecord = asRecord(completed);
+      const status = getString(completedRecord.status) ?? 'unknown';
+      const finalAnswer = getString(completedRecord.message);
+      const failure = classifyRunFailure(status, finalAnswer);
       const toolCalls = (trace.events ?? [])
         .filter((event) => event.type === 'tool.call.completed')
         .map((event) => getString(event.toolName) ?? 'unknown');
@@ -49,13 +53,16 @@ export function collectRunHistory(traces: TraceArtifact[]): RunHistoryItem[] {
       return {
         traceId: trace.id,
         createdAt: trace.createdAt,
-        status: getString(completedRecord.status) ?? 'unknown',
+        status,
         latencyMs: getNumber(completedRecord.latencyMs) ?? 0,
         costUsd: getNumber(completedRecord.costUsd) ?? 0,
         toolCalls,
         issueCount: toolCalls.filter((toolName) => isIssueTool(toolName)).length,
         slackCount: toolCalls.filter((toolName) => toolName === 'slack.message').length,
-        finalAnswer: getString(completedRecord.message),
+        finalAnswer,
+        failureCategory: failure?.category,
+        failureLabel: failure?.label,
+        failureReason: failure?.reason,
       };
     });
 }

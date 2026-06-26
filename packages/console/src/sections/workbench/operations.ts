@@ -54,7 +54,8 @@ export function renderRunHistory(history: RunHistoryItem[]): string {
     return '<p class="subtle">No run history yet.</p>';
   }
 
-  return `<table>
+  return `${renderFailureBreakdown(history)}
+  <table>
     <thead><tr><th>Run</th><th>Status</th><th>Actions</th><th>Latency</th><th>Cost</th></tr></thead>
     <tbody>
       ${history.slice(0, 8).map((run) => `<tr>
@@ -62,11 +63,47 @@ export function renderRunHistory(history: RunHistoryItem[]): string {
           <span class="mono">${escapeHtml(shortId(run.traceId))}</span>
           <div class="event-meta">${escapeHtml(formatDate(run.createdAt))}</div>
         </td>
-        <td>${statusPill(run.status)}</td>
+        <td>${renderRunStatus(run)}</td>
         <td>${escapeHtml(`${run.toolCalls.length} call(s) · ${run.issueCount + run.slackCount} write(s)`)}</td>
         <td>${escapeHtml(`${Math.round(run.latencyMs)}ms`)}</td>
         <td>${escapeHtml(`$${run.costUsd.toFixed(4)}`)}</td>
       </tr>`).join('')}
     </tbody>
   </table>`;
+}
+
+function renderFailureBreakdown(history: RunHistoryItem[]): string {
+  const failures = history.filter((run) => run.failureCategory);
+
+  if (failures.length === 0) {
+    return '<p class="subtle">No failed run reasons captured in history.</p>';
+  }
+
+  const categoryOrder = ['infra', 'policy-block', 'tool-error', 'max-steps', 'model-error', 'other'];
+  const categories = categoryOrder
+    .map((category) => failures.filter((run) => run.failureCategory === category))
+    .filter((runs) => runs.length > 0);
+
+  return `<div class="chart-title">Failure breakdown</div>
+  <div class="mini-metrics">
+    ${categories.map((runs) => {
+      const sample = runs[0];
+
+      return `<div class="mini-metric">
+        <strong>${escapeHtml(String(runs.length))}</strong>
+        <span class="subtle">${escapeHtml(sample?.failureLabel ?? 'Other')} failure${runs.length === 1 ? '' : 's'}</span>
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+
+function renderRunStatus(run: RunHistoryItem): string {
+  if (!run.failureReason) {
+    return statusPill(run.status);
+  }
+
+  return `<div class="status-stack">
+    <div>${statusPill(run.status)} <span class="pill info">${escapeHtml(run.failureLabel ?? 'Other')}</span></div>
+    <div class="event-meta">${escapeHtml(run.failureReason)}</div>
+  </div>`;
 }

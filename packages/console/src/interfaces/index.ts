@@ -243,6 +243,9 @@ export interface RunHistoryItem {
   issueCount: number;
   slackCount: number;
   finalAnswer?: string;
+  failureCategory?: 'infra' | 'policy-block' | 'tool-error' | 'max-steps' | 'model-error' | 'other';
+  failureLabel?: string;
+  failureReason?: string;
 }
 
 export interface EvalSuiteSummary {

@@ -261,4 +261,10 @@ export const cardAndTableStyles = `    .handoff {
     }
 
     tr:last-child td { border-bottom: 0; }
+
+    .status-stack {
+      display: grid;
+      gap: 6px;
+      min-width: 0;
+    }
 `;

@@ -310,6 +310,62 @@ describe('renderConsole', () => {
     });
   });
 
+  it('surfaces run failure categories and reasons in operations history', () => {
+    const failedTraces: TraceArtifact[] = [
+      {
+        id: 'run_infra_failure',
+        createdAt: '2026-06-26T12:00:00.000Z',
+        deployment: 'support-triage-example',
+        events: [{
+          type: 'agent.run.completed',
+          status: 'failed',
+          latencyMs: 120,
+          costUsd: 0,
+          message: 'Ollama request failed at http://127.0.0.1:11434',
+        }],
+      },
+      {
+        id: 'run_policy_block',
+        createdAt: '2026-06-26T12:01:00.000Z',
+        deployment: 'support-triage-example',
+        events: [{
+          type: 'agent.run.completed',
+          status: 'failed',
+          latencyMs: 80,
+          costUsd: 0,
+          message: 'Policy "limit-tool-use" blocked codebase.search: Tool call limit exceeded',
+        }],
+      },
+      {
+        id: 'run_tool_error',
+        createdAt: '2026-06-26T12:02:00.000Z',
+        deployment: 'support-triage-example',
+        events: [{
+          type: 'agent.run.completed',
+          status: 'failed',
+          latencyMs: 60,
+          costUsd: 0,
+          message: 'Tool "codebase.readFile" args $.filePath: Required property is missing',
+        }],
+      },
+    ];
+    const charts = renderConsolePages({
+      deployment,
+      traces: [...failedTraces, trace],
+      createdAt: '2026-06-26T12:03:00.000Z',
+    }).find((page) => page.fileName === 'charts.html')?.html ?? '';
+
+    expectTextIncludes(charts, [
+      'Failure breakdown',
+      'Infrastructure failure',
+      'Policy block failure',
+      'Tool error failure',
+      'Ollama request failed at http://127.0.0.1:11434',
+      'Policy &quot;limit-tool-use&quot; blocked codebase.search: Tool call limit exceeded',
+      'Tool &quot;codebase.readFile&quot; args $.filePath: Required property is missing',
+    ]);
+  });
+
   it('scopes dashboard evidence to traces referenced by the latest eval', () => {
     const bundle = createConsoleExportBundle({
       deployment,

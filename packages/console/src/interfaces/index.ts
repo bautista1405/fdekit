@@ -67,6 +67,7 @@ export interface ConsoleMetrics {
   slackMessages: SlackNotification[];
   connectorEvidence: ConnectorEvidence[];
   runHistory: RunHistoryItem[];
+  allRunHistory: RunHistoryItem[];
   evalSuites: EvalSuiteSummary[];
   snapshotTrend: SnapshotTrendItem[];
   reportReady: boolean;

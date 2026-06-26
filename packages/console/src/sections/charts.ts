@@ -21,7 +21,7 @@ export function renderCharts(metrics: ConsoleMetrics): string {
     </div>
     <div class="chart-block">
       <div class="chart-title">Latency Trend</div>
-      ${renderLatencySparkline(metrics.runHistory)}
+      ${renderLatencySparkline(metrics.allRunHistory)}
     </div>
   </div>`;
 }
@@ -77,6 +77,15 @@ function renderLatencySparkline(history: RunHistoryItem[]): string {
 
   if (runs.length === 0) {
     return '<p class="subtle">No completed run latency captured yet.</p>';
+  }
+
+  if (runs.length === 1) {
+    const only = runs[0];
+
+    return `<div class="chart-stat">
+      <strong>${escapeHtml(`${Math.round(only?.latencyMs ?? 0)}ms`)}</strong>
+      <div class="event-meta">Single run; trend appears once a second run is captured.</div>
+    </div>`;
   }
 
   const width = 280;

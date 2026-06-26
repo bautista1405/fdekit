@@ -1,9 +1,4 @@
 import type {
-  ConsoleMetrics,
-  ReusablePatternItem,
-  SnapshotTrendItem,
-} from '../../interfaces/index.js';
-import type {
   EvalCaseResult,
   EvalArtifact,
   EvalSuiteResult,
@@ -11,7 +6,6 @@ import type {
 } from '@fdekit/runtime';
 import {
   escapeHtml,
-  formatDate,
   statusPill,
 } from '../../view-models/index.js';
 
@@ -67,16 +61,15 @@ export function renderMacroEvalResults(macroEval: MacroEvalArtifact | null): str
 
   const focus = macroEval.focusPattern;
 
-  return `<div class="stack">
-    ${focus ? `<div class="row-item">
-      <div>
-        <div class="label">Focus pattern</div>
-        <div class="row-main">${escapeHtml(focus.behaviorPattern)}</div>
-        <div class="subtle">${escapeHtml(focus.summary)}</div>
+  return `<div>
+    ${focus ? `<div class="readiness-item">
+      <div>${statusPill(focus.severity)}</div>
+      <div class="row-main">
+        <strong>${escapeHtml(focus.behaviorPattern)}</strong>
+        <div class="event-meta">${escapeHtml(focus.summary)}</div>
       </div>
-      ${statusPill(focus.severity)}
     </div>` : ''}
-    <table>
+    <table style="margin-top: 10px;">
       <thead>
         <tr>
           <th>Pattern</th>
@@ -94,58 +87,5 @@ export function renderMacroEvalResults(macroEval: MacroEvalArtifact | null): str
         </tr>`).join('')}
       </tbody>
     </table>
-  </div>`;
-}
-
-export function renderPatternReuse(patterns: ReusablePatternItem[]): string {
-  if (patterns.length === 0) {
-    return '<p class="subtle">No recipe or reuse metadata captured yet.</p>';
-  }
-
-  return `<div class="impact-grid">
-    ${patterns.map((pattern) => `<article class="impact-card ${escapeHtml(pattern.status)}">
-      <div class="event-meta">${escapeHtml(pattern.label)}</div>
-      <strong class="impact-value">${escapeHtml(pattern.value)}</strong>
-      <div class="event-meta">${escapeHtml(pattern.detail)}</div>
-    </article>`).join('')}
-  </div>`;
-}
-
-export function renderEvalComparison(metrics: ConsoleMetrics): string {
-  const suiteRows = metrics.evalSuites.length > 0
-    ? `<table>
-      <thead><tr><th>Suite</th><th>Status</th><th>Pass rate</th></tr></thead>
-      <tbody>
-        ${metrics.evalSuites.map((suite) => `<tr>
-          <td>${escapeHtml(suite.name)}</td>
-          <td>${statusPill(suite.status)}</td>
-          <td>${escapeHtml(`${suite.passed}/${suite.cases || 0} passed`)}</td>
-        </tr>`).join('')}
-      </tbody>
-    </table>`
-    : '<p class="subtle">No eval suites found yet.</p>';
-
-  return `<div>
-    <div class="mini-metrics">
-      <div class="mini-metric"><strong>${escapeHtml(`${metrics.evalPassedCases}/${metrics.evalCaseCount || 0}`)}</strong><span class="subtle">cases passed</span></div>
-      <div class="mini-metric"><strong>${escapeHtml(String(metrics.snapshotTrend.length))}</strong><span class="subtle">dashboard snapshots</span></div>
-      <div class="mini-metric"><strong>${escapeHtml(metrics.evalStatus)}</strong><span class="subtle">latest eval</span></div>
-    </div>
-    ${suiteRows}
-    ${renderSnapshotTrend(metrics.snapshotTrend)}
-  </div>`;
-}
-
-function renderSnapshotTrend(trend: SnapshotTrendItem[]): string {
-  if (trend.length === 0) {
-    return '';
-  }
-
-  return `<div class="trend" style="margin-top: 12px;">
-    ${trend.slice(-6).reverse().map((entry) => `<div class="trend-row">
-      <span>${statusPill(entry.evalStatus)}</span>
-      <a href="${escapeHtml(entry.file)}">${escapeHtml(formatDate(entry.createdAt))}</a>
-      <span class="right">${escapeHtml(String(entry.traceCount))}</span>
-    </div>`).join('')}
   </div>`;
 }

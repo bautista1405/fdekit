@@ -201,4 +201,39 @@ export const workbenchStyles = `
       stroke: var(--line-strong);
       stroke-width: 1;
     }
+
+    .chart-stat {
+      display: grid;
+      gap: 4px;
+      padding: 8px 0;
+    }
+
+    .chart-stat strong {
+      font-size: 26px;
+      font-weight: 780;
+      line-height: 1.1;
+    }
+
+    .ops-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+      gap: 18px;
+      margin-top: 14px;
+      align-items: start;
+    }
+
+    .bar-label {
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+      min-width: 0;
+    }
+
+    .bar-label .mono { overflow-wrap: anywhere; }
+
+    .bar-sub {
+      color: var(--muted);
+      font-size: 12px;
+      flex: 0 0 auto;
+    }
 `;

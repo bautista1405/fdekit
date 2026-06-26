@@ -1,16 +1,11 @@
 import type {
-  BudgetCapItem,
   ConsoleMetrics,
   PolicyDefinitionItem,
 } from '../../interfaces/index.js';
 import { asRecord } from '@fdekit/core';
-import type {
-  AuditLogEntry,
-  TraceArtifact,
-} from '@fdekit/runtime';
+import type { TraceArtifact } from '@fdekit/runtime';
 import {
   escapeHtml,
-  formatDate,
   statusPill,
 } from '../../view-models/index.js';
 
@@ -58,50 +53,6 @@ export function renderPolicyDefinitions(policies: PolicyDefinitionItem[]): strin
         </td>
         <td>${statusPill(policy.kind)}</td>
         <td>${escapeHtml(policy.detail)}</td>
-      </tr>`).join('')}
-    </tbody>
-  </table>`;
-}
-
-export function renderBudgetCaps(budgets: BudgetCapItem[], totalCostUsd: number): string {
-  if (budgets.length === 0) {
-    return '<p class="subtle">No budget cap policy found.</p>';
-  }
-
-  return `<div>
-    ${budgets.map((budget) => {
-      const usedPercent = budget.maxUsd > 0 ? Math.min((totalCostUsd / budget.maxUsd) * 100, 100) : 0;
-      return `<div class="bar-row">
-        <span class="mono">${escapeHtml(budget.scope)}</span>
-        <span class="track"><span class="bar" style="width: ${Math.round(usedPercent)}%"></span></span>
-        <span class="right">${escapeHtml(`$${budget.maxUsd.toFixed(2)}`)}</span>
-      </div>
-      <div class="event-meta">${escapeHtml(`${budget.policy}: $${totalCostUsd.toFixed(4)} used`)}</div>`;
-    }).join('')}
-  </div>`;
-}
-
-export function renderAuditLog(entries: AuditLogEntry[]): string {
-  if (entries.length === 0) {
-    return '<p class="subtle">No audit log entries captured yet.</p>';
-  }
-
-  return `<table>
-    <thead><tr><th>Time</th><th>Outcome</th><th>Action</th><th>Detail</th></tr></thead>
-    <tbody>
-      ${entries.slice(-8).reverse().map((entry) => `<tr>
-        <td>
-          ${escapeHtml(formatDate(entry.createdAt))}
-          <div class="event-meta">${escapeHtml(entry.actor)}</div>
-        </td>
-        <td>${statusPill(entry.outcome)}</td>
-        <td class="mono">${escapeHtml(entry.action)}</td>
-        <td>${escapeHtml([
-          entry.toolName,
-          entry.policy,
-          entry.approvalId,
-          entry.message,
-        ].filter(Boolean).join(' - ') || 'recorded')}</td>
       </tr>`).join('')}
     </tbody>
   </table>`;

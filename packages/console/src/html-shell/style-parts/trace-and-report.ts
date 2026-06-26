@@ -39,7 +39,7 @@ export const traceAndReportStyles = `    .timeline {
 
     .bar-row {
       display: grid;
-      grid-template-columns: minmax(110px, .8fr) minmax(140px, 1.4fr) 44px;
+      grid-template-columns: minmax(110px, .9fr) minmax(120px, 1.3fr) 58px;
       align-items: center;
       gap: 10px;
       font-size: 13px;

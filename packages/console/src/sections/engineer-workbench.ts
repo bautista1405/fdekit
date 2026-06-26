@@ -2,6 +2,7 @@ import { renderDetailPanel } from './components.js';
 import type { DashboardSectionStrategy } from './types.js';
 import {
   renderEvalResults,
+  renderMacroEvalResults,
 } from './workbench/evals.js';
 import {
   renderCreatedIssues,
@@ -15,6 +16,7 @@ import {
 import {
   renderRunStory,
 } from './workbench/traces.js';
+import type { EvalArtifact, MacroEvalArtifact } from '@fdekit/runtime';
 import type { ConsoleMetrics } from '../interfaces/index.js';
 import {
   escapeHtml,
@@ -40,7 +42,7 @@ export const engineerWorkbenchSection: DashboardSectionStrategy = {
         <div class="detail-stack">
           ${renderDetailPanel('Review Gates', renderReviewGates(metrics), true)}
           ${renderDetailPanel('Latest Run Story', renderRunStory(metrics.latestTrace), true)}
-          ${renderDetailPanel('Eval Results', renderEvalResults(data.latestEval ?? null), true)}
+          ${renderDetailPanel('Eval Results', renderEvalDetail(data.latestEval ?? null, data.latestMacroEval ?? null), true)}
         </div>
 
         <div class="detail-stack">
@@ -91,6 +93,17 @@ function renderReviewGates(metrics: ConsoleMetrics): string {
       <strong>${escapeHtml(`${productionReady}/${metrics.productionReadiness.length}`)}</strong>
     </div>
   </div>`;
+}
+
+function renderEvalDetail(
+  evalArtifact: EvalArtifact | null,
+  macroEval: MacroEvalArtifact | null,
+): string {
+  if (!macroEval || macroEval.patterns.length === 0) {
+    return renderEvalResults(evalArtifact);
+  }
+
+  return `${renderEvalResults(evalArtifact)}<h3 class="subsection-title">Behavior Patterns</h3>${renderMacroEvalResults(macroEval)}`;
 }
 
 function renderCustomerAnswer(metrics: ConsoleMetrics): string {

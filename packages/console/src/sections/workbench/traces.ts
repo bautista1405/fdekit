@@ -6,7 +6,6 @@ import type {
 import {
   escapeHtml,
   eventMessage,
-  eventMeta,
   isIssueTool,
 } from '../../view-models/index.js';
 
@@ -34,24 +33,6 @@ export function renderRunStory(trace: TraceArtifact | null): string {
         </div>
       </div>`;
     }).join('')}
-  </div>`;
-}
-
-export function renderTimeline(trace: TraceArtifact | null): string {
-  if (!trace || trace.events.length === 0) {
-    return '<p class="subtle">No trace events captured yet.</p>';
-  }
-
-  const events = trace.events.slice(-16);
-
-  return `<div class="timeline">
-    ${events.map((event) => `<article class="event">
-      <div class="event-type">${escapeHtml(event.type)}</div>
-      <div class="event-main">
-        ${escapeHtml(eventMessage(event))}
-        <div class="event-meta">${escapeHtml(eventMeta(event))}</div>
-      </div>
-    </article>`).join('')}
   </div>`;
 }
 

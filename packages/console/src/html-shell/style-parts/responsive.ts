@@ -16,6 +16,7 @@ export const responsiveStyles = `    @media (max-width: 1120px) {
       .chart-grid { grid-template-columns: 1fr; }
       .chart-block { padding-right: 0; border-right: 0; border-bottom: 1px solid var(--line); padding-bottom: 14px; }
       .chart-block:last-child { border-bottom: 0; padding-bottom: 0; }
+      .ops-grid { grid-template-columns: 1fr; }
     }
 
     @media (max-width: 640px) {

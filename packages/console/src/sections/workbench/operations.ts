@@ -5,51 +5,47 @@ import type {
 import {
   escapeHtml,
   formatDate,
+  percentile,
   shortId,
   statusPill,
 } from '../../view-models/index.js';
 
-export function renderCostLatency(metrics: ConsoleMetrics): string {
-  if (metrics.runHistory.length === 0) {
-    return '<p class="subtle">No completed run cost or latency captured yet.</p>';
+export function renderRunLatencyStats(history: RunHistoryItem[]): string {
+  if (history.length === 0) {
+    return '<p class="subtle">No completed run latency or cost captured yet.</p>';
   }
 
-  return `<div>
-    <div class="mini-metrics">
-      <div class="mini-metric"><strong>${escapeHtml(`${Math.round(metrics.avgLatencyMs)}ms`)}</strong><span class="subtle">average latency</span></div>
-      <div class="mini-metric"><strong>${escapeHtml(`${Math.round(metrics.p95LatencyMs)}ms`)}</strong><span class="subtle">p95 latency</span></div>
-      <div class="mini-metric"><strong>${escapeHtml(`$${metrics.totalCostUsd.toFixed(4)}`)}</strong><span class="subtle">total cost</span></div>
-    </div>
-    <table>
-      <thead><tr><th>Run</th><th>Status</th><th>Latency</th><th>Cost</th></tr></thead>
-      <tbody>
-        ${metrics.runHistory.slice(0, 6).map((run) => `<tr>
-          <td>
-            <span class="mono">${escapeHtml(shortId(run.traceId))}</span>
-            <div class="event-meta">${escapeHtml(formatDate(run.createdAt))}</div>
-          </td>
-          <td>${statusPill(run.status)}</td>
-          <td>${escapeHtml(`${Math.round(run.latencyMs)}ms`)}</td>
-          <td>${escapeHtml(`$${run.costUsd.toFixed(4)}`)}</td>
-        </tr>`).join('')}
-      </tbody>
-    </table>
+  const latencies = history.map((run) => run.latencyMs).filter((value) => value >= 0);
+  const avg = latencies.length > 0
+    ? latencies.reduce((total, value) => total + value, 0) / latencies.length
+    : 0;
+  const p95 = percentile(latencies, 95);
+  const totalCost = history.reduce((total, run) => total + run.costUsd, 0);
+
+  return `<div class="mini-metrics">
+    <div class="mini-metric"><strong>${escapeHtml(`${Math.round(avg)}ms`)}</strong><span class="subtle">avg latency / run</span></div>
+    <div class="mini-metric"><strong>${escapeHtml(`${Math.round(p95)}ms`)}</strong><span class="subtle">p95 latency</span></div>
+    <div class="mini-metric"><strong>${escapeHtml(`$${totalCost.toFixed(4)}`)}</strong><span class="subtle">cost / ${history.length} run(s)</span></div>
   </div>`;
 }
 
 export function renderToolBars(toolCounts: ConsoleMetrics['toolCounts']): string {
   if (toolCounts.length === 0) {
-    return '<p class="subtle">No tool calls captured yet.</p>';
+    return '<p class="subtle">No tool calls captured in the reviewed run yet.</p>';
   }
 
-  const max = Math.max(...toolCounts.map((tool) => tool.count), 1);
+  const maxTime = Math.max(...toolCounts.map((tool) => tool.avgLatencyMs * tool.count), 1);
 
   return `<div class="bars">
-    ${toolCounts.map((tool) => `<div class="bar-row">
-      <span class="mono">${escapeHtml(tool.name)}</span>
-      <span class="track"><span class="bar" style="width: ${Math.round((tool.count / max) * 100)}%"></span></span>
-      <span class="right">${tool.count}</span>
-    </div>`).join('')}
+    ${toolCounts.map((tool) => {
+      const totalMs = tool.avgLatencyMs * tool.count;
+
+      return `<div class="bar-row">
+      <span class="bar-label"><span class="mono">${escapeHtml(tool.name)}</span><span class="bar-sub">×${tool.count}</span></span>
+      <span class="track"><span class="bar" style="width: ${Math.max(Math.round((totalMs / maxTime) * 100), 2)}%"></span></span>
+      <span class="right">${escapeHtml(`${Math.round(tool.avgLatencyMs)}ms`)}</span>
+    </div>`;
+    }).join('')}
   </div>`;
 }
 
@@ -59,7 +55,7 @@ export function renderRunHistory(history: RunHistoryItem[]): string {
   }
 
   return `<table>
-    <thead><tr><th>Run</th><th>Status</th><th>Actions</th><th>Latency</th></tr></thead>
+    <thead><tr><th>Run</th><th>Status</th><th>Actions</th><th>Latency</th><th>Cost</th></tr></thead>
     <tbody>
       ${history.slice(0, 8).map((run) => `<tr>
         <td>
@@ -67,8 +63,9 @@ export function renderRunHistory(history: RunHistoryItem[]): string {
           <div class="event-meta">${escapeHtml(formatDate(run.createdAt))}</div>
         </td>
         <td>${statusPill(run.status)}</td>
-        <td>${escapeHtml(`${run.toolCalls.length} tools, ${run.issueCount} issues, ${run.slackCount} Slack`)}</td>
+        <td>${escapeHtml(`${run.toolCalls.length} call(s) · ${run.issueCount + run.slackCount} write(s)`)}</td>
         <td>${escapeHtml(`${Math.round(run.latencyMs)}ms`)}</td>
+        <td>${escapeHtml(`$${run.costUsd.toFixed(4)}`)}</td>
       </tr>`).join('')}
     </tbody>
   </table>`;

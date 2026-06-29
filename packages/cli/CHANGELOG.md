@@ -1,5 +1,18 @@
 # fdekit
 
+## 0.4.6
+
+### Patch Changes
+
+- Updated dependencies [e523d60]
+  - @fdekit/console@0.4.6
+  - @fdekit/core@0.4.6
+  - @fdekit/runtime@0.4.6
+  - @fdekit/provider-anthropic@0.4.6
+  - @fdekit/provider-google@0.4.6
+  - @fdekit/provider-ollama@0.4.6
+  - @fdekit/provider-openai@0.4.6
+
 ## 0.4.5
 
 ### Patch Changes

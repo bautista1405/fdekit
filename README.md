@@ -1,8 +1,9 @@
 <h1 style="font-weight:normal">
-  FDEKit&nbsp;
-  <a href="./LICENSE"><img src="https://img.shields.io/github/license/bautista1405/fdekit.svg?colorB=ff0000"></a>
-  <a href="https://www.npmjs.com/package/@fdekit/cli"><img src="https://img.shields.io/npm/d18m/%40fdekit%2Fcli?label=npm" /></a>
-  <!-- <img src="https://img.shields.io/github/stars/bautista1405/fdekit" /> -->
+    FDEKit&nbsp;
+    <a href="./LICENSE"><img src="https://img.shields.io/github/license/bautista1405/fdekit.svg?colorB=ff0000"></a>
+    <a href="https://www.npmjs.com/package/@fdekit/cli"><img src="https://img.shields.io/npm/d18m/%40fdekit%2Fcli?label=cli" /></a>
+    <a href="https://www.npmjs.com/package/@fdekit/core"><img src="https://img.shields.io/npm/d18m/%40fdekit%2Fcore?label=core" /></a>
+    <!-- <img src="https://img.shields.io/github/stars/bautista1405/fdekit" /> -->
 </h1>
 
 > [!WARNING]

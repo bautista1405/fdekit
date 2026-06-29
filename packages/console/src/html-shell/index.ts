@@ -130,6 +130,7 @@ function renderOverviewPage(metrics: ConsoleMetrics, navItems: ConsoleNavItem[])
   return `${renderDemoHero(metrics)}
 
       <section class="kpis" aria-label="Key results">
+        ${renderKpi('Health', `${metrics.readinessScore}/100`, healthDetail(metrics), metrics.healthStatus)}
         ${renderKpi('Eval', metrics.evalStatus, `${metrics.evalPassedCases}/${metrics.evalCaseCount || 0} cases passed`, signalStatus('Evals'))}
         ${renderKpi('Reviewed run', String(metrics.traceCount), traceScopeDetail(metrics), signalStatus('Trace Evidence'))}
         ${renderKpi('Reliability', reliabilityValue(metrics), reliabilityDetail(metrics), metrics.reliabilityStatus)}
@@ -168,7 +169,15 @@ function reliabilityDetail(metrics: ConsoleMetrics): string {
     return 'No stored run history captured';
   }
 
-  return `${Math.round(metrics.successRate * 100)}% completed or guardrail-stopped; ${metrics.policyBlockedRunCount} governance stop(s)`;
+  return `${Math.round(metrics.successRate * 100)}% completed or guardrail-stopped; ${metrics.policyBlockedRunCount} governance stop(s), ${metrics.reliabilityFailureCount} reliability failure(s)`;
+}
+
+function healthDetail(metrics: ConsoleMetrics): string {
+  if (metrics.totalRunCount === 0) {
+    return 'No stored run history captured; health is awaiting measured evidence';
+  }
+
+  return `${Math.round(metrics.successRate * 100)}% fleet reliability, ${Math.round(metrics.fleetP95LatencyMs)}ms fleet p95 latency`;
 }
 
 function governanceDetail(metrics: ConsoleMetrics): string {

@@ -41,6 +41,7 @@ describe('renderConsole', () => {
       'Review snapshot',
       'Key results',
       'Latest eval scope',
+      'Health',
       'Eval',
       'Reviewed run',
       'Reliability',
@@ -418,6 +419,10 @@ describe('renderConsole', () => {
         reliabilityFailureCount?: number;
         successRate?: number;
         reliabilityStatus?: string;
+        readinessScore?: number;
+        healthStatus?: string;
+        latencyStatus?: string;
+        fleetP95LatencyMs?: number;
       };
       productionReadiness?: Array<{ label?: string; status?: string; detail?: string }>;
     };
@@ -440,6 +445,10 @@ describe('renderConsole', () => {
       policyBlockedRunCount: 2,
       reliabilityFailureCount: 2,
       reliabilityStatus: 'fail',
+      readinessScore: 69,
+      healthStatus: 'fail',
+      latencyStatus: 'pass',
+      fleetP95LatencyMs: 20,
     });
     expect(parsed.metrics?.successRate).toBeCloseTo(4 / 6);
     expect(parsed.productionReadiness?.find((item) => item.label === 'Guardrail stops')).toMatchObject({
@@ -449,15 +458,52 @@ describe('renderConsole', () => {
     expectTextIncludes(overview, [
       'Reviewed run',
       'Reliability',
+      'Health',
+      '69/100',
       '4/6',
-      '67% completed or guardrail-stopped; 2 governance stop(s)',
+      '67% fleet reliability, 20ms fleet p95 latency',
+      '67% completed or guardrail-stopped; 2 governance stop(s), 2 reliability failure(s)',
     ]);
     expectTextIncludes(readiness, [
       'Guardrail stops',
       'Governance stopped 2 policy-blocked run(s)',
     ]);
     expect(bundle.summaryMarkdown).toContain('- Reviewed runs: 1');
+    expect(bundle.summaryMarkdown).toContain('- Deployment health score: 69/100 (fail; reliability 67%, fleet p95 latency 20ms)');
     expect(bundle.summaryMarkdown).toContain('- Fleet reliability: 4/6 completed or guardrail-stopped (67%); 2 governance stop(s), 2 reliability failure(s)');
+  });
+
+  it('penalizes health score and latency status for slow measured runs', () => {
+    const traces = [
+      runTrace('run_completed_fast', '2026-06-26T12:00:00.000Z', 'completed', 'Completed fast run'),
+      runTrace('run_completed_slow', '2026-06-26T12:01:00.000Z', 'completed', 'Completed slow run', 59_826),
+    ];
+    const bundle = createConsoleExportBundle({
+      deployment,
+      traces,
+      latestEval: evalArtifact,
+      reportMarkdown: '# Report\n\n- Status: passed',
+      createdAt: '2026-06-26T12:02:00.000Z',
+    });
+    const parsed = JSON.parse(bundle.dataJson) as {
+      metrics?: {
+        readinessScore?: number;
+        healthStatus?: string;
+        latencyStatus?: string;
+        reliabilityStatus?: string;
+        fleetP95LatencyMs?: number;
+      };
+    };
+
+    expect(parsed.metrics).toMatchObject({
+      readinessScore: 69,
+      healthStatus: 'fail',
+      latencyStatus: 'fail',
+      reliabilityStatus: 'pass',
+      fleetP95LatencyMs: 59_826,
+    });
+    expect(bundle.summaryMarkdown).toContain('- Deployment health score: 69/100 (fail; reliability 100%, fleet p95 latency 59826ms)');
+    expect(bundle.summaryMarkdown).toContain('- Fleet P95 latency: 59826ms (fail)');
   });
 
   it('surfaces runtime enforcement posture from reviewed trace profiles', () => {
@@ -736,7 +782,13 @@ function countCsvRecords(value: string, recordType: string): number {
   return value.split('\n').filter((line) => line.startsWith(`${recordType},`)).length;
 }
 
-function runTrace(id: string, createdAt: string, status: string, message: string): TraceArtifact {
+function runTrace(
+  id: string,
+  createdAt: string,
+  status: string,
+  message: string,
+  latencyMs = 20,
+): TraceArtifact {
   return {
     id,
     createdAt,
@@ -744,7 +796,7 @@ function runTrace(id: string, createdAt: string, status: string, message: string
     events: [{
       type: 'agent.run.completed',
       status,
-      latencyMs: 20,
+      latencyMs,
       costUsd: 0,
       message,
     }],

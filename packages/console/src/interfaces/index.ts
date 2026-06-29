@@ -47,6 +47,8 @@ export interface ConsoleMetrics {
   evalCaseCount: number;
   evalPassedCases: number;
   readinessScore: number;
+  healthStatus: 'pass' | 'warn' | 'fail';
+  latencyStatus: 'pass' | 'warn' | 'fail';
   readinessSignals: ReadinessSignal[];
   policyEvaluations: number;
   policyViolationCount: number;
@@ -63,6 +65,8 @@ export interface ConsoleMetrics {
   avgLatencyMs: number;
   p95LatencyMs: number;
   maxLatencyMs: number;
+  fleetAvgLatencyMs: number;
+  fleetP95LatencyMs: number;
   totalCostUsd: number;
   toolCounts: Array<{ name: string; count: number; avgLatencyMs: number }>;
   createdIssues: CreatedIssue[];

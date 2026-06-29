@@ -9,6 +9,8 @@ import { collectEvidenceMetrics } from './evidence.js';
 import { collectGovernanceMetrics } from './governance.js';
 import { collectReadinessMetrics } from './readiness.js';
 import { collectToolMetrics } from './tools.js';
+import { calculateReadinessScore } from '../readiness.js';
+import { percentile } from '../format.js';
 
 export function calculateMetrics(data: ConsoleData): ConsoleMetrics {
   const context = createMetricsContext(data);
@@ -26,6 +28,12 @@ export function calculateMetrics(data: ConsoleData): ConsoleMetrics {
     toolMetrics,
     policyBlockedRunCount: reliabilityMetrics.policyBlockedRunCount,
   });
+  const healthMetrics = collectHealthMetrics({
+    readinessSignals: readinessMetrics.readinessSignals,
+    allRunHistory: evidenceMetrics.allRunHistory,
+    successRate: reliabilityMetrics.successRate,
+    totalRunCount: reliabilityMetrics.totalRunCount,
+  });
 
   return {
     traceCount: context.traces.length,
@@ -33,6 +41,7 @@ export function calculateMetrics(data: ConsoleData): ConsoleMetrics {
     traceScope: context.traceScope,
     ...evalMetrics,
     ...readinessMetrics,
+    ...healthMetrics,
     ...governanceMetrics,
     ...toolMetrics,
     ...evidenceMetrics,
@@ -40,6 +49,42 @@ export function calculateMetrics(data: ConsoleData): ConsoleMetrics {
     reportReady: context.reportReady,
     latestRunSummary: context.latestRunSummary,
     finalAnswer: getString(context.latestRunSummary.message) ?? null,
+  };
+}
+
+function collectHealthMetrics(input: {
+  readinessSignals: ConsoleMetrics['readinessSignals'];
+  allRunHistory: ConsoleMetrics['allRunHistory'];
+  successRate: number;
+  totalRunCount: number;
+}): Pick<
+  ConsoleMetrics,
+  'readinessScore' | 'healthStatus' | 'latencyStatus' | 'fleetAvgLatencyMs' | 'fleetP95LatencyMs'
+> {
+  const fleetLatencies = input.allRunHistory
+    .map((run) => run.latencyMs)
+    .filter((latency) => latency >= 0);
+  const fleetAvgLatencyMs = fleetLatencies.length > 0
+    ? fleetLatencies.reduce((total, latency) => total + latency, 0) / fleetLatencies.length
+    : 0;
+  const fleetP95LatencyMs = percentile(fleetLatencies, 95);
+  const declarationScore = calculateReadinessScore(input.readinessSignals) / 100;
+  const reliabilityScore = input.totalRunCount > 0 ? input.successRate : 0.55;
+  const latencyScore = latencyScoreFor(fleetP95LatencyMs, input.totalRunCount);
+  const rawScore = Math.round(100 * (
+    (reliabilityScore * 0.6)
+    + (latencyScore * 0.25)
+    + (declarationScore * 0.15)
+  ));
+  const latencyStatus = latencyStatusFor(fleetP95LatencyMs, input.totalRunCount);
+  const healthStatus = healthStatusFor(input.successRate, input.totalRunCount, latencyStatus);
+
+  return {
+    readinessScore: capHealthScore(rawScore, healthStatus),
+    healthStatus,
+    latencyStatus,
+    fleetAvgLatencyMs,
+    fleetP95LatencyMs,
   };
 }
 
@@ -94,4 +139,68 @@ function reliabilityStatus(totalRunCount: number, successRate: number): 'pass' |
   }
 
   return 'fail';
+}
+
+function latencyScoreFor(p95LatencyMs: number, totalRunCount: number): number {
+  if (totalRunCount === 0) {
+    return 0.55;
+  }
+
+  if (p95LatencyMs <= 10_000) {
+    return 1;
+  }
+
+  if (p95LatencyMs <= 30_000) {
+    return 0.55;
+  }
+
+  return 0;
+}
+
+function latencyStatusFor(p95LatencyMs: number, totalRunCount: number): 'pass' | 'warn' | 'fail' {
+  if (totalRunCount === 0) {
+    return 'warn';
+  }
+
+  if (p95LatencyMs > 30_000) {
+    return 'fail';
+  }
+
+  if (p95LatencyMs > 10_000) {
+    return 'warn';
+  }
+
+  return 'pass';
+}
+
+function healthStatusFor(
+  successRate: number,
+  totalRunCount: number,
+  latencyStatus: 'pass' | 'warn' | 'fail',
+): 'pass' | 'warn' | 'fail' {
+  if (totalRunCount === 0) {
+    return 'warn';
+  }
+
+  if (successRate < 0.8 || latencyStatus === 'fail') {
+    return 'fail';
+  }
+
+  if (successRate < 0.9 || latencyStatus === 'warn') {
+    return 'warn';
+  }
+
+  return 'pass';
+}
+
+function capHealthScore(score: number, status: 'pass' | 'warn' | 'fail'): number {
+  if (status === 'fail') {
+    return Math.min(score, 69);
+  }
+
+  if (status === 'warn') {
+    return Math.min(score, 89);
+  }
+
+  return score;
 }

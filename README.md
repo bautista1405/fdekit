@@ -1,4 +1,9 @@
-# FDEKit
+<h1 style="font-weight:normal">
+  FDEKit&nbsp;
+  <a href="./LICENSE"><img src="https://img.shields.io/github/license/bautista1405/fdekit.svg?colorB=ff0000"></a>
+  <a href="https://www.npmjs.com/package/@fdekit/cli"><img src="https://img.shields.io/npm/d18m/%40fdekit%2Fcli?label=npm" /></a>
+  <!-- <img src="https://img.shields.io/github/stars/bautista1405/fdekit" /> -->
+</h1>
 
 > [!WARNING]
 > FDEKit is still in a experimental phase. APIs, recipes, CLI behavior, config files, and generated artifacts may change without notice, including breaking changes. Avoid using it for production or customer-critical workloads unless you have reviewed, pinned, and tested the exact version you are running.

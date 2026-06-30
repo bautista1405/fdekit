@@ -40,7 +40,9 @@ export function renderHandoffRow(label: string, value: string): string {
   </div>`;
 }
 
-export function renderReadinessList(items: Array<{ label: string; status: 'pass' | 'warn' | 'fail'; detail: string }>): string {
+export function renderReadinessList(
+  items: Array<{ label: string; status: 'pass' | 'warn' | 'fail' | 'advisory'; detail: string }>,
+): string {
   if (items.length === 0) {
     return '<p class="subtle">No readiness data captured yet.</p>';
   }

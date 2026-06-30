@@ -220,8 +220,10 @@ function collectOutcomeMetrics(
       return {
         label: name,
         value: target,
-        detail: `Baseline: ${baseline}`,
-        status: target === 'target not configured' ? 'warn' : 'declared',
+        detail: target === 'target not configured'
+          ? `Baseline: ${baseline}`
+          : `Baseline: ${baseline}; measurement not captured yet`,
+        status: target === 'target not configured' ? 'warn' : 'not measured',
       } satisfies FieldMethodItem;
     });
 }

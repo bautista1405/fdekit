@@ -25,6 +25,7 @@ export function createProductionReadiness(input: {
     : undefined;
   const budgetExceeded = maxBudget !== undefined && input.totalCostUsd > maxBudget;
   const passingControls = input.governancePosture.filter((item) => item.status === 'pass').length;
+  const advisoryControls = input.governancePosture.filter((item) => item.status === 'advisory').length;
   const enforcementQualifier = input.enforcementMode === 'advisory'
     ? ', advisory mode - not enforced'
     : '';
@@ -45,8 +46,14 @@ export function createProductionReadiness(input: {
     },
     {
       label: 'Governance controls',
-      status: input.policyViolationCount === 0 && passingControls > 0 ? 'pass' : input.policyViolationCount > 0 ? 'fail' : 'warn',
-      detail: `${passingControls}/${input.governancePosture.length} controls passing, ${input.policyViolationCount} latest violation(s)${enforcementQualifier}`,
+      status: input.policyViolationCount > 0
+        ? 'fail'
+        : input.enforcementMode === 'advisory' && advisoryControls > 0
+          ? 'advisory'
+          : passingControls > 0 ? 'pass' : 'warn',
+      detail: input.enforcementMode === 'advisory'
+        ? `${advisoryControls}/${input.governancePosture.length} controls advisory/observed, ${passingControls} enforced control(s) passing, ${input.policyViolationCount} latest violation(s)${enforcementQualifier}`
+        : `${passingControls}/${input.governancePosture.length} controls passing, ${input.policyViolationCount} latest violation(s)`,
     },
     ...guardrailStops,
     {

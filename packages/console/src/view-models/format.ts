@@ -1,21 +1,35 @@
 export function statusPill(status: string): string {
   const normalized = status.toLowerCase();
-  const kind = normalized === 'declared'
-    ? 'declared'
-    : normalized === 'pass'
+  const kind = statusPillKind(normalized);
+
+  return `<span class="pill ${kind}">${escapeHtml(status)}</span>`;
+}
+
+function statusPillKind(normalized: string): string {
+  if (normalized === 'declared' || normalized === 'advisory') {
+    return normalized;
+  }
+
+  if (normalized === 'not measured') {
+    return 'not-measured';
+  }
+
+  if (normalized === 'pass'
     || normalized === 'passed'
     || normalized === 'completed'
     || normalized === 'clear'
     || normalized === 'allowed'
     || normalized === 'succeeded'
     || normalized === 'approved'
-    || normalized === 'ready'
-    ? 'pass'
-    : normalized === 'fail' || normalized === 'failed' || normalized === 'blocked' || normalized === 'rejected'
-      ? 'fail'
-      : 'warn';
+    || normalized === 'ready') {
+    return 'pass';
+  }
 
-  return `<span class="pill ${kind}">${escapeHtml(status)}</span>`;
+  if (normalized === 'fail' || normalized === 'failed' || normalized === 'blocked' || normalized === 'rejected') {
+    return 'fail';
+  }
+
+  return 'warn';
 }
 
 export function formatDate(value: string): string {

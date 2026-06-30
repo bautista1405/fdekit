@@ -36,7 +36,13 @@ export function collectGovernanceMetrics(context: MetricsContext): GovernanceMet
   return {
     policyEvaluations: context.policyEvents.length,
     policyDefinitions,
-    governancePosture: collectGovernancePosture(context.data.deployment, policyDefinitions, budgetCaps, auditLog.length),
+    governancePosture: collectGovernancePosture(
+      context.data.deployment,
+      policyDefinitions,
+      budgetCaps,
+      auditLog.length,
+      enforcementMetrics.enforcementMode,
+    ),
     ...enforcementMetrics,
     budgetCaps,
     approvalQueue,

@@ -316,6 +316,7 @@ export const foundationStyles = `    :root {
 
     .pill.pass { background: var(--green-soft); color: var(--green); border-color: var(--green-line); }
     .pill.declared { background: var(--surface-alt); color: var(--muted); border-color: var(--line); }
+    .pill.advisory, .pill.not-measured { background: var(--surface-alt); color: var(--muted); border-color: var(--line); }
     .pill.warn { background: var(--amber-soft); color: var(--amber); border-color: var(--amber-line); font-weight: 720; }
     .pill.fail { background: var(--red-soft); color: var(--red); border-color: var(--red-line); font-weight: 740; }
     .pill.info { background: var(--surface-alt); color: var(--ink); border-color: var(--line); }

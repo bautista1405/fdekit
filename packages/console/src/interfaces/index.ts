@@ -139,7 +139,7 @@ export interface FieldMethodItem {
   label: string;
   value: string;
   detail: string;
-  status: 'pass' | 'warn' | 'fail' | 'declared';
+  status: 'pass' | 'warn' | 'fail' | 'declared' | 'not measured';
 }
 
 export interface IntegrationReadinessItem {
@@ -156,7 +156,7 @@ export interface WorkflowStepItem {
 
 export interface ProductionReadinessItem {
   label: string;
-  status: 'pass' | 'warn' | 'fail';
+  status: 'pass' | 'warn' | 'fail' | 'advisory';
   detail: string;
 }
 
@@ -235,7 +235,7 @@ export interface PolicyDefinitionItem {
 
 export interface GovernancePostureItem {
   label: string;
-  status: 'pass' | 'warn' | 'fail';
+  status: 'pass' | 'warn' | 'fail' | 'advisory';
   detail: string;
 }
 

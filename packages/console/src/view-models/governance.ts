@@ -89,6 +89,7 @@ export function collectGovernancePosture(
   policies: PolicyDefinitionItem[],
   budgets: BudgetCapItem[],
   auditEventCount: number,
+  enforcementMode: 'enforced' | 'advisory' | 'unknown',
 ): GovernancePostureItem[] {
   const governance = deployment.governance;
   const environmentPolicy = policies.find((policy) => policy.kind === 'environment-separation');
@@ -105,50 +106,66 @@ export function collectGovernancePosture(
   const dataProtectionEnabled = Boolean(governance?.dataProtection?.denyPII || governance?.dataProtection?.redactSecrets || dataPolicyCount > 0);
   const auditEnabled = governance?.audit?.enabled !== false;
   const retention = governance?.audit?.retentionDays;
+  const advisory = enforcementMode === 'advisory';
 
   return [
     {
       label: 'Audit Logs',
-      status: auditEnabled ? 'pass' : 'fail',
+      status: auditEnabled ? advisory ? 'advisory' : 'pass' : 'fail',
       detail: auditEnabled
-        ? `${auditEventCount} event(s) captured${retention ? `, ${retention} day retention` : ''}`
+        ? governancePostureDetail(`${auditEventCount} event(s) captured${retention ? `, ${retention} day retention` : ''}`, advisory)
         : 'audit logging disabled',
     },
     {
       label: 'Environment Separation',
-      status: allowedEnvironments.length > 0 || deniedEnvironments.length > 0 || environmentPolicy ? 'pass' : 'warn',
-      detail: allowedEnvironments.length > 0
+      status: governancePostureStatus(
+        allowedEnvironments.length > 0 || deniedEnvironments.length > 0 || environmentPolicy !== undefined,
+        advisory,
+      ),
+      detail: governancePostureDetail(allowedEnvironments.length > 0
         ? `Allowed: ${allowedEnvironments.join(', ')}`
         : deniedEnvironments.length > 0
           ? `Denied: ${deniedEnvironments.join(', ')}`
-          : environmentPolicy?.detail ?? 'no environment policy configured',
+          : environmentPolicy?.detail ?? 'no environment policy configured', advisory),
     },
     {
       label: 'Permission Scopes',
-      status: uniqueScopes.length > 0 || permissionPolicy ? 'pass' : 'warn',
-      detail: uniqueScopes.length > 0
+      status: governancePostureStatus(uniqueScopes.length > 0 || permissionPolicy !== undefined, advisory),
+      detail: governancePostureDetail(uniqueScopes.length > 0
         ? uniqueScopes.join(', ')
-        : permissionPolicy?.detail ?? 'no tool scope grants configured',
+        : permissionPolicy?.detail ?? 'no tool scope grants configured', advisory),
     },
     {
       label: 'Data Protection',
-      status: dataProtectionEnabled ? 'pass' : 'warn',
+      status: dataProtectionEnabled ? advisory ? 'advisory' : 'pass' : 'warn',
       detail: dataProtectionEnabled
         ? [
           governance?.dataProtection?.denyPII ? 'PII denial' : '',
           governance?.dataProtection?.redactSecrets ? 'secret redaction' : '',
           dataPolicyCount > 0 ? `${dataPolicyCount} policy item(s)` : '',
-        ].filter(Boolean).join(', ')
+        ].filter(Boolean).join(', ') + (advisory ? ', advisory mode - not enforced' : '')
         : 'no PII or secret handling configured',
     },
     {
       label: 'Budget Caps',
-      status: budgets.length > 0 ? 'pass' : 'warn',
+      status: budgets.length > 0 ? advisory ? 'advisory' : 'pass' : 'warn',
       detail: budgets.length > 0
-        ? budgets.map((budget) => `${budget.scope} $${budget.maxUsd.toFixed(4)}`).join(', ')
+        ? governancePostureDetail(budgets.map((budget) => `${budget.scope} $${budget.maxUsd.toFixed(4)}`).join(', '), advisory)
         : 'no cost ceiling configured',
     },
   ];
+}
+
+function governancePostureStatus(configured: boolean, advisory: boolean): GovernancePostureItem['status'] {
+  if (!configured) {
+    return 'warn';
+  }
+
+  return advisory ? 'advisory' : 'pass';
+}
+
+function governancePostureDetail(detail: string, advisory: boolean): string {
+  return advisory ? `${detail}, advisory mode - not enforced` : detail;
 }
 
 export function collectEnforcementPosture(traces: TraceArtifact[]): {

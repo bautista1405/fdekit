@@ -126,7 +126,7 @@ describe('renderConsole', () => {
       'slack,2026-05-22T12:00:01.000Z',
       'workflow_scorecard,Manual effort,2026-05-22T12:00:00.000Z,declared,high',
       'data_layer,System of record,2026-05-22T12:00:00.000Z,declared,"customer-api, ticketing"',
-      'outcome_metric,triage-cycle-time,2026-05-22T12:00:00.000Z,declared,<30m',
+      'outcome_metric,triage-cycle-time,2026-05-22T12:00:00.000Z,not measured,<30m',
       'harness_phase,context,2026-05-22T12:00:00.000Z,declared',
       'harness_reference,issue.create,2026-05-22T12:00:00.000Z,declared,Tool',
       'enforcement_posture',
@@ -150,7 +150,7 @@ describe('renderConsole', () => {
       '## Enforcement Posture',
       '## Created Issues',
       '| Manual effort | high | declared |',
-      '| triage-cycle-time | <30m | declared | Baseline: 4h median |',
+      '| triage-cycle-time | <30m | not measured | Baseline: 4h median; measurement not captured yet |',
       '| System of record | customer-api, ticketing | declared |',
       '| context | tools: ticket.get, customer.get; artifacts: trace; max 2 step(s) | declared |',
       '| issue.create | Tool | declared |',
@@ -202,7 +202,7 @@ describe('renderConsole', () => {
       status: 'declared',
     });
     expect(parsed.fieldMethod?.outcomeMetrics?.find((item) => item.label === 'triage-cycle-time')).toMatchObject({
-      status: 'declared',
+      status: 'not measured',
     });
     expect(parsed.harness?.name).toBe('support-triage-governed-loop');
     expect(parsed.harness?.phaseCount).toBe(4);
@@ -571,9 +571,10 @@ describe('renderConsole', () => {
     });
     const parsed = JSON.parse(bundle.dataJson) as {
       metrics?: { enforcementMode?: string; policyViolationCount?: number };
+      governancePosture?: Array<{ label?: string; status?: string; detail?: string }>;
       enforcementPosture?: Array<{ label?: string; status?: string; detail?: string }>;
       readinessSignals?: Array<{ label?: string; detail?: string }>;
-      productionReadiness?: Array<{ label?: string; detail?: string }>;
+      productionReadiness?: Array<{ label?: string; status?: string; detail?: string }>;
     };
     const pages = renderConsolePages({
       deployment,
@@ -599,16 +600,27 @@ describe('renderConsole', () => {
       status: 'pass',
       detail: 'audit enabled, 6 policy item(s), scopes: codebase:read, issues:write, 1 budget cap(s)',
     });
+    expect(parsed.governancePosture?.find((item) => item.label === 'Permission Scopes')).toMatchObject({
+      status: 'advisory',
+      detail: 'Allowed scopes: customer:read, ticket:read, issues:write, slack:write, advisory mode - not enforced',
+    });
+    expect(parsed.governancePosture?.find((item) => item.label === 'Budget Caps')).toMatchObject({
+      status: 'advisory',
+      detail: 'deployment $0.2500, advisory mode - not enforced',
+    });
     expect(parsed.readinessSignals?.find((item) => item.label === 'Governance')?.detail)
       .toContain('0 violation(s), advisory mode - not enforced');
-    expect(parsed.productionReadiness?.find((item) => item.label === 'Governance controls')?.detail)
-      .toContain('0 latest violation(s), advisory mode - not enforced');
+    expect(parsed.productionReadiness?.find((item) => item.label === 'Governance controls')).toMatchObject({
+      status: 'advisory',
+      detail: '3/5 controls advisory/observed, 0 enforced control(s) passing, 0 latest violation(s), advisory mode - not enforced',
+    });
     expectTextIncludes(overview, [
       '0 violation(s), advisory mode - not enforced',
     ]);
     expectTextIncludes(readiness, [
       'Enforcement Posture',
       'Strict mode',
+      'advisory',
       'advisory mode - not enforced',
       'schema metadata advisory - not enforced',
       'scope metadata advisory - not enforced',
@@ -617,6 +629,8 @@ describe('renderConsole', () => {
       'audit enabled, 6 policy item(s), scopes: codebase:read, issues:write, 1 budget cap(s)',
     ]);
     expect(bundle.summaryMarkdown).toContain('- Policy violations: 0 (advisory mode - not enforced)');
+    expect(bundle.summaryMarkdown).toContain('| Governance controls | advisory | 3/5 controls advisory/observed, 0 enforced control(s) passing, 0 latest violation(s), advisory mode - not enforced |');
+    expect(bundle.summaryMarkdown).toContain('| Permission Scopes | advisory | Allowed scopes: customer:read, ticket:read, issues:write, slack:write, advisory mode - not enforced |');
     expect(bundle.summaryMarkdown).toContain('## Enforcement Posture');
     expect(bundle.dashboardCsv).toContain('enforcement_posture,Strict mode');
   });

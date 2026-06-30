@@ -1,6 +1,8 @@
 export function statusPill(status: string): string {
   const normalized = status.toLowerCase();
-  const kind = normalized === 'pass'
+  const kind = normalized === 'declared'
+    ? 'declared'
+    : normalized === 'pass'
     || normalized === 'passed'
     || normalized === 'completed'
     || normalized === 'clear'

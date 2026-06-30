@@ -139,7 +139,7 @@ export interface FieldMethodItem {
   label: string;
   value: string;
   detail: string;
-  status: 'pass' | 'warn' | 'fail';
+  status: 'pass' | 'warn' | 'fail' | 'declared';
 }
 
 export interface IntegrationReadinessItem {

@@ -131,7 +131,7 @@ function harnessPhaseItem(phase: unknown, index: number): FieldMethodItem {
     detail: getString(record.description)
       ?? getString(record.instructions)
       ?? 'No phase description configured',
-    status: controls.length > 0 ? 'pass' : 'warn',
+    status: controls.length > 0 ? 'declared' : 'warn',
   };
 }
 
@@ -149,7 +149,7 @@ function referenceItems(kind: string, refs: string[], detail: string): FieldMeth
     label: ref,
     value: kind,
     detail,
-    status: 'pass',
+    status: 'declared',
   }));
 }
 
@@ -221,7 +221,7 @@ function collectOutcomeMetrics(
         label: name,
         value: target,
         detail: `Baseline: ${baseline}`,
-        status: target === 'target not configured' ? 'warn' : 'pass',
+        status: target === 'target not configured' ? 'warn' : 'declared',
       } satisfies FieldMethodItem;
     });
 }
@@ -234,7 +234,7 @@ function fieldMethodItem(label: string, value: unknown, fallbackDetail: string):
     label,
     value: rendered,
     detail: fallbackDetail,
-    status: values.length === 0 || rendered === 'unknown' ? 'warn' : 'pass',
+    status: values.length === 0 || rendered === 'unknown' ? 'warn' : 'declared',
   };
 }
 

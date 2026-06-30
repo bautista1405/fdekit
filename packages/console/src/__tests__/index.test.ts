@@ -64,6 +64,7 @@ describe('renderConsole', () => {
       'Engineer Review',
       'Review Gates',
       'Permission Scopes',
+      'class="pill declared">declared</span>',
     ]);
     expect(html).not.toContain('Demo Readiness');
     expectTextIncludes(html, [
@@ -123,11 +124,11 @@ describe('renderConsole', () => {
       'record_type,id,created_at,status,title',
       'issue,ENG-1',
       'slack,2026-05-22T12:00:01.000Z',
-      'workflow_scorecard',
-      'data_layer',
-      'outcome_metric',
-      'harness_phase',
-      'harness_reference',
+      'workflow_scorecard,Manual effort,2026-05-22T12:00:00.000Z,declared,high',
+      'data_layer,System of record,2026-05-22T12:00:00.000Z,declared,"customer-api, ticketing"',
+      'outcome_metric,triage-cycle-time,2026-05-22T12:00:00.000Z,declared,<30m',
+      'harness_phase,context,2026-05-22T12:00:00.000Z,declared',
+      'harness_reference,issue.create,2026-05-22T12:00:00.000Z,declared,Tool',
       'enforcement_posture',
     ]);
     expectTextIncludes(bundle.summaryMarkdown, [
@@ -148,21 +149,26 @@ describe('renderConsole', () => {
       '## Budget Caps',
       '## Enforcement Posture',
       '## Created Issues',
+      '| Manual effort | high | declared |',
+      '| triage-cycle-time | <30m | declared | Baseline: 4h median |',
+      '| System of record | customer-api, ticketing | declared |',
+      '| context | tools: ticket.get, customer.get; artifacts: trace; max 2 step(s) | declared |',
+      '| issue.create | Tool | declared |',
     ]);
     const parsed = JSON.parse(bundle.dataJson) as {
       deployment?: { name?: string };
       readinessSignals?: unknown[];
       fieldMethod?: {
         workflowName?: string;
-        scorecard?: unknown[];
-        dataLayers?: unknown[];
-        outcomeMetrics?: unknown[];
+        scorecard?: Array<{ label?: string; status?: string }>;
+        dataLayers?: Array<{ label?: string; status?: string }>;
+        outcomeMetrics?: Array<{ label?: string; status?: string }>;
       };
       harness?: {
         name?: string;
         phaseCount?: number;
-        phases?: unknown[];
-        references?: unknown[];
+        phases?: Array<{ label?: string; status?: string }>;
+        references?: Array<{ label?: string; status?: string }>;
       };
       businessImpact?: unknown[];
       workflowMap?: unknown[];
@@ -189,10 +195,25 @@ describe('renderConsole', () => {
     expect(parsed.fieldMethod?.scorecard).toHaveLength(6);
     expect(parsed.fieldMethod?.dataLayers).toHaveLength(4);
     expect(parsed.fieldMethod?.outcomeMetrics).toHaveLength(2);
+    expect(parsed.fieldMethod?.scorecard?.find((item) => item.label === 'Manual effort')).toMatchObject({
+      status: 'declared',
+    });
+    expect(parsed.fieldMethod?.dataLayers?.find((item) => item.label === 'System of record')).toMatchObject({
+      status: 'declared',
+    });
+    expect(parsed.fieldMethod?.outcomeMetrics?.find((item) => item.label === 'triage-cycle-time')).toMatchObject({
+      status: 'declared',
+    });
     expect(parsed.harness?.name).toBe('support-triage-governed-loop');
     expect(parsed.harness?.phaseCount).toBe(4);
     expect(parsed.harness?.phases).toHaveLength(4);
     expect(parsed.harness?.references).toHaveLength(14);
+    expect(parsed.harness?.phases?.find((item) => item.label === 'context')).toMatchObject({
+      status: 'declared',
+    });
+    expect(parsed.harness?.references?.find((item) => item.label === 'issue.create')).toMatchObject({
+      status: 'declared',
+    });
     expect(parsed.businessImpact).toHaveLength(4);
     expect(parsed.workflowMap).toHaveLength(5);
     expect(parsed.integrationReadiness).toHaveLength(3);

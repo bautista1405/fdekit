@@ -29,7 +29,7 @@ export function renderDashboardCsv(
       'issue',
       issue.id,
       issue.createdAt,
-      issue.mode ?? '',
+      issueModeStatus(issue.mode),
       issue.title,
       issue.tracker,
       issue.destination ?? '',
@@ -236,4 +236,12 @@ export function renderDashboardCsv(
   ];
 
   return csvRows.map((row) => row.map(csvCell).join(',')).join('\n') + '\n';
+}
+
+function issueModeStatus(mode: string | undefined): string {
+  if (mode === 'local') {
+    return 'simulated-local';
+  }
+
+  return mode ?? '';
 }

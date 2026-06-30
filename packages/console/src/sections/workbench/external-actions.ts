@@ -20,6 +20,7 @@ export function renderCreatedIssues(issues: CreatedIssue[], limit = 8): string {
     <thead>
       <tr>
         <th>Tracker</th>
+        <th>Mode</th>
         <th>Issue</th>
         <th>Destination</th>
         <th>Link</th>
@@ -27,7 +28,8 @@ export function renderCreatedIssues(issues: CreatedIssue[], limit = 8): string {
     </thead>
     <tbody>
       ${issues.slice(-limit).reverse().map((issue) => `<tr>
-        <td>${escapeHtml(issue.tracker)}${issue.mode ? `<div class="event-meta">${escapeHtml(issue.mode)}</div>` : ''}</td>
+        <td>${escapeHtml(issue.tracker)}</td>
+        <td>${renderIssueMode(issue)}</td>
         <td>
           ${escapeHtml(issue.title)}
           <div class="event-meta">${escapeHtml(issue.id)} - ${escapeHtml(issue.toolName)}</div>
@@ -37,6 +39,18 @@ export function renderCreatedIssues(issues: CreatedIssue[], limit = 8): string {
       </tr>`).join('')}
     </tbody>
   </table>`;
+}
+
+function renderIssueMode(issue: CreatedIssue): string {
+  if (issue.mode === 'local') {
+    return '<span class="pill info">SIMULATED</span><div class="event-meta">mode: local</div>';
+  }
+
+  if (issue.mode) {
+    return `<span class="pill info">${escapeHtml(issue.mode.toUpperCase())}</span><div class="event-meta">mode: ${escapeHtml(issue.mode)}</div>`;
+  }
+
+  return '<span class="subtle">not captured</span>';
 }
 
 export function renderSlackMessages(messages: SlackNotification[], limit = 6): string {

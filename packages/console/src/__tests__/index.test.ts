@@ -83,6 +83,8 @@ describe('renderConsole', () => {
       'Created Issues',
       'ENG-1',
       'jira.local',
+      'SIMULATED',
+      'mode: local',
       'Slack Notifications',
       '#support-escalations',
     ]);
@@ -122,7 +124,7 @@ describe('renderConsole', () => {
 
     expectTextIncludes(bundle.dashboardCsv, [
       'record_type,id,created_at,status,title',
-      'issue,ENG-1',
+      'issue,ENG-1,2026-05-22T12:00:00.000Z,simulated-local',
       'slack,2026-05-22T12:00:01.000Z',
       'workflow_scorecard,Manual effort,2026-05-22T12:00:00.000Z,declared,high',
       'data_layer,System of record,2026-05-22T12:00:00.000Z,declared,"customer-api, ticketing"',
@@ -149,6 +151,7 @@ describe('renderConsole', () => {
       '## Budget Caps',
       '## Enforcement Posture',
       '## Created Issues',
+      '| jira | SIMULATED (mode: local) | ENG-1 | Escalate company billing outage | ENG | https://jira.local/browse/ENG-1 |',
       '| Manual effort | high | declared |',
       '| triage-cycle-time | <30m | not measured | Baseline: 4h median; measurement not captured yet |',
       '| System of record | customer-api, ticketing | declared |',

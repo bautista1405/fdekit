@@ -281,9 +281,10 @@ export function renderExportMarkdown(
     '## Created Issues',
     '',
     ...markdownTable(
-      ['Tracker', 'ID', 'Title', 'Destination', 'URL'],
+      ['Tracker', 'Mode', 'ID', 'Title', 'Destination', 'URL'],
       metrics.createdIssues.map((issue) => [
         issue.tracker,
+        issueModeSummary(issue.mode),
         issue.id,
         issue.title,
         issue.destination ?? '',
@@ -353,6 +354,14 @@ function policyViolationSummary(metrics: ConsoleMetrics): string {
     : '';
 
   return `${metrics.policyViolationCount}${qualifier}`;
+}
+
+function issueModeSummary(mode: string | undefined): string {
+  if (mode === 'local') {
+    return 'SIMULATED (mode: local)';
+  }
+
+  return mode ? `mode: ${mode}` : 'not captured';
 }
 
 function markdownTable(headers: string[], rows: string[][]): string[] {

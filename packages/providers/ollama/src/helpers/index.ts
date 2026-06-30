@@ -24,42 +24,56 @@ export async function createChat(
   options: OllamaRuntimeOptions,
   resilience: HttpResilienceClient,
 ): Promise<unknown> {
-  return requestProviderJson({
-    providerName: 'Ollama',
-    fetch: options.fetch,
-    resilience,
-    apiBaseUrl: getString(config.options?.apiBaseUrl) ?? defaultBaseUrl,
-    path: '/api/chat',
-    errorPrefix: 'Ollama chat failed',
-    requestFailureMessage: (apiBaseUrl, message) =>
-      `Ollama request failed at ${apiBaseUrl}; is Ollama running? ${message}`,
-    init: {
-      method: 'POST',
-      headers: {
-        'content-type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: config.model ?? defaultModel,
-        messages: [
-          {
-            role: 'system',
-            content: buildProviderPlannerInstructions(context),
-          },
-          {
-            role: 'user',
-            content: buildProviderPlannerInput(context),
-          },
-        ],
-        stream: false,
-        format: config.options?.format ?? 'json',
-        keep_alive: config.options?.keepAlive ?? '5m',
-        options: compactRecord({
-          num_predict: getNumber(config.options?.numPredict) ?? 800,
-          temperature: getNumber(config.options?.temperature) ?? 0,
+  const apiBaseUrl = getString(config.options?.apiBaseUrl) ?? defaultBaseUrl;
+  const model = config.model ?? defaultModel;
+
+  try {
+    return await requestProviderJson({
+      providerName: 'Ollama',
+      fetch: options.fetch,
+      resilience,
+      apiBaseUrl,
+      path: '/api/chat',
+      errorPrefix: 'Ollama chat failed',
+      requestFailureMessage: (apiBaseUrl, message) =>
+        `Ollama request failed at ${apiBaseUrl}; is Ollama running? ${message}`,
+      init: {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({
+          model,
+          messages: [
+            {
+              role: 'system',
+              content: buildProviderPlannerInstructions(context),
+            },
+            {
+              role: 'user',
+              content: buildProviderPlannerInput(context),
+            },
+          ],
+          stream: false,
+          format: config.options?.format ?? 'json',
+          keep_alive: config.options?.keepAlive ?? '5m',
+          options: compactRecord({
+            num_predict: getNumber(config.options?.numPredict) ?? 800,
+            temperature: getNumber(config.options?.temperature) ?? 0,
+          }),
         }),
-      }),
-    },
-  });
+      },
+    });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+
+    if (message.startsWith('Ollama chat failed:')
+      && (message.includes('404') || message.toLowerCase().includes('not found'))) {
+      throw new Error(ollamaMissingModelMessage(model, apiBaseUrl));
+    }
+
+    throw err;
+  }
 }
 
 export function extractOllamaText(response: unknown): string {
@@ -82,6 +96,10 @@ export function extractOllamaText(response: unknown): string {
 
 export function parseProviderStep(text: string): ProviderStep {
   return parseProviderPlannerStep(text, 'Ollama');
+}
+
+function ollamaMissingModelMessage(model: string, apiBaseUrl: string): string {
+  return `model "${model}" not found on ${apiBaseUrl} - pull it or set FDEKIT_MODEL`;
 }
 
 export { getHttpResilienceOptions };

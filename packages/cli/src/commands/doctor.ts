@@ -1,7 +1,10 @@
 import * as path from 'path';
-import { asRecord, getNumber, type DeploymentDefinition } from '@fdekit/core';
+import { asRecord, getNumber, getString, type DeploymentDefinition } from '@fdekit/core';
 import { loadDeployment, requireConfigFile } from '@fdekit/runtime';
 import type { CommandContext } from '../context.js';
+
+const defaultOllamaModel = 'llama3.1:8b';
+const defaultOllamaBaseUrl = 'http://127.0.0.1:11434';
 
 interface EnvCheck {
   scope: 'provider' | 'connector';
@@ -30,12 +33,20 @@ interface LiveCheck {
   message?: string;
 }
 
+interface ProviderReadinessCheck {
+  owner: string;
+  ok: boolean;
+  latencyMs?: number;
+  message: string;
+}
+
 export async function cmdDoctor(ctx: CommandContext): Promise<void> {
   const live = ctx.args.includes('--live');
   const configPath = await requireConfigFile(ctx.cwd);
   const deployment = await loadDeployment(configPath);
   const checks = collectEnvironmentChecks(deployment, process.env);
   const missingRequired = checks.filter((check) => check.required && !check.configured);
+  const providerReadiness = await runProviderReadinessChecks(deployment);
 
   console.log('FDEKit doctor');
   console.log(`Deployment: ${deployment.name}`);
@@ -47,8 +58,19 @@ export async function cmdDoctor(ctx: CommandContext): Promise<void> {
   printSection('Connectors', checks.filter((check) => check.scope === 'connector'), Object.keys(deployment.connectors ?? {}));
   console.log('');
 
+  if (providerReadiness.length > 0) {
+    printProviderReadiness(providerReadiness);
+    console.log('');
+  }
+
   if (missingRequired.length > 0) {
     console.log(`Summary: ${missingRequired.length} missing required env var(s)`);
+    process.exitCode = 1;
+    return;
+  }
+
+  if (providerReadiness.some((check) => !check.ok)) {
+    console.log('Summary: provider readiness warnings found');
     process.exitCode = 1;
     return;
   }
@@ -66,6 +88,148 @@ export async function cmdDoctor(ctx: CommandContext): Promise<void> {
   }
 
   console.log('Summary: all required env vars are set');
+}
+
+async function runProviderReadinessChecks(deployment: DeploymentDefinition): Promise<ProviderReadinessCheck[]> {
+  const checks: ProviderReadinessCheck[] = [];
+  const selections = collectOllamaProviderSelections(deployment);
+
+  for (const selection of selections) {
+    checks.push(await checkOllamaModel(selection));
+  }
+
+  return checks;
+}
+
+function collectOllamaProviderSelections(deployment: DeploymentDefinition): Array<{
+  owner: string;
+  model: string;
+  apiBaseUrl: string;
+}> {
+  const selections: Array<{ owner: string; model: string; apiBaseUrl: string }> = [];
+  const seen = new Set<string>();
+
+  for (const agent of Object.values(deployment.agents ?? {})) {
+    const providerKey = agent.provider ?? 'mock';
+    const provider = deployment.providers?.[providerKey];
+
+    if (!provider || !isOllamaProvider(providerKey, provider.name)) {
+      continue;
+    }
+
+    const model = agent.model ?? provider.model ?? defaultOllamaModel;
+    const apiBaseUrl = normalizeBaseUrl(getString(provider.options?.apiBaseUrl) ?? defaultOllamaBaseUrl);
+    const key = `${providerKey}:${model}:${apiBaseUrl}`;
+
+    if (seen.has(key)) {
+      continue;
+    }
+
+    seen.add(key);
+    selections.push({
+      owner: providerKey,
+      model,
+      apiBaseUrl,
+    });
+  }
+
+  return selections;
+}
+
+function isOllamaProvider(providerKey: string, providerName: string): boolean {
+  return providerKey === 'localOllama'
+    || providerKey === 'ollama'
+    || providerName === 'localOllama'
+    || providerName === 'ollama';
+}
+
+async function checkOllamaModel(selection: {
+  owner: string;
+  model: string;
+  apiBaseUrl: string;
+}): Promise<ProviderReadinessCheck> {
+  const fetchImpl = globalThis.fetch;
+
+  if (!fetchImpl) {
+    return {
+      owner: selection.owner,
+      ok: false,
+      message: `could not query Ollama models at ${selection.apiBaseUrl} - no fetch implementation is available`,
+    };
+  }
+
+  const startedAt = Date.now();
+
+  try {
+    const response = await fetchImpl(`${selection.apiBaseUrl}/api/tags`);
+
+    if (!response.ok) {
+      return {
+        owner: selection.owner,
+        ok: false,
+        latencyMs: Date.now() - startedAt,
+        message: `could not query Ollama models at ${selection.apiBaseUrl} - ${response.status} ${response.statusText}`,
+      };
+    }
+
+    const modelNames = ollamaModelNames(await response.json().catch(() => ({})));
+
+    if (!modelNames.has(selection.model)) {
+      return {
+        owner: selection.owner,
+        ok: false,
+        latencyMs: Date.now() - startedAt,
+        message: ollamaMissingModelMessage(selection.model, selection.apiBaseUrl),
+      };
+    }
+
+    return {
+      owner: selection.owner,
+      ok: true,
+      latencyMs: Date.now() - startedAt,
+      message: `model "${selection.model}" is available on ${selection.apiBaseUrl}`,
+    };
+  } catch (err) {
+    return {
+      owner: selection.owner,
+      ok: false,
+      latencyMs: Date.now() - startedAt,
+      message: `could not query Ollama models at ${selection.apiBaseUrl} - ${err instanceof Error ? err.message : String(err)}`,
+    };
+  }
+}
+
+function ollamaModelNames(value: unknown): Set<string> {
+  const models = asRecord(value).models;
+  const names = new Set<string>();
+
+  if (!Array.isArray(models)) {
+    return names;
+  }
+
+  for (const model of models) {
+    const record = asRecord(model);
+    const name = getString(record.name);
+    const modelName = getString(record.model);
+
+    if (name) {
+      names.add(name);
+    }
+
+    if (modelName) {
+      names.add(modelName);
+    }
+  }
+
+  return names;
+}
+
+function ollamaMissingModelMessage(model: string, apiBaseUrl: string): string {
+  return `model "${model}" not found on ${apiBaseUrl} - pull it or set FDEKIT_MODEL`;
+}
+
+function normalizeBaseUrl(baseUrl: string): string {
+  return baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
 }
 
 function collectEnvironmentChecks(
@@ -161,6 +325,16 @@ function printSection(title: string, checks: EnvCheck[], owners: string[]): void
       const description = check.description ? ` - ${check.description}` : '';
       console.log(`    ${check.name.padEnd(24)} ${state.padEnd(8)} ${required}${description}`);
     }
+  }
+}
+
+function printProviderReadiness(checks: ProviderReadinessCheck[]): void {
+  console.log('Provider Readiness');
+
+  for (const check of checks) {
+    const state = check.ok ? 'ok' : 'warning';
+    const latency = check.latencyMs === undefined ? '' : ` ${check.latencyMs}ms`;
+    console.log(`  ${check.owner} ${state}${latency} - ${check.message}`);
   }
 }
 

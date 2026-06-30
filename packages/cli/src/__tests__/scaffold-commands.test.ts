@@ -203,12 +203,23 @@ describe('cli scaffold and setup commands', () => {
         'OLLAMA_BASE_URL=http://127.0.0.1:11434',
         '',
       ].join('\n'), 'utf8');
-      const localOutput = await captureCommand(() => cmdDoctor({ cwd: projectDir, args: [] }));
-      expect(localOutput.exitCode).toBeUndefined();
-      expect(localOutput.stdout).toContain('  localOllama');
-      expect(localOutput.stdout).toContain('OLLAMA_BASE_URL');
-      expect(localOutput.stdout).toContain('FDEKIT_MODEL');
-      expect(localOutput.stdout).not.toContain('OPENAI_API_KEY');
+      vi.stubGlobal('fetch', async (input: RequestInfo | URL) => {
+        expect(String(input)).toBe('http://127.0.0.1:11434/api/tags');
+        return Response.json({ models: [{ name: 'hermes3:8b' }] });
+      });
+
+      try {
+        const localOutput = await captureCommand(() => cmdDoctor({ cwd: projectDir, args: [] }));
+        expect(localOutput.exitCode).toBeUndefined();
+        expect(localOutput.stdout).toContain('  localOllama');
+        expect(localOutput.stdout).toContain('OLLAMA_BASE_URL');
+        expect(localOutput.stdout).toContain('FDEKIT_MODEL');
+        expect(localOutput.stdout).toContain('Provider Readiness');
+        expect(localOutput.stdout).toContain('model "hermes3:8b" is available on http://127.0.0.1:11434');
+        expect(localOutput.stdout).not.toContain('OPENAI_API_KEY');
+      } finally {
+        vi.unstubAllGlobals();
+      }
 
       await writeFile(envPath, 'FDEKIT_PROVIDER=openai\nFDEKIT_MODEL=gpt-5.5\n', 'utf8');
       const missingOpenAI = await captureCommand(() => cmdDoctor({ cwd: projectDir, args: [] }));
@@ -656,6 +667,58 @@ describe('cli scaffold and setup commands', () => {
     expect(live.stdout).toContain('customerApi customerApi.healthCheck ok');
     expect(live.stdout).toContain('postgres postgres.healthCheck ok');
     expect(live.stdout).toContain('Summary: all required env vars are set');
+  });
+
+
+  it('warns when the selected local Ollama model is not pulled', async () => {
+    const projectDir = await mkProjectRoot('fdekit-cli-ollama-doctor-');
+    await mkdir(path.join(projectDir, 'agents'), { recursive: true });
+    await writeFile(path.join(projectDir, 'agents', 'agent.md'), 'Use the local model', 'utf8');
+    await writeFile(path.join(projectDir, 'fde.config.ts'), `import {
+  defineAgent,
+  defineDeployment,
+} from '@fdekit/core';
+
+export default defineDeployment({
+  name: 'ollama-doctor-test',
+  providers: {
+    localOllama: {
+      name: 'localOllama',
+      model: process.env.FDEKIT_MODEL || 'llama3.1:8b',
+      options: {
+        apiBaseUrl: process.env.OLLAMA_BASE_URL || 'http://127.0.0.1:11434',
+      },
+    },
+  },
+  connectors: {},
+  agents: {
+    supportTriage: defineAgent({
+      provider: 'localOllama',
+      instructions: './agents/agent.md',
+    }),
+  },
+});
+`, 'utf8');
+
+    vi.stubGlobal('fetch', async (input: RequestInfo | URL) => {
+      expect(String(input)).toBe('http://ollama.test/api/tags');
+      return Response.json({ models: [{ name: 'mistral:7b' }] });
+    });
+
+    try {
+      const output = await withEnv({
+        FDEKIT_MODEL: undefined,
+        OLLAMA_BASE_URL: 'http://ollama.test',
+      }, () => captureCommand(() => cmdDoctor({ cwd: projectDir, args: [] })));
+
+      expect(output.exitCode).toBe(1);
+      expect(output.stdout).toContain('Provider Readiness');
+      expect(output.stdout).toContain('localOllama warning');
+      expect(output.stdout).toContain('model "llama3.1:8b" not found on http://ollama.test - pull it or set FDEKIT_MODEL');
+      expect(output.stdout).toContain('Summary: provider readiness warnings found');
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 
 

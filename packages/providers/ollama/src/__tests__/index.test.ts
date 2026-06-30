@@ -113,4 +113,35 @@ describe('ollamaProvider', () => {
       message: 'Local review complete',
     });
   });
+
+  it('rewrites Ollama chat 404s as missing model guidance', async () => {
+    const provider = createOllamaProvider(localOllamaProvider({
+      model: 'llama3.1:8b',
+      apiBaseUrl: 'http://ollama.test',
+    }), {
+      fetch: async () => new Response(JSON.stringify({ error: 'not found' }), {
+        status: 404,
+        statusText: 'Not Found',
+        headers: {
+          'content-type': 'application/json',
+        },
+      }),
+    });
+
+    await expect(provider.planNextStep({
+      deployment: {
+        name: 'demo',
+        providers: { localOllama: localOllamaProvider() },
+        connectors: {},
+        agents: { supportTriage: { provider: 'localOllama', instructions: './agent.md' } },
+      },
+      agentName: 'supportTriage',
+      agent: { provider: 'localOllama', instructions: './agent.md' },
+      input: {},
+      instructions: 'Classify tickets',
+      toolResults: [],
+      stepIndex: 1,
+      maxSteps: 8,
+    })).rejects.toThrow('model "llama3.1:8b" not found on http://ollama.test - pull it or set FDEKIT_MODEL');
+  });
 });

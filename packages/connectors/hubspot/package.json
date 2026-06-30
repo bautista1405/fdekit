@@ -1,6 +1,6 @@
 {
   "name": "@fdekit/connector-hubspot",
-  "version": "0.4.6",
+  "version": "0.4.7",
   "description": "HubSpot CRM connector adapter for FDEKit",
   "main": "dist/index.js",
   "module": "dist/index.js",
@@ -25,7 +25,7 @@
   ],
   "license": "MIT",
   "dependencies": {
-    "@fdekit/core": "0.4.6"
+    "@fdekit/core": "0.4.7"
   },
   "type": "module"
 }

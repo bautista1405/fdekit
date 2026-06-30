@@ -15,11 +15,11 @@
     "fdekit:env:stop": "fdekit env stop"
   },
   "dependencies": {
-    "@fdekit/core": "0.4.6",
-    "@fdekit/environment-docker": "0.4.6",
-    "@fdekit/environment-floci": "0.4.6"
+    "@fdekit/core": "0.4.7",
+    "@fdekit/environment-docker": "0.4.7",
+    "@fdekit/environment-floci": "0.4.7"
   },
   "devDependencies": {
-    "@fdekit/cli": "0.4.6"
+    "@fdekit/cli": "0.4.7"
   }
 }

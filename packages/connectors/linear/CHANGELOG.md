@@ -1,5 +1,13 @@
 # @fdekit/connector-linear
 
+## 0.4.7
+
+### Patch Changes
+
+- ad31181: console report modifications, command and runtime-related small changes
+- Updated dependencies [ad31181]
+  - @fdekit/core@0.4.7
+
 ## 0.4.6
 
 ### Patch Changes

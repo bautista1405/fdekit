@@ -7,6 +7,7 @@ import {
   defineAgent,
   defineDeployment,
   defineGovernance,
+  defineHarness,
   definePolicy,
   defineTool,
   denyPIILeak,
@@ -327,6 +328,121 @@ describe('runAgent', () => {
       type: 'agent.run.completed',
       status: 'failed',
       message: 'Policy "deny-escalation" blocked ticket.escalate: Escalation queue is frozen',
+    });
+  });
+
+  it('steers and then blocks repeated identical tool calls before executing them again', async () => {
+    const projectDir = await mkRunProjectDir();
+    let handled = 0;
+    const observedToolResults: ProviderToolResult[][] = [];
+    const repeatedArgs = { query: 'interface', maxResults: 1 };
+    const deployment = defineDeployment({
+      name: 'repeated-tool-steering',
+      environment: 'local',
+      providers: {
+        mock: {
+          name: 'mock',
+          options: {
+            planner(context: ProviderPlanContext): ProviderStep {
+              observedToolResults.push(context.toolResults);
+
+              return {
+                type: 'tool_call',
+                toolName: 'codebase.search',
+                args: context.stepIndex === 1
+                  ? { maxResults: 1, query: 'interface' }
+                  : repeatedArgs,
+              };
+            },
+          },
+        },
+      },
+      agents: {
+        codebaseAgent: defineAgent({
+          provider: 'mock',
+          instructions: 'Search the codebase once and then produce a finding.',
+          tools: [
+            defineTool<typeof repeatedArgs>({
+              name: 'codebase.search',
+              handler(args) {
+                handled += 1;
+                return {
+                  matches: [
+                    { path: 'src/index.ts', query: args.query },
+                  ],
+                };
+              },
+            }),
+          ],
+        }),
+      },
+      harness: defineHarness({
+        name: 'codebase-steering',
+        phases: [
+          { name: 'inspect', toolRefs: ['codebase.search'] },
+        ],
+        steer: {
+          enabled: true,
+          maxAttempts: 1,
+        },
+      }),
+    });
+
+    let failure: AgentRunError | undefined;
+
+    try {
+      await runAgent({
+        deployment,
+        projectDir,
+        agentName: 'codebaseAgent',
+        input: { task: 'Find interface usage' },
+        maxSteps: 4,
+      });
+    } catch (err) {
+      expect(err).toBeInstanceOf(AgentRunError);
+      failure = err as AgentRunError;
+    }
+
+    const expectedMessage = 'Harness steering stopped repeated tool call codebase.search with identical args {"maxResults":1,"query":"interface"}';
+    expect(failure?.message).toBe(expectedMessage);
+    expect(handled).toBe(1);
+    expect(failure?.result.toolCalls.map((call) => call.name)).toEqual(['codebase.search']);
+    expect(observedToolResults).toHaveLength(3);
+    expect(observedToolResults[2][1]).toMatchObject({
+      name: 'codebase.search',
+      is_error: true,
+      result: {
+        error: {
+          name: 'HarnessSteering',
+          message: expectedMessage,
+        },
+      },
+    });
+    expect(failure?.result.trace.events).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        type: 'harness.steer.triggered',
+        toolName: 'codebase.search',
+        reason: 'repeated_tool_call',
+        attempt: 1,
+        maxAttempts: 1,
+      }),
+      expect.objectContaining({
+        type: 'harness.steer.blocked',
+        toolName: 'codebase.search',
+        reason: 'repeated_tool_call',
+      }),
+    ]));
+
+    const audit = await readAuditLog(projectDir);
+    expect(audit.find((entry) => entry.action === 'harness.steer.triggered')).toMatchObject({
+      outcome: 'requested',
+      toolName: 'codebase.search',
+      message: expectedMessage,
+    });
+    expect(audit.find((entry) => entry.action === 'harness.steer.blocked')).toMatchObject({
+      outcome: 'blocked',
+      toolName: 'codebase.search',
+      message: expectedMessage,
     });
   });
 

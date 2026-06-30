@@ -1,6 +1,6 @@
 import { findProjectDir } from '@fdekit/runtime';
 import type { CommandContext } from '../context.js';
-import { findBuiltinRecipe } from '../scaffolds/index.js';
+import { findBuiltinRecipe, type RecipeInstallResult } from '../scaffolds/index.js';
 import { captureLocalRecipe } from './recipe/capture.js';
 import {
   installCapturedRecipe,
@@ -35,26 +35,28 @@ export async function cmdRecipe(ctx: CommandContext): Promise<void> {
 
     const result = await installCapturedRecipe(projectDir, localRecipe);
     console.log(`Installed recipe ${localRecipe.manifest.name}`);
-
-    if (result.configSkipped) {
-      console.log(`Existing fde.config.ts was preserved; recipe config written to recipes/${localRecipe.manifest.name}/fde.config.ts`);
-    } else if (result.configUpdated) {
-      console.log(`Config updated: ${result.configPath}`);
-    }
+    printRecipeConfigResult(result, localRecipe.manifest.name);
 
     return;
   }
 
   const result = await builtinRecipe.install(projectDir);
   console.log(`Installed recipe ${recipeName}`);
-
-  if (result.configSkipped) {
-    console.log(`Existing fde.config.ts was preserved; recipe config written to recipes/${recipeName}/fde.config.ts`);
-  } else if (result.configUpdated) {
-    console.log(`Config updated: ${result.configPath}`);
-  }
+  printRecipeConfigResult(result, recipeName);
 
   if (recipeName === 'support-triage') {
     console.log('Next: npm install && npm run demo');
+  }
+}
+
+function printRecipeConfigResult(result: RecipeInstallResult, recipeName: string): void {
+  if (result.configSkipped) {
+    console.log(`Existing fde.config.ts was preserved; recipe config written to recipes/${recipeName}/fde.config.ts`);
+  } else if (result.configUpdated) {
+    if (result.configBackupPath) {
+      console.log(`Existing fde.config.ts was replaced; backup written to ${result.configBackupPath}`);
+    }
+
+    console.log(`Config updated: ${result.configPath}`);
   }
 }

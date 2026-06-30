@@ -1,12 +1,13 @@
 import { promises as fs } from 'fs';
 import * as path from 'path';
 import { asRecord, escapeRegExp } from '@fdekit/core';
-import { writeFileIfMissing } from '../utils/files.js';
+import { writeBakFile, writeFileIfMissing } from '../utils/files.js';
 import { isDefaultStarterConfig } from './starter.js';
 
 export interface RecipeInstallResult {
   projectDir: string;
   configPath: string;
+  configBackupPath?: string;
   configUpdated: boolean;
   configSkipped: boolean;
 }
@@ -146,13 +147,14 @@ export async function installRecipe(
     configPath: configTarget.path,
   };
 
-  await writeRecipeConfig(configTarget, recipe.config(configCtx));
+  const configBackupPath = await writeRecipeConfig(configTarget, recipe.config(configCtx));
 
   return {
     projectDir,
     configPath: configTarget.path,
     configUpdated: configTarget.kind === 'updated',
     configSkipped: configTarget.kind === 'skipped',
+    ...(configBackupPath ? { configBackupPath } : {}),
   };
 }
 
@@ -200,6 +202,7 @@ async function writeFileIfMissingOrDefault(
 interface RecipeConfigTarget {
   path: string;
   kind: 'updated' | 'skipped';
+  existingConfig?: string;
 }
 
 async function resolveRecipeConfigTarget(ctx: RecipeContext): Promise<RecipeConfigTarget> {
@@ -212,6 +215,12 @@ async function resolveRecipeConfigTarget(ctx: RecipeContext): Promise<RecipeConf
         kind: 'skipped',
       };
     }
+
+    return {
+      path: ctx.configPath,
+      kind: 'updated',
+      existingConfig: existing,
+    };
   } catch {
     // No config exists yet, so write the recipe config below.
   }
@@ -222,13 +231,18 @@ async function resolveRecipeConfigTarget(ctx: RecipeContext): Promise<RecipeConf
   };
 }
 
-async function writeRecipeConfig(target: RecipeConfigTarget, config: string): Promise<void> {
+async function writeRecipeConfig(target: RecipeConfigTarget, config: string): Promise<string | undefined> {
   if (target.kind === 'skipped') {
     await writeFileIfMissing(target.path, config);
-    return;
+    return undefined;
   }
 
+  const backupPath = typeof target.existingConfig === 'string'
+    ? await writeBakFile(target.path, target.existingConfig)
+    : undefined;
+
   await fs.writeFile(target.path, config, 'utf8');
+  return backupPath;
 }
 
 async function upsertPackageJson(

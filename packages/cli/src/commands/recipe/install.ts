@@ -4,6 +4,7 @@ import {
   readJsonIfExists,
 } from '@fdekit/runtime';
 import type { RecipeInstallResult } from '../../scaffolds/index.js';
+import { writeBakFile } from '../../utils/files.js';
 import {
   copyDir,
   copyInstallAsset,
@@ -35,12 +36,14 @@ export async function installCapturedRecipe(
 
   let configUpdated = false;
   let configSkipped = false;
+  let configBackupPath: string | undefined;
   const recipeConfig = await fs.readFile(path.join(source.dir, 'fde.config.ts'), 'utf8');
 
   try {
     const existing = await fs.readFile(configPath, 'utf8');
 
     if (isDefaultScaffoldConfig(existing)) {
+      configBackupPath = await writeBakFile(configPath, existing);
       await fs.writeFile(configPath, recipeConfig, 'utf8');
       configUpdated = true;
     } else {
@@ -58,6 +61,7 @@ export async function installCapturedRecipe(
     configPath,
     configUpdated,
     configSkipped,
+    ...(configBackupPath ? { configBackupPath } : {}),
   };
 }
 

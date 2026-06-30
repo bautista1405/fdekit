@@ -169,8 +169,11 @@ describe('cli recipe commands', () => {
 
     expect(output.exitCode).toBeUndefined();
     expect(output.stdout).toContain('Installed recipe codebase-agent');
+    expect(output.stdout).toContain('Existing fde.config.ts was replaced; backup written to');
+    expect(output.stdout).toContain(path.join(projectDir, 'fde.config.ts.bak'));
     expect(output.stdout).toContain('Config updated:');
     await expectFiles(projectDir, [
+      'fde.config.ts.bak',
       'sample-repo/src/billing.ts',
       'recipes/codebase-agent/README.md',
       'recipes/codebase-agent/workflow.md',
@@ -213,6 +216,12 @@ describe('cli recipe commands', () => {
       "allowedScopes: ['codebase:read', 'issues:write']",
       'codebaseAgent',
       'codebase-agent-dataset',
+    ]);
+
+    const backupConfig = await readFile(path.join(projectDir, 'fde.config.ts.bak'), 'utf8');
+    expectTextIncludes(backupConfig, [
+      "name: 'support-triage-smoke'",
+      "instructions: './agents/support-triage.md'",
     ]);
 
     const envExample = await readEnvExample(projectDir);
@@ -523,8 +532,11 @@ describe('cli recipe commands', () => {
 
     expect(output.exitCode).toBeUndefined();
     expect(output.stdout).toContain('Installed recipe renewal-risk');
+    expect(output.stdout).toContain('Existing fde.config.ts was replaced; backup written to');
+    expect(output.stdout).toContain(path.join(targetProjectDir, 'fde.config.ts.bak'));
     expect(output.stdout).toContain('Config updated:');
     await expectFiles(targetProjectDir, [
+      'fde.config.ts.bak',
       'recipes/renewal-risk/recipe.json',
       'recipes/renewal-risk/artifacts/deployment-snapshot.json',
       'agents/support-triage.md',
@@ -535,6 +547,12 @@ describe('cli recipe commands', () => {
       `name: '${path.basename(sourceCwd)}'`,
       'const provider = providerFromEnv();',
       "name: 'support-triage-smoke'",
+    ]);
+
+    const backupConfig = await readFile(path.join(targetProjectDir, 'fde.config.ts.bak'), 'utf8');
+    expectTextIncludes(backupConfig, [
+      "name: 'support-triage-smoke'",
+      "instructions: './agents/support-triage.md'",
     ]);
 
     const packageJson = await readPackageJson(targetProjectDir);

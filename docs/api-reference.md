@@ -421,7 +421,7 @@ Main commands:
 | `fdekit diff` | Compare deployment snapshots/config changes. |
 | `fdekit dev` | Generate local dev trace artifacts. |
 | `fdekit run <agent> [--strict]` | Run an agent loop. `--strict` activates runtime edge gates for tool metadata before handlers execute. |
-| `fdekit eval run` | Run configured evals. |
+| `fdekit eval run [target]` | Run configured evals, optionally narrowed to one agent or eval suite. |
 | `fdekit eval macro` | Run macro evals over traces/eval artifacts. |
 | `fdekit report` | Generate a Markdown deployment report. |
 | `fdekit console` | Generate the static dashboard and exports. |

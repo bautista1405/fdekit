@@ -25,7 +25,7 @@ Declaration source: `packages/cli/dist/index.d.ts`; command map source: `scripts
 | [`fdekit validate [--json] [--strict]`](#fdekit-validate-json-strict) | Check config readiness and write reviewable deployment artifacts. |
 | [`fdekit diff [--from <snapshot>] [--to <config-or-snapshot>]`](#fdekit-diff-from-snapshot-to-config-or-snapshot) | Review deployment changes before customer handoff. |
 | [`fdekit run <agent> [--input <json>] [--strict]`](#fdekit-run-agent-input-json-strict) | Execute an agent loop with trace and policy evidence. |
-| [`fdekit eval run`](#fdekit-eval-run) | Run configured eval suites. |
+| [`fdekit eval run [target]`](#fdekit-eval-run-target) | Run all configured eval suites, or one agent/eval suite target. |
 | [`fdekit eval macro [--min-frequency <n>]`](#fdekit-eval-macro-min-frequency-n) | Find repeated behavior patterns across traces. |
 | [`fdekit approvals list`](#fdekit-approvals-list) | Inspect pending approval requests. |
 | [`fdekit feedback export [--json]`](#fdekit-feedback-export-json) | Turn decided approvals into replay-ready eval cases. |
@@ -53,7 +53,7 @@ The package root exports 3 TypeScript symbols.
 | <a id="fdekit-diff-from-snapshot-to-config-or-snapshot"></a>`fdekit diff [--from <snapshot>] [--to <config-or-snapshot>]` | Compare deployment snapshots or configs. | [packages/cli/src/commands/diff.ts](../../packages/cli/src/commands/diff.ts) |
 | <a id="fdekit-dev"></a>`fdekit dev` | Load the deployment and write a local development trace. | [packages/cli/src/commands/dev.ts](../../packages/cli/src/commands/dev.ts) |
 | <a id="fdekit-run-agent-input-json-strict"></a>`fdekit run <agent> [--input <json>] [--strict]` | Run an agent loop and write a trace. | [packages/cli/src/commands/run.ts](../../packages/cli/src/commands/run.ts) |
-| <a id="fdekit-eval-run"></a>`fdekit eval run` | Run configured lower-level evals. | [packages/cli/src/commands/eval.ts](../../packages/cli/src/commands/eval.ts) |
+| <a id="fdekit-eval-run-target"></a>`fdekit eval run [target]` | Run all configured lower-level evals, or one agent/eval suite target. | [packages/cli/src/commands/eval.ts](../../packages/cli/src/commands/eval.ts) |
 | <a id="fdekit-eval-macro-min-frequency-n"></a>`fdekit eval macro [--min-frequency <n>]` | Discover recurring behavior patterns across traces. | [packages/cli/src/commands/eval.ts](../../packages/cli/src/commands/eval.ts) |
 | <a id="fdekit-approvals-list"></a>`fdekit approvals list` | List approval requests. | [packages/cli/src/commands/approvals.ts](../../packages/cli/src/commands/approvals.ts) |
 | <a id="fdekit-approvals-approve-id"></a>`fdekit approvals approve <id>` | Approve a queued approval request. | [packages/cli/src/commands/approvals.ts](../../packages/cli/src/commands/approvals.ts) |

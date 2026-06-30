@@ -19,7 +19,7 @@ fdekit doctor
 fdekit validate
 fdekit run <agent> [--input <json>] [--strict]
 fdekit feedback export
-fdekit eval run
+fdekit eval run [target]
 fdekit eval macro
 fdekit report
 fdekit console
@@ -109,7 +109,7 @@ nor audit event contains a recoverable run input.
 
 | Command | Purpose |
 | --- | --- |
-| `fdekit eval run` | Run configured lower-level evals. |
+| `fdekit eval run [target]` | Run all lower-level evals, or one agent/eval suite target. |
 | `fdekit eval macro [--min-frequency <n>]` | Discover recurring behavior patterns across traces. |
 
 ## Runtime Environments

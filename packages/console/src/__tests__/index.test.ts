@@ -236,6 +236,49 @@ describe('renderConsole', () => {
     expect(parsed.slackMessages).toHaveLength(1);
   });
 
+  it('clears handoff warnings when a dashboard snapshot exists without a deployment report', () => {
+    const history = [{
+      createdAt: '2026-05-22T12:02:00.000Z',
+      deployment: 'support-triage-example',
+      evalStatus: 'passed',
+      traceCount: 1,
+      file: 'consoles/console-2026-05-22.html',
+    }];
+    const bundle = createConsoleExportBundle({
+      deployment,
+      traces: [trace],
+      latestEval: evalArtifact,
+      approvals: [approval],
+      auditLog,
+      createdAt: '2026-05-22T12:02:00.000Z',
+      history,
+    });
+    const parsed = JSON.parse(bundle.dataJson) as {
+      readinessSignals?: Array<{ label?: string; status?: string; detail?: string }>;
+      productionReadiness?: Array<{ label?: string; status?: string; detail?: string }>;
+    };
+    const overview = renderConsolePages({
+      deployment,
+      traces: [trace],
+      latestEval: evalArtifact,
+      approvals: [approval],
+      auditLog,
+      createdAt: '2026-05-22T12:02:00.000Z',
+      history,
+    }).find((page) => page.fileName === 'console.html')?.html ?? '';
+
+    expect(parsed.readinessSignals?.find((item) => item.label === 'Customer Report')).toMatchObject({
+      status: 'pass',
+      detail: 'dashboard snapshot ready; deployment report missing',
+    });
+    expect(parsed.productionReadiness?.find((item) => item.label === 'Customer handoff')).toMatchObject({
+      status: 'pass',
+      detail: '1 preserved dashboard snapshot(s); deployment report missing',
+    });
+    expect(overview).toContain('dashboard snapshot ready; deployment report missing');
+    expect(overview).not.toContain('generate report before handoff');
+  });
+
   it('labels local load-test simulations without counting them as readiness evidence', () => {
     const loadTestDeployment: DeploymentDefinition = {
       ...deployment,

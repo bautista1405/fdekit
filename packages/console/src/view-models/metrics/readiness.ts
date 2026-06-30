@@ -64,6 +64,7 @@ export function collectReadinessMetrics(input: {
     policyViolationCount: context.latestPolicyViolationCount,
     approvalQueueCount: governanceMetrics.openApprovalCount,
     reportReady: context.reportReady,
+    dashboardSnapshotReady: evalMetrics.snapshotTrend.length > 0,
     enforcementMode: governanceMetrics.enforcementMode,
   });
 
@@ -82,6 +83,7 @@ export function collectReadinessMetrics(input: {
       evalPassedCases: context.evalPassedCases,
       evalStatus: context.evalStatus,
       reportReady: context.reportReady,
+      dashboardSnapshotReady: evalMetrics.snapshotTrend.length > 0,
     }),
     integrationReadiness: createIntegrationReadiness(context.data.deployment, evidenceMetrics.connectorEvidence),
     workflowMap: createWorkflowMap({

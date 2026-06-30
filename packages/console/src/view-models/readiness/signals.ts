@@ -10,6 +10,7 @@ export function createReadinessSignals(input: {
   policyViolationCount: number;
   approvalQueueCount: number;
   reportReady: boolean;
+  dashboardSnapshotReady: boolean;
   enforcementMode: 'enforced' | 'advisory' | 'unknown';
 }): ReadinessSignal[] {
   const enforcementQualifier = input.enforcementMode === 'advisory'
@@ -43,10 +44,26 @@ export function createReadinessSignals(input: {
     },
     {
       label: 'Customer Report',
-      status: input.reportReady ? 'pass' : 'warn',
-      detail: input.reportReady ? 'report artifact created' : 'generate report before handoff',
+      status: input.reportReady || input.dashboardSnapshotReady ? 'pass' : 'warn',
+      detail: handoffArtifactDetail(input.reportReady, input.dashboardSnapshotReady),
     },
   ];
+}
+
+function handoffArtifactDetail(reportReady: boolean, dashboardSnapshotReady: boolean): string {
+  if (reportReady && dashboardSnapshotReady) {
+    return 'report artifact and dashboard snapshot ready';
+  }
+
+  if (reportReady) {
+    return 'report artifact created; dashboard snapshot missing';
+  }
+
+  if (dashboardSnapshotReady) {
+    return 'dashboard snapshot ready; deployment report missing';
+  }
+
+  return 'deployment report and dashboard snapshot missing';
 }
 
 export function calculateReadinessScore(signals: ReadinessSignal[]): number {

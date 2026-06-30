@@ -21,6 +21,7 @@ export function createBusinessImpact(input: {
   evalPassedCases: number;
   evalStatus: string;
   reportReady: boolean;
+  dashboardSnapshotReady: boolean;
 }): BusinessImpactItem[] {
   const metadata = asRecord(input.deployment.metadata);
   const impactMetadata = asRecord(metadata.businessImpact);
@@ -75,14 +76,24 @@ export function createBusinessImpact(input: {
     {
       label: 'Validated quality',
       value: input.evalCaseCount > 0 ? `${input.evalPassedCases}/${input.evalCaseCount}` : 'not run',
-      detail: input.reportReady
-        ? `${input.evalStatus} eval status with a handoff report`
-        : `${input.evalStatus} eval status; generate report before handoff`,
-      status: input.evalStatus === 'passed' && input.reportReady
+      detail: validatedQualityDetail(input.evalStatus, input.reportReady, input.dashboardSnapshotReady),
+      status: input.evalStatus === 'passed' && (input.reportReady || input.dashboardSnapshotReady)
         ? 'pass'
         : input.evalCaseCount > 0 && input.evalPassedCases < input.evalCaseCount
           ? 'fail'
           : 'warn',
     },
   ];
+}
+
+function validatedQualityDetail(evalStatus: string, reportReady: boolean, dashboardSnapshotReady: boolean): string {
+  if (reportReady) {
+    return `${evalStatus} eval status with a handoff report`;
+  }
+
+  if (dashboardSnapshotReady) {
+    return `${evalStatus} eval status with a dashboard snapshot; deployment report missing`;
+  }
+
+  return `${evalStatus} eval status; deployment report and dashboard snapshot missing`;
 }

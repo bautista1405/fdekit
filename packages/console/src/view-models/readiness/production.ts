@@ -26,6 +26,8 @@ export function createProductionReadiness(input: {
   const budgetExceeded = maxBudget !== undefined && input.totalCostUsd > maxBudget;
   const passingControls = input.governancePosture.filter((item) => item.status === 'pass').length;
   const advisoryControls = input.governancePosture.filter((item) => item.status === 'advisory').length;
+  const dashboardSnapshotReady = input.snapshotTrend.length > 0;
+  const handoffArtifactReady = input.reportReady || dashboardSnapshotReady;
   const enforcementQualifier = input.enforcementMode === 'advisory'
     ? ', advisory mode - not enforced'
     : '';
@@ -75,10 +77,24 @@ export function createProductionReadiness(input: {
     },
     {
       label: 'Customer handoff',
-      status: input.reportReady && input.snapshotTrend.length > 0 ? 'pass' : input.reportReady ? 'warn' : 'warn',
-      detail: input.reportReady
-        ? `${input.snapshotTrend.length} preserved dashboard snapshot(s)`
-        : 'Generate report and dashboard snapshot before stakeholder handoff',
+      status: handoffArtifactReady ? 'pass' : 'warn',
+      detail: customerHandoffDetail(input.reportReady, dashboardSnapshotReady, input.snapshotTrend.length),
     },
   ];
+}
+
+function customerHandoffDetail(reportReady: boolean, dashboardSnapshotReady: boolean, snapshotCount: number): string {
+  if (reportReady && dashboardSnapshotReady) {
+    return `${snapshotCount} preserved dashboard snapshot(s); deployment report ready`;
+  }
+
+  if (reportReady) {
+    return 'deployment report ready; dashboard snapshot missing';
+  }
+
+  if (dashboardSnapshotReady) {
+    return `${snapshotCount} preserved dashboard snapshot(s); deployment report missing`;
+  }
+
+  return 'Missing deployment report and dashboard snapshot before stakeholder handoff';
 }

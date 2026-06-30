@@ -396,22 +396,42 @@ describe('renderConsole', () => {
           message: 'Tool "codebase.readFile" args $.filePath: Required property is missing',
         }],
       },
+      {
+        id: 'run_invalid_tool_json',
+        createdAt: '2026-06-26T12:03:00.000Z',
+        deployment: 'support-triage-example',
+        events: [{
+          type: 'agent.run.completed',
+          status: 'failed',
+          latencyMs: 90,
+          costUsd: 0,
+          message: "Expected ',' or '}' after property value in JSON at position 2167",
+        }],
+      },
     ];
     const charts = renderConsolePages({
       deployment,
       traces: [...failedTraces, trace],
-      createdAt: '2026-06-26T12:03:00.000Z',
+      createdAt: '2026-06-26T12:04:00.000Z',
     }).find((page) => page.fileName === 'charts.html')?.html ?? '';
 
     expectTextIncludes(charts, [
       'Run outcome breakdown',
+      'Reliability failures',
+      'Failed and guardrail-stopped runs by actionable reason class.',
       'Infrastructure failure',
       'Governance stop',
       'Governance stopped',
       'Tool error failure',
+      'Model error failure',
+      'infra-error',
+      'tool-limit-loop',
+      'invalid-tool-args',
+      'invalid-tool-json',
       'Ollama request failed at http://127.0.0.1:11434',
       'Policy &quot;limit-tool-use&quot; blocked codebase.search: Tool call limit exceeded',
       'Tool &quot;codebase.readFile&quot; args $.filePath: Required property is missing',
+      'after property value in JSON at position 2167',
     ]);
     expect(charts).not.toContain('Policy block failure');
   });

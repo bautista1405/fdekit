@@ -55,6 +55,7 @@ export function renderRunHistory(history: RunHistoryItem[]): string {
   }
 
   return `${renderFailureBreakdown(history)}
+  ${renderReliabilityPanel(history)}
   <table>
     <thead><tr><th>Run</th><th>Status</th><th>Actions</th><th>Latency</th><th>Cost</th></tr></thead>
     <tbody>
@@ -70,6 +71,37 @@ export function renderRunHistory(history: RunHistoryItem[]): string {
       </tr>`).join('')}
     </tbody>
   </table>`;
+}
+
+function renderReliabilityPanel(history: RunHistoryItem[]): string {
+  const incidents = history.filter((run) => run.failureCategory || run.failureReason);
+
+  if (incidents.length === 0) {
+    return '<p class="subtle">No reliability failures or governance stops captured.</p>';
+  }
+
+  return `<div class="reliability-panel">
+    <div class="chart-title">Reliability failures</div>
+    <div class="event-meta">Failed and guardrail-stopped runs by actionable reason class.</div>
+    <div class="readiness-list">
+      ${incidents.map((run) => `<div class="readiness-item">
+        <div>${reliabilityIncidentStatus(run)}</div>
+        <div class="row-main">
+          <strong><span class="mono">${escapeHtml(run.failureReasonClass ?? 'unknown')}</span> · ${escapeHtml(shortId(run.traceId))}</strong>
+          <div class="event-meta">${escapeHtml(run.failureReason ?? 'No failure reason captured')}</div>
+          <div class="event-meta">${escapeHtml(`${run.status}; ${Math.round(run.latencyMs)}ms; ${run.toolCalls.length} tool call(s); ${formatDate(run.createdAt)}`)}</div>
+        </div>
+      </div>`).join('')}
+    </div>
+  </div>`;
+}
+
+function reliabilityIncidentStatus(run: RunHistoryItem): string {
+  if (run.failureCategory === 'policy-block') {
+    return '<span class="pill info">Governance stopped</span>';
+  }
+
+  return statusPill(run.status);
 }
 
 function renderFailureBreakdown(history: RunHistoryItem[]): string {

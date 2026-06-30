@@ -262,6 +262,7 @@ export interface RunHistoryItem {
   slackCount: number;
   finalAnswer?: string;
   failureCategory?: 'infra' | 'policy-block' | 'tool-error' | 'max-steps' | 'model-error' | 'other';
+  failureReasonClass?: 'governance-block' | 'tool-limit-loop' | 'invalid-tool-json' | 'invalid-tool-args' | 'infra-error' | 'provider-error' | 'max-steps' | 'unknown';
   failureLabel?: string;
   failureReason?: string;
 }

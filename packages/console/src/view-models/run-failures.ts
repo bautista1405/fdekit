@@ -1,7 +1,17 @@
 export type RunFailureCategory = 'infra' | 'policy-block' | 'tool-error' | 'max-steps' | 'model-error' | 'other';
+export type RunFailureReasonClass =
+  | 'governance-block'
+  | 'tool-limit-loop'
+  | 'invalid-tool-json'
+  | 'invalid-tool-args'
+  | 'infra-error'
+  | 'provider-error'
+  | 'max-steps'
+  | 'unknown';
 
 export interface RunFailureClassification {
   category: RunFailureCategory;
+  reasonClass: RunFailureReasonClass;
   label: string;
   reason: string;
 }
@@ -23,17 +33,19 @@ export function classifyRunFailure(status: string, message: string | undefined):
   if (!message) {
     return {
       category: 'other',
+      reasonClass: 'unknown',
       label: FAILURE_LABELS.other,
       reason: 'No failure reason captured',
     };
   }
 
   const normalized = message.toLowerCase();
-  const category = classifyFailureMessage(normalized);
+  const classification = classifyFailureMessage(normalized);
 
   return {
-    category,
-    label: FAILURE_LABELS[category],
+    category: classification.category,
+    reasonClass: classification.reasonClass,
+    label: FAILURE_LABELS[classification.category],
     reason: message,
   };
 }
@@ -47,17 +59,28 @@ function isFailureStatus(status: string): boolean {
     || normalized === 'error';
 }
 
-function classifyFailureMessage(normalized: string): RunFailureCategory {
+function classifyFailureMessage(normalized: string): Pick<RunFailureClassification, 'category' | 'reasonClass'> {
+  if (normalized.includes('tool call limit') || normalized.includes('limit-tool-use')) {
+    return { category: 'policy-block', reasonClass: 'tool-limit-loop' };
+  }
+
+  if ((normalized.includes('json') && (normalized.includes('expected') || normalized.includes('invalid')))
+    || normalized.includes('invalid tool-call json')
+    || normalized.includes('invalid tool call json')
+    || normalized.includes('json at position')) {
+    return { category: 'model-error', reasonClass: 'invalid-tool-json' };
+  }
+
   if (normalized.includes('policy') && (normalized.includes('blocked') || normalized.includes('violation'))) {
-    return 'policy-block';
+    return { category: 'policy-block', reasonClass: 'governance-block' };
   }
 
   if (normalized.includes('tool call limit') || normalized.includes('max steps') || normalized.includes('maximum steps')) {
-    return 'max-steps';
+    return { category: 'max-steps', reasonClass: 'max-steps' };
   }
 
   if (normalized.includes('args $.') || normalized.includes('required property') || normalized.includes('tool "')) {
-    return 'tool-error';
+    return { category: 'tool-error', reasonClass: 'invalid-tool-args' };
   }
 
   if (normalized.includes('request failed')
@@ -66,7 +89,7 @@ function classifyFailureMessage(normalized: string): RunFailureCategory {
     || normalized.includes('timeout')
     || normalized.includes('http://127.0.0.1')
     || normalized.includes('http://localhost')) {
-    return 'infra';
+    return { category: 'infra', reasonClass: 'infra-error' };
   }
 
   if (normalized.includes('model')
@@ -74,8 +97,8 @@ function classifyFailureMessage(normalized: string): RunFailureCategory {
     || normalized.includes('ollama')
     || normalized.includes('openai')
     || normalized.includes('anthropic')) {
-    return 'model-error';
+    return { category: 'model-error', reasonClass: 'provider-error' };
   }
 
-  return 'other';
+  return { category: 'other', reasonClass: 'unknown' };
 }

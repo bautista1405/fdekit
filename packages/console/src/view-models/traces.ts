@@ -61,6 +61,7 @@ export function collectRunHistory(traces: TraceArtifact[]): RunHistoryItem[] {
         slackCount: toolCalls.filter((toolName) => toolName === 'slack.message').length,
         finalAnswer,
         failureCategory: failure?.category,
+        failureReasonClass: failure?.reasonClass,
         failureLabel: failure?.label,
         failureReason: failure?.reason,
       };

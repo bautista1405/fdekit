@@ -31,6 +31,22 @@ export function collectEvals(deployment: DeploymentDefinition): LoadedEval[] {
   return evals;
 }
 
+export function filterEvalsByTarget(evals: LoadedEval[], target: string | undefined): LoadedEval[] {
+  if (!target) {
+    return evals;
+  }
+
+  return evals.filter((evalItem) => evalMatchesTarget(evalItem, target));
+}
+
+function evalMatchesTarget(evalItem: LoadedEval, target: string): boolean {
+  const agentName = evalItem.definition.agent ?? agentNameFromScope(evalItem.scope);
+
+  return evalItem.name === target
+    || evalItem.scope === target
+    || agentName === target;
+}
+
 export async function runEval(evalItem: LoadedEval, options: RunEvalsOptions): Promise<EvalSuiteResult> {
   const definition = evalItem.definition;
   const assertionResults: EvalAssertionResult[] = [];
@@ -101,7 +117,7 @@ export async function runEval(evalItem: LoadedEval, options: RunEvalsOptions): P
 }
 
 export async function runEvals(options: RunEvalsOptions): Promise<EvalArtifact> {
-  const evals = collectEvals(options.deployment);
+  const evals = filterEvalsByTarget(collectEvals(options.deployment), options.evalTarget);
   const runOptions: RunEvalsOptions = {
     ...options,
     artifactStore: createArtifactStore({

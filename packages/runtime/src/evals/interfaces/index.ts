@@ -47,4 +47,5 @@ export interface RunEvalsOptions {
   writeTraces?: boolean;
   providerRegistry?: ProviderRuntimeRegistry;
   artifactStore?: ArtifactStore;
+  evalTarget?: string;
 }

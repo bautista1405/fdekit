@@ -13,11 +13,12 @@ import {
   type EvalArtifact,
   type TraceArtifact,
 } from '@fdekit/runtime';
+import type { DeploymentDefinition } from '@fdekit/core';
 import type { CommandContext } from '../context.js';
 import { CliUserError } from '../errors.js';
 import { builtinProviderRegistry } from '../providers/registry.js';
 
-const EVAL_USAGE = 'fdekit eval <run|macro> [--min-frequency <n>]';
+const EVAL_USAGE = 'fdekit eval <run [target]|macro [--min-frequency <n>]>';
 
 export async function cmdEval(ctx: CommandContext): Promise<void> {
   const [subcommand, ...args] = ctx.args;
@@ -29,14 +30,13 @@ export async function cmdEval(ctx: CommandContext): Promise<void> {
   }
 
   const macroOptions = subcommand === 'macro' ? parseMacroOptions(args) : null;
-  if (subcommand === 'run' && args.length > 0) {
-    throw new CliUserError(`Unknown eval run option: ${args[0]}`, { usage: EVAL_USAGE });
-  }
+  const runTarget = subcommand === 'run' ? parseRunTarget(args) : undefined;
 
   const configPath = await requireConfigFile(ctx.cwd);
   const deployment = await loadDeployment(configPath);
+  const evalDeployment = selectDeploymentEvalTarget(deployment, runTarget);
   const projectDir = path.dirname(configPath);
-  const artifactStore = createArtifactStore({ deployment, projectDir });
+  const artifactStore = createArtifactStore({ deployment: evalDeployment, projectDir });
 
   if (subcommand === 'macro') {
     const traces = await readJsonArtifacts<TraceArtifact>(projectDir, 'traces', artifactStore);
@@ -61,7 +61,7 @@ export async function cmdEval(ctx: CommandContext): Promise<void> {
   }
 
   const artifact = await runEvals({
-    deployment,
+    deployment: evalDeployment,
     projectDir,
     writeTraces: true,
     providerRegistry: builtinProviderRegistry,
@@ -72,12 +72,76 @@ export async function cmdEval(ctx: CommandContext): Promise<void> {
   await writeJsonArtifact(projectDir, 'evals', `${artifact.id}.json`, artifact, artifactStore);
 
   console.log(`Eval status: ${artifact.status}`);
+  if (runTarget) {
+    console.log(`Eval target: ${runTarget}`);
+  }
   console.log(`Eval suites: ${artifact.results.length}`);
   console.log(`Results written: ${latestPath}`);
 
   if (artifact.status !== 'passed') {
     process.exitCode = 1;
   }
+}
+
+function parseRunTarget(args: string[]): string | undefined {
+  if (args.length === 0) {
+    return undefined;
+  }
+
+  if (args.length > 1) {
+    throw new CliUserError(`Unknown eval run option: ${args[1]}`, { usage: EVAL_USAGE });
+  }
+
+  const target = args[0];
+
+  if (target.startsWith('--')) {
+    throw new CliUserError(`Unknown eval run option: ${target}`, { usage: EVAL_USAGE });
+  }
+
+  return target;
+}
+
+function selectDeploymentEvalTarget(
+  deployment: DeploymentDefinition,
+  target: string | undefined,
+): DeploymentDefinition {
+  if (!target) {
+    return deployment;
+  }
+
+  const deploymentEvals = (deployment.evals ?? []).filter((evalDefinition) => (
+    evalDefinition.name === target
+    || evalDefinition.agent === target
+    || `deployment:${evalDefinition.name}` === target
+  ));
+  const agents = Object.fromEntries(Object.entries(deployment.agents ?? {}).map(([agentName, agent]) => [
+    agentName,
+    {
+      ...agent,
+      evals: (agent.evals ?? []).filter((evalDefinition) => (
+        agentName === target
+        || evalDefinition.name === target
+        || evalDefinition.agent === target
+        || `agent:${agentName}` === target
+        || `agent:${agentName}:${evalDefinition.name}` === target
+      )),
+    },
+  ]));
+  const matchedAgentEvals = Object.values(agents)
+    .reduce((total, agent) => total + (agent.evals?.length ?? 0), 0);
+
+  if (deploymentEvals.length === 0 && matchedAgentEvals === 0) {
+    throw new CliUserError(`No eval suites matched "${target}"`, {
+      usage: EVAL_USAGE,
+      next: ['Use an agent name, eval suite name, or eval scope from the current deployment.'],
+    });
+  }
+
+  return {
+    ...deployment,
+    evals: deploymentEvals,
+    agents,
+  };
 }
 
 function parseMacroOptions(args: string[]): { minFrequency: number } {

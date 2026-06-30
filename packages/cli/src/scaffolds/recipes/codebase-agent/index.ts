@@ -49,6 +49,7 @@ export const codebaseAgentRecipe: RecipeSpec = {
     fdekitScripts: {
       namespace: 'codebase',
       run: 'fdekit run codebaseAgent --input \'{"task":"Find TODO(fdekit) markers and create an engineering issue","query":"TODO(fdekit)"}\'',
+      evalTarget: 'codebaseAgent',
     },
     scripts: {
       demo: 'node scripts/demo.mjs',

@@ -114,6 +114,7 @@ describe('cli recipe commands', () => {
     expect(packageJson.scripts?.['fdekit:validate']).toBe('fdekit validate');
     expect(packageJson.scripts?.['fdekit:validate:strict']).toBe('fdekit validate --strict');
     expect(packageJson.scripts?.['fdekit:diff']).toBe('fdekit diff');
+    expect(packageJson.scripts?.['fdekit:eval']).toBe('fdekit eval run supportTriage');
     expect(packageJson.scripts?.['fdekit:console']).toBe('fdekit console');
     expect(packageJson.dependencies?.['@fdekit/connector-customer-api']).toBe(fdekitDependencyVersion);
     expect(packageJson.dependencies?.['@fdekit/connector-github']).toBe(fdekitDependencyVersion);
@@ -254,6 +255,7 @@ describe('cli recipe commands', () => {
     expect(packageJson.scripts?.['fdekit:codebase:validate']).toBe('fdekit validate');
     expect(packageJson.scripts?.['fdekit:codebase:validate:strict']).toBe('fdekit validate --strict');
     expect(packageJson.scripts?.['fdekit:codebase:diff']).toBe('fdekit diff');
+    expect(packageJson.scripts?.['fdekit:codebase:eval']).toBe('fdekit eval run codebaseAgent');
     expect(packageJson.dependencies?.['@fdekit/connector-codebase']).toBe(fdekitDependencyVersion);
     expect(packageJson.dependencies?.['@fdekit/connector-github']).toBe(fdekitDependencyVersion);
     expect(packageJson.dependencies?.['@fdekit/connector-jira']).toBe(fdekitDependencyVersion);
@@ -341,6 +343,7 @@ describe('cli recipe commands', () => {
     expect(packageJson.scripts?.['fdekit:sales:feedback']).toBe('fdekit feedback export');
     expect(packageJson.scripts?.['fdekit:sales:validate:strict']).toBe('fdekit validate --strict');
     expect(packageJson.scripts?.['fdekit:sales:diff']).toBe('fdekit diff');
+    expect(packageJson.scripts?.['fdekit:sales:eval']).toBe('fdekit eval run salesResearchAgent');
     expect(packageJson.scripts?.['fdekit:sales:console']).toBe('fdekit console');
     expect(packageJson.dependencies?.['@fdekit/core']).toBe(fdekitDependencyVersion);
     expect(packageJson.dependencies?.['@fdekit/connector-hubspot']).toBe(fdekitDependencyVersion);
@@ -428,6 +431,7 @@ describe('cli recipe commands', () => {
     expect(packageJson.scripts?.['fdekit:loadtest:approvals']).toBe('fdekit approvals list');
     expect(packageJson.scripts?.['fdekit:loadtest:audit']).toBe('fdekit audit');
     expect(packageJson.scripts?.['fdekit:loadtest:feedback']).toBe('fdekit feedback export');
+    expect(packageJson.scripts?.['fdekit:loadtest:eval']).toBe('fdekit eval run loadTestAgent');
     expect(packageJson.dependencies?.['@fdekit/connector-k6']).toBe(fdekitDependencyVersion);
     expect(packageJson.dependencies?.['@fdekit/core']).toBe(fdekitDependencyVersion);
     expect(packageJson.devDependencies?.['@fdekit/cli']).toBe(fdekitDependencyVersion);

@@ -619,7 +619,7 @@ describe('cli scaffold and setup commands', () => {
     expect(runOutput.exitCode).toBe(1);
     expect(runOutput.stderr).toContain('Usage: fdekit run');
     expect(evalOutput.exitCode).toBe(1);
-    expect(evalOutput.stderr).toContain('Usage: fdekit eval <run|macro>');
+    expect(evalOutput.stderr).toContain('Usage: fdekit eval <run [target]|macro [--min-frequency <n>]>');
   });
 
 

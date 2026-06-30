@@ -31,6 +31,7 @@ export type RecipeFileSpec =
 export interface RecipeRunScriptsSpec {
   namespace?: string;
   run: string;
+  evalTarget?: string;
 }
 
 export interface RecipePackageSpec {
@@ -120,7 +121,9 @@ function renderFdekitScripts(spec: RecipeRunScriptsSpec): Record<string, string>
     [key('validate')]: 'fdekit validate',
     [key('validate:strict')]: 'fdekit validate --strict',
     [key('diff')]: 'fdekit diff',
-    [key('eval')]: 'fdekit eval run',
+    [key('eval')]: spec.evalTarget
+      ? `fdekit eval run ${spec.evalTarget}`
+      : 'fdekit eval run',
     [key('macro')]: 'fdekit eval macro',
     [key('trace')]: 'fdekit trace',
     [key('report')]: 'fdekit report',

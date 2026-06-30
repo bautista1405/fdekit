@@ -51,6 +51,7 @@ export const supportTriageRecipe: RecipeSpec = {
     },
     fdekitScripts: {
       run: 'fdekit run supportTriage --ticket tick_1001',
+      evalTarget: 'supportTriage',
     },
     dependencies: fdekitDependencies([
       '@fdekit/connector-customer-api',

@@ -50,6 +50,7 @@ export const loadTestRecipe: RecipeSpec = {
     fdekitScripts: {
       namespace: 'loadtest',
       run: 'fdekit run loadTestAgent --input \'{"scenario":"smoke","vus":5,"duration":"10s"}\'',
+      evalTarget: 'loadTestAgent',
     },
     scripts: {
       demo: 'node scripts/demo.mjs',

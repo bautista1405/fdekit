@@ -43,6 +43,7 @@ export const salesResearchRecipe: RecipeSpec = {
     fdekitScripts: {
       namespace: 'sales',
       run: 'fdekit run salesResearchAgent --input \'{"accountId":"acct_company","persona":"CRO"}\'',
+      evalTarget: 'salesResearchAgent',
     },
     scripts: {
       demo: 'node scripts/demo.mjs',

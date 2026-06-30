@@ -20,7 +20,7 @@ const commandUsages = {
   env: 'fdekit env <start|seed|doctor|stop|describe>',
   trace: 'fdekit trace',
   validate: 'fdekit validate [--json] [--strict]',
-  eval: 'fdekit eval <run|macro> [--min-frequency <n>]',
+  eval: 'fdekit eval <run [target]|macro [--min-frequency <n>]>',
   feedback: 'fdekit feedback export [--json]',
   report: 'fdekit report',
   run: 'fdekit run <agent> [--ticket <id>] [--input <json-object>] [--max-steps <n>] [--strict]',
@@ -164,7 +164,7 @@ Options:
 Run configured evals or discover recurring behavior patterns across traces.
 
 Subcommands:
-  run                         Run configured lower-level evals
+  run [target]                Run all evals, or one agent/eval suite target
   macro [--min-frequency <n>] Discover recurring behavior patterns
 
 Options:

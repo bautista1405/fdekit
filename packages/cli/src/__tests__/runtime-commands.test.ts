@@ -425,6 +425,40 @@ describe('cli runtime commands', () => {
   });
 
 
+  it('runs a targeted eval loop without unrelated recipe suites', async () => {
+    const projectDir = await createCliProject();
+    const configPath = path.join(projectDir, 'fde.config.ts');
+    const config = await readFile(configPath, 'utf8');
+    await writeFile(
+      configPath,
+      config.replace(
+        '  evals: [\n',
+        `  evals: [
+    defineEval({
+      name: 'unrelated-recipe-dataset',
+      agent: 'unrelatedRecipeAgent',
+      run: () => false,
+    }),\n`,
+      ),
+      'utf8',
+    );
+
+    const evalOutput = await captureCommand(() => cmdEval({ cwd: projectDir, args: ['run', 'supportTriage'] }));
+
+    expect(evalOutput.exitCode).toBeUndefined();
+    expect(evalOutput.stdout).toContain('Eval status: passed');
+    expect(evalOutput.stdout).toContain('Eval target: supportTriage');
+    expect(evalOutput.stdout).toContain('Eval suites: 1');
+
+    const latestEval = JSON.parse(await readFile(
+      path.join(projectDir, 'artifacts', 'evals', 'latest.json'),
+      'utf8',
+    )) as { status?: string; results?: Array<{ name?: string; status?: string }> };
+    expect(latestEval.status).toBe('passed');
+    expect(latestEval.results?.map((result) => result.name)).toEqual(['support-triage-dataset']);
+  });
+
+
   it('surfaces invalid field-method metadata through validate', async () => {
     const projectDir = await mkProjectRoot('fdekit-cli-field-method-');
     await writeFile(path.join(projectDir, 'fde.config.ts'), `import {

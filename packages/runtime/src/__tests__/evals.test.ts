@@ -106,6 +106,34 @@ describe('runEvals', () => {
     }
   });
 
+  it('filters eval suites by agent or suite target', async () => {
+    const projectDir = await createEvalProject();
+    const deployment = createSupportTriageDeployment();
+    deployment.evals?.push(defineEval({
+      name: 'unrelated-recipe-dataset',
+      agent: 'unrelatedAgent',
+      run: () => false,
+    }));
+
+    const supportOnly = await runEvals({
+      deployment,
+      projectDir,
+      evalTarget: 'supportTriage',
+    });
+
+    expect(supportOnly.status).toBe('passed');
+    expect(supportOnly.results.map((result) => result.name)).toEqual(['support-triage-dataset']);
+
+    const unrelatedOnly = await runEvals({
+      deployment,
+      projectDir,
+      evalTarget: 'unrelated-recipe-dataset',
+    });
+
+    expect(unrelatedOnly.status).toBe('failed');
+    expect(unrelatedOnly.results.map((result) => result.name)).toEqual(['unrelated-recipe-dataset']);
+  });
+
   it('builds macro eval patterns from traces and lower-level eval labels', () => {
     const artifact = runMacroEvals({
       deployment: createSupportTriageDeployment(),

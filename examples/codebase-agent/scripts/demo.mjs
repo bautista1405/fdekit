@@ -14,7 +14,7 @@ await run('fdekit', ['doctor']);
 await run('fdekit', ['validate']);
 await run('fdekit', ['run', 'codebaseAgent', '--input', JSON.stringify(runInput)]);
 await run('fdekit', ['feedback', 'export']);
-await run('fdekit', ['eval', 'run']);
+await run('fdekit', ['eval', 'run', 'codebaseAgent']);
 await run('fdekit', ['eval', 'macro']);
 await run('fdekit', ['report']);
 await run('fdekit', ['console']);

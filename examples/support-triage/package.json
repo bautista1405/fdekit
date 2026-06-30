@@ -12,7 +12,7 @@
     "demo": "node scripts/demo.mjs",
     "fdekit:dev": "fdekit dev",
     "fdekit:doctor": "fdekit doctor",
-    "fdekit:eval": "fdekit eval run",
+    "fdekit:eval": "fdekit eval run supportTriage",
     "fdekit:macro": "fdekit eval macro",
     "fdekit:run": "fdekit run supportTriage --ticket tick_1001",
     "fdekit:approvals": "fdekit approvals list",

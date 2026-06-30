@@ -12,7 +12,7 @@
     "demo": "node scripts/demo.mjs",
     "fdekit:dev": "fdekit dev",
     "fdekit:doctor": "fdekit doctor",
-    "fdekit:eval": "fdekit eval run",
+    "fdekit:eval": "fdekit eval run loadTestAgent",
     "fdekit:macro": "fdekit eval macro",
     "fdekit:run": "fdekit run loadTestAgent --input '{\"scenario\":\"smoke\",\"vus\":5,\"duration\":\"10s\"}'",
     "fdekit:approvals": "fdekit approvals list",

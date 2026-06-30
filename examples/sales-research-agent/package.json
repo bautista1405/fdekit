@@ -11,7 +11,7 @@
     "demo": "node scripts/demo.mjs",
     "fdekit:dev": "fdekit dev",
     "fdekit:doctor": "fdekit doctor",
-    "fdekit:eval": "fdekit eval run",
+    "fdekit:eval": "fdekit eval run salesResearchAgent",
     "fdekit:macro": "fdekit eval macro",
     "fdekit:run": "fdekit run salesResearchAgent --input '{\"accountId\":\"acct_company\",\"persona\":\"CRO\"}'",
     "fdekit:approvals": "fdekit approvals list",

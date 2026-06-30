@@ -23,7 +23,7 @@ try {
   await run('fdekit', ['validate']);
   await run('fdekit', ['run', 'loadTestAgent', '--input', JSON.stringify(runInput)]);
   await run('fdekit', ['feedback', 'export']);
-  await run('fdekit', ['eval', 'run']);
+  await run('fdekit', ['eval', 'run', 'loadTestAgent']);
   await run('fdekit', ['eval', 'macro']);
   await run('fdekit', ['report']);
   await run('fdekit', ['console']);

@@ -222,7 +222,7 @@
       "fdekit:dev": "fdekit dev",
       "fdekit:diff": "fdekit diff",
       "fdekit:doctor": "fdekit doctor",
-      "fdekit:eval": "fdekit eval run",
+      "fdekit:eval": "fdekit eval run supportTriage",
       "fdekit:feedback": "fdekit feedback export",
       "fdekit:macro": "fdekit eval macro",
       "fdekit:report": "fdekit report",

@@ -3,6 +3,7 @@
     <a href="./LICENSE"><img src="https://img.shields.io/github/license/bautista1405/fdekit.svg?colorB=ff0000"></a>
     <a href="https://www.npmjs.com/package/@fdekit/cli"><img src="https://img.shields.io/npm/d18m/%40fdekit%2Fcli?label=cli" /></a>
     <a href="https://www.npmjs.com/package/@fdekit/core"><img src="https://img.shields.io/npm/d18m/%40fdekit%2Fcore?label=core" /></a>
+    <a href="https://www.npmjs.com/package/@fdekit/runtime"><img src="https://img.shields.io/npm/d18m/%40fdekit%2Fruntime?label=runtime" /></a>
     <!-- <img src="https://img.shields.io/github/stars/bautista1405/fdekit" /> -->
 </h1>
 
@@ -14,6 +15,12 @@
 FDEKit is a field-deployment operating layer for forward-deployed engineers. It helps you scaffold agent deployments, connect customer systems, enforce governance, run evals, inspect traces, and package repeatable customer work into reusable recipes.
 
 The goal is to make governed, evaluated, observable AI deployments accessible.
+
+The three main packages are:
+
+- **core**: the authoring contract for FDEKit deployments. useful for describing what a deployment is. [see more](https://github.com/bautista1405/fdekit/blob/main/packages/core/README.md)
+- **runtime**: loads FDEKit deployment configs, executes agent runs, etc. useful for operating a deployment programmatically, when you need to script the same behavior outside the cli, etc. [see more](https://github.com/bautista1405/fdekit/blob/main/packages/runtime/README.md)
+- **cli**: the package for the FDEKit command-line interface. it scaffolds projects, installs and captures recipes, adds providers/connectors/policies/evals, validates configs, runs agents, etc. useful when you want the standard workflow from a terminal. [see more](https://github.com/bautista1405/fdekit/blob/main/packages/cli/README.md)
 
 ## Why It Exists
 

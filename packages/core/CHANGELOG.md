@@ -1,5 +1,11 @@
 # @fdekit/core
 
+## 0.4.7
+
+### Patch Changes
+
+- ad31181: console report modifications, command and runtime-related small changes
+
 ## 0.4.6
 
 ## 0.4.5

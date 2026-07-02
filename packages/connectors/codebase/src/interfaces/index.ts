@@ -47,3 +47,26 @@ export interface CodebaseReadFileResult {
   endLine: number;
   truncated: boolean;
 }
+
+export type CodebaseSymbolKind = 'function' | 'class' | 'interface' | 'type' | 'enum' | 'const' | 'method';
+
+export interface CodebaseSymbolEntry {
+  name: string;
+  kind: CodebaseSymbolKind;
+  filePath: string;
+  startLine: number;
+  endLine: number;
+  exported: boolean;
+}
+
+export interface CodebaseSymbolIndexFile {
+  mtimeMs: number;
+  symbols: CodebaseSymbolEntry[];
+  imports: string[];
+}
+
+export interface CodebaseSymbolIndex {
+  builtAt: string;
+  root: string;
+  files: Record<string, CodebaseSymbolIndexFile>;
+}

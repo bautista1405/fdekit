@@ -27,5 +27,21 @@
   "dependencies": {
     "@fdekit/core": "0.4.7"
   },
+  "peerDependencies": {
+    "tree-sitter-wasms": "^0.1.11",
+    "web-tree-sitter": "^0.25.0"
+  },
+  "peerDependenciesMeta": {
+    "tree-sitter-wasms": {
+      "optional": true
+    },
+    "web-tree-sitter": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "tree-sitter-wasms": "^0.1.11",
+    "web-tree-sitter": "^0.25.0"
+  },
   "type": "module"
 }

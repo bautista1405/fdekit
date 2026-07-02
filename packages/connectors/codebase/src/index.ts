@@ -6,10 +6,10 @@ import {
   readTextFile,
   resolveRoot,
   resolveSafePath,
-  searchFiles,
   statFile,
   toRelativePath,
 } from './helpers/index.js';
+import { ripgrepSearch } from './helpers/ripgrep.js';
 import type { CodebaseConnectorConfig, CodebaseConnectorOptions, CodebaseFileEntry, CodebaseListFilesArgs, CodebaseReadFileArgs, CodebaseReadFileResult, CodebaseSearchArgs, CodebaseSearchMatch } from './interfaces/index.js';
 export type { CodebaseConnectorConfig, CodebaseConnectorOptions, CodebaseFileEntry, CodebaseListFilesArgs, CodebaseReadFileArgs, CodebaseReadFileResult, CodebaseSearchArgs, CodebaseSearchMatch } from './interfaces/index.js';
 
@@ -43,7 +43,7 @@ const searchArgsSchema = {
   properties: {
     query: {
       type: 'string',
-      description: 'Literal substring to search for, not a regex; use separate searches for alternatives',
+      description: 'Regular expression to search for (ripgrep syntax); escape special characters to match literal text',
     },
     maxResults: {
       type: 'number',
@@ -120,7 +120,7 @@ export function codebaseConnector(options: CodebaseConnectorOptions = {}): Conne
       }),
       defineTool<CodebaseSearchArgs, { rootDir: string; query: string; matches: CodebaseSearchMatch[] }>({
         name: 'codebase.search',
-        description: 'Search text files by literal substring under the configured codebase root',
+        description: 'Search text files by regular expression under the configured codebase root',
         scopes: ['codebase:read'],
         environments: defaultToolEnvironments,
         category: 'codebase',
@@ -134,7 +134,7 @@ export function codebaseConnector(options: CodebaseConnectorOptions = {}): Conne
             throw new Error('codebase.search requires a non-empty query');
           }
 
-          const matches = await searchFiles(root, ignore, maxFileBytes, query, args.maxResults ?? 20);
+          const matches = await ripgrepSearch(root, ignore, maxFileBytes, query, args.maxResults ?? 20);
 
           return {
             rootDir: root,

@@ -13,7 +13,7 @@ describe('codebaseConnector', () => {
     }
   });
 
-  it('documents codebase.search as literal substring matching', () => {
+  it('documents codebase.search as regular expression matching', () => {
     const connector = codebaseConnector();
     const search = connector.tools?.find((tool) => tool.name === 'codebase.search');
     const argsSchema = search?.argsSchema as {
@@ -24,8 +24,8 @@ describe('codebaseConnector', () => {
       };
     };
 
-    expect(search?.description).toContain('literal substring');
-    expect(argsSchema.properties?.query?.description).toContain('not a regex');
+    expect(search?.description).toContain('regular expression');
+    expect(argsSchema.properties?.query?.description).toContain('ripgrep');
   });
 
   it('resolves relative roots from the loaded FDEKit project directory', () => {
@@ -64,8 +64,8 @@ describe('codebaseConnector', () => {
     await expect(listFiles?.handler({ pattern: 'src' }, {})).resolves.toMatchObject({
       files: [{ filePath: 'src/billing.ts' }],
     });
-    await expect(search?.handler({ query: 'TODO(fdekit)' }, {})).resolves.toMatchObject({
-      query: 'TODO(fdekit)',
+    await expect(search?.handler({ query: 'TODO\\(fdekit\\)' }, {})).resolves.toMatchObject({
+      query: 'TODO\\(fdekit\\)',
       matches: [
         {
           filePath: 'src/billing.ts',
@@ -73,6 +73,12 @@ describe('codebaseConnector', () => {
           preview: '// TODO(fdekit): add retry handling before production rollout',
         },
       ],
+    });
+    await expect(search?.handler({ query: 'TODO\\(fdekit\\)|# Demo' }, {})).resolves.toMatchObject({
+      matches: expect.arrayContaining([
+        expect.objectContaining({ filePath: 'README.md', line: 1 }),
+        expect.objectContaining({ filePath: 'src/billing.ts', line: 2 }),
+      ]),
     });
     await expect(read?.handler({ filePath: 'src/billing.ts', startLine: 2, endLine: 2 }, {})).resolves.toMatchObject({
       filePath: 'src/billing.ts',

@@ -28,10 +28,14 @@
     "@fdekit/core": "0.4.7"
   },
   "peerDependencies": {
+    "@vscode/ripgrep": "^1.15.0",
     "tree-sitter-wasms": "^0.1.11",
     "web-tree-sitter": "^0.25.0"
   },
   "peerDependenciesMeta": {
+    "@vscode/ripgrep": {
+      "optional": true
+    },
     "tree-sitter-wasms": {
       "optional": true
     },
@@ -40,6 +44,7 @@
     }
   },
   "devDependencies": {
+    "@vscode/ripgrep": "^1.15.0",
     "tree-sitter-wasms": "^0.1.11",
     "web-tree-sitter": "^0.25.0"
   },

@@ -1,5 +1,17 @@
 # fdekit
 
+## 0.5.0
+
+### Patch Changes
+
+- @fdekit/core@0.5.0
+- @fdekit/runtime@0.5.0
+- @fdekit/console@0.5.0
+- @fdekit/provider-anthropic@0.5.0
+- @fdekit/provider-google@0.5.0
+- @fdekit/provider-ollama@0.5.0
+- @fdekit/provider-openai@0.5.0
+
 ## 0.4.7
 
 ### Patch Changes

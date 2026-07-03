@@ -68,6 +68,9 @@ steps are required.
   the analyzed repository.
 - `importedBy` resolves relative import specifiers only; package imports and
   tsconfig path aliases are reported in `imports` but not followed.
+- `fdekit doctor` reports navigation readiness for this connector: whether the
+  tree-sitter parser and grammars load, whether the ripgrep binary is present
+  (or search is on the JS fallback), and the symbol-index cache status.
 
 ## Public API surface
 

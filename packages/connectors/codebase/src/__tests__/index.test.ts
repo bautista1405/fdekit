@@ -190,6 +190,29 @@ describe('codebaseConnector', () => {
     expect(budgeted.definitions[0].content.length).toBeLessThanOrEqual(10);
   });
 
+  it('reports navigation readiness for tree-sitter, ripgrep, and the symbol index', async () => {
+    const rootDir = await writeNavFixture();
+    const projectDir = await mkdtemp(path.join(tmpdir(), 'fdekit-project-'));
+    const connector = codebaseConnector({ rootDir, env: { FDEKIT_PROJECT_DIR: projectDir } });
+
+    const checks = await connector.readiness?.() ?? [];
+    const byName = Object.fromEntries(checks.map((check) => [check.name, check]));
+
+    expect(byName['tree-sitter']).toMatchObject({ ok: true });
+    expect(byName['tree-sitter'].message).toContain('grammars loaded');
+    expect(byName['ripgrep'].ok).toBe(true);
+    expect(byName['symbol-index']).toMatchObject({ ok: true });
+    // Index not built yet for this fresh project.
+    expect(byName['symbol-index'].message).toContain('not built yet');
+
+    // After a navigation call the index is cached and readiness reflects it.
+    const symbols = connector.tools?.find((tool) => tool.name === 'codebase.symbols');
+    await symbols?.handler({}, {});
+    const afterChecks = await connector.readiness?.() ?? [];
+    const afterIndex = afterChecks.find((check) => check.name === 'symbol-index');
+    expect(afterIndex?.message).toMatch(/cached \d+ file/);
+  });
+
   it('persists the symbol index under the project artifacts directory when FDEKIT_PROJECT_DIR is set', async () => {
     const rootDir = await writeNavFixture();
     const projectDir = await mkdtemp(path.join(tmpdir(), 'fdekit-project-'));

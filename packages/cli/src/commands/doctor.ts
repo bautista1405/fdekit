@@ -40,6 +40,14 @@ interface ProviderReadinessCheck {
   message: string;
 }
 
+interface ConnectorReadinessResult {
+  owner: string;
+  name: string;
+  ok: boolean;
+  latencyMs?: number;
+  message: string;
+}
+
 export async function cmdDoctor(ctx: CommandContext): Promise<void> {
   const live = ctx.args.includes('--live');
   const configPath = await requireConfigFile(ctx.cwd);
@@ -47,6 +55,7 @@ export async function cmdDoctor(ctx: CommandContext): Promise<void> {
   const checks = collectEnvironmentChecks(deployment, process.env);
   const missingRequired = checks.filter((check) => check.required && !check.configured);
   const providerReadiness = await runProviderReadinessChecks(deployment);
+  const connectorReadiness = await runConnectorReadinessChecks(deployment);
 
   console.log('FDEKit doctor');
   console.log(`Deployment: ${deployment.name}`);
@@ -63,6 +72,11 @@ export async function cmdDoctor(ctx: CommandContext): Promise<void> {
     console.log('');
   }
 
+  if (connectorReadiness.length > 0) {
+    printConnectorReadiness(connectorReadiness);
+    console.log('');
+  }
+
   if (missingRequired.length > 0) {
     console.log(`Summary: ${missingRequired.length} missing required env var(s)`);
     process.exitCode = 1;
@@ -71,6 +85,12 @@ export async function cmdDoctor(ctx: CommandContext): Promise<void> {
 
   if (providerReadiness.some((check) => !check.ok)) {
     console.log('Summary: provider readiness warnings found');
+    process.exitCode = 1;
+    return;
+  }
+
+  if (connectorReadiness.some((check) => !check.ok)) {
+    console.log('Summary: connector readiness warnings found');
     process.exitCode = 1;
     return;
   }
@@ -335,6 +355,41 @@ function printProviderReadiness(checks: ProviderReadinessCheck[]): void {
     const state = check.ok ? 'ok' : 'warning';
     const latency = check.latencyMs === undefined ? '' : ` ${check.latencyMs}ms`;
     console.log(`  ${check.owner} ${state}${latency} - ${check.message}`);
+  }
+}
+
+export async function runConnectorReadinessChecks(deployment: DeploymentDefinition): Promise<ConnectorReadinessResult[]> {
+  const results: ConnectorReadinessResult[] = [];
+
+  for (const [owner, connector] of Object.entries(deployment.connectors ?? {})) {
+    if (typeof connector.readiness !== 'function') {
+      continue;
+    }
+
+    try {
+      for (const check of await connector.readiness()) {
+        results.push({ owner, ...check });
+      }
+    } catch (err) {
+      results.push({
+        owner,
+        name: 'readiness',
+        ok: false,
+        message: `readiness probe failed - ${err instanceof Error ? err.message : String(err)}`,
+      });
+    }
+  }
+
+  return results;
+}
+
+function printConnectorReadiness(results: ConnectorReadinessResult[]): void {
+  console.log('Connector Readiness');
+
+  for (const result of results) {
+    const state = result.ok ? 'ok' : 'warning';
+    const latency = result.latencyMs === undefined ? '' : ` ${result.latencyMs}ms`;
+    console.log(`  ${result.owner} ${result.name} ${state}${latency} - ${result.message}`);
   }
 }
 

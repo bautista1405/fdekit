@@ -59,7 +59,7 @@ Use `fdekit validate --strict` before customer handoff or production-shaped pilo
 
 | Command | Purpose |
 | --- | --- |
-| `fdekit doctor [--live]` | Check env setup; `--live` runs connector health checks. |
+| `fdekit doctor [--live]` | Check env setup plus provider and connector readiness (model availability, codebase navigation prerequisites); `--live` also runs connector `*.healthCheck` tools. |
 | `fdekit validate [--json] [--strict]` | Validate config and write a deployment snapshot plus `deployments/execution-plan.json` through the configured artifact store. `--strict` requires every tool to declare `argsSchema`, `scopes`, and `environments`. |
 | `fdekit diff [--from <snapshot>] [--to <config-or-snapshot>]` | Compare deployment snapshots or configs. |
 

@@ -59,7 +59,7 @@ export async function ripgrepSearch(
   }
 }
 
-async function resolveRipgrepPath(): Promise<string | null> {
+export async function resolveRipgrepPath(): Promise<string | null> {
   if (!ripgrepPathPromise) {
     ripgrepPathPromise = importRipgrepPath();
   }

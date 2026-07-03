@@ -55,7 +55,7 @@ This path runs the launch demo: the credential-free `mock` provider, the bundled
 
 Prerequisites:
 
-- Node.js 18 or newer
+- Node.js 22 or newer
 - npm
 
 From the repo root:

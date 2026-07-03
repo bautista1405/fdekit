@@ -138,6 +138,58 @@ describe('codebaseConnector', () => {
     await expect(usages?.handler({ symbol: '   ' }, {})).rejects.toThrow('non-empty symbol');
   });
 
+  it('reports the import graph for a source file', async () => {
+    const rootDir = await writeNavFixture();
+    await mkdir(path.join(rootDir, 'src', 'util'), { recursive: true });
+    await writeFile(path.join(rootDir, 'src', 'util', 'index.ts'), 'export const UTIL = 1;\n', 'utf8');
+    await writeFile(path.join(rootDir, 'src', 'uses-util.ts'), [
+      "import { UTIL } from './util';",
+      'export const DOUBLED = UTIL * 2;',
+    ].join('\n'), 'utf8');
+    const connector = codebaseConnector({ rootDir });
+    const deps = connector.tools?.find((tool) => tool.name === 'codebase.deps');
+
+    await expect(deps?.handler({ filePath: 'src/app.ts' }, {})).resolves.toMatchObject({
+      filePath: 'src/app.ts',
+      imports: ['./billing.js'],
+      importedBy: [],
+    });
+    await expect(deps?.handler({ filePath: 'src/billing.ts' }, {})).resolves.toMatchObject({
+      imports: [],
+      importedBy: ['src/app.ts'],
+    });
+    await expect(deps?.handler({ filePath: 'src/util/index.ts' }, {})).resolves.toMatchObject({
+      importedBy: ['src/uses-util.ts'],
+    });
+    await expect(deps?.handler({ filePath: 'missing.ts' }, {})).rejects.toThrow('not in the symbol index');
+  });
+
+  it('assembles definition bodies and usage previews for a symbol', async () => {
+    const rootDir = await writeNavFixture();
+    const connector = codebaseConnector({ rootDir });
+    const context = connector.tools?.find((tool) => tool.name === 'codebase.context');
+
+    const result = await context?.handler({ symbol: 'syncBilling' }, {}) as {
+      definitions: Array<{ filePath: string; content: string; truncated: boolean }>;
+      usages: Array<{ filePath: string; line: number }>;
+    };
+
+    expect(result.definitions).toEqual([
+      expect.objectContaining({ filePath: 'src/billing.ts', truncated: false }),
+    ]);
+    expect(result.definitions[0].content).toContain('export function syncBilling(): boolean {');
+    expect(result.usages).toEqual(expect.arrayContaining([
+      expect.objectContaining({ filePath: 'src/app.ts', line: 4 }),
+    ]));
+
+    const budgeted = await context?.handler({ symbol: 'syncBilling', maxBytes: 10 }, {}) as {
+      definitions: Array<{ content: string; truncated: boolean }>;
+    };
+
+    expect(budgeted.definitions[0].truncated).toBe(true);
+    expect(budgeted.definitions[0].content.length).toBeLessThanOrEqual(10);
+  });
+
   it('persists the symbol index under the project artifacts directory when FDEKIT_PROJECT_DIR is set', async () => {
     const rootDir = await writeNavFixture();
     const projectDir = await mkdtemp(path.join(tmpdir(), 'fdekit-project-'));

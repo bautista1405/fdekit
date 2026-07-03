@@ -100,6 +100,41 @@ export function isIndexableSourceFile(filePath: string): boolean {
   return languageByExtension[path.extname(filePath).toLowerCase()] !== undefined;
 }
 
+export function resolveImportPath(fromFile: string, specifier: string): string | null {
+  if (!specifier.startsWith('./') && !specifier.startsWith('../')) {
+    return null;
+  }
+
+  return stripSourceExtension(path.posix.join(path.posix.dirname(fromFile), specifier));
+}
+
+export function findImporters(index: CodebaseSymbolIndex, filePath: string): string[] {
+  const targetBase = stripSourceExtension(filePath);
+  const importers: string[] = [];
+
+  for (const [fromFile, file] of Object.entries(index.files)) {
+    if (fromFile === filePath) {
+      continue;
+    }
+
+    const importsTarget = file.imports.some((specifier) => {
+      const resolved = resolveImportPath(fromFile, specifier);
+
+      return resolved !== null && (resolved === targetBase || `${resolved}/index` === targetBase);
+    });
+
+    if (importsTarget) {
+      importers.push(fromFile);
+    }
+  }
+
+  return importers.sort();
+}
+
+function stripSourceExtension(filePath: string): string {
+  return filePath.replace(/\.(ts|tsx|js|jsx|mjs|cjs|mts|cts)$/, '');
+}
+
 export function symbolIndexCachePath(projectDir: string | undefined, root: string): string | undefined {
   if (!projectDir) {
     return undefined;

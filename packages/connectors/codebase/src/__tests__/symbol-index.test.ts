@@ -2,7 +2,7 @@ import { mkdir, mkdtemp, readFile, rm, utimes, writeFile } from 'fs/promises';
 import { tmpdir } from 'os';
 import * as path from 'path';
 import { describe, expect, it } from 'vitest';
-import { isIndexableSourceFile, loadOrBuildSymbolIndex, symbolIndexCachePath } from '../helpers/symbol-index.js';
+import { findImporters, isIndexableSourceFile, loadOrBuildSymbolIndex, resolveImportPath, symbolIndexCachePath } from '../helpers/symbol-index.js';
 
 const ignore = ['node_modules', '.git'];
 const maxFileBytes = 80_000;
@@ -113,6 +113,28 @@ describe('symbol index', () => {
     const persisted = JSON.parse(await readFile(cacheFilePath, 'utf8')) as { root: string; files: Record<string, unknown> };
     expect(persisted.root).toBe(rootDir);
     expect(persisted.files['src/billing.ts']).toBeDefined();
+  });
+
+  it('resolves relative import specifiers against the importing file', () => {
+    expect(resolveImportPath('src/app.ts', './billing.js')).toBe('src/billing');
+    expect(resolveImportPath('src/sub/a.ts', '../y/z')).toBe('src/y/z');
+    expect(resolveImportPath('app.ts', './billing.js')).toBe('billing');
+    expect(resolveImportPath('src/app.ts', '@fdekit/core')).toBeNull();
+    expect(resolveImportPath('src/app.ts', 'react')).toBeNull();
+  });
+
+  it('finds importers including directory-style index imports', async () => {
+    const rootDir = await mkdtemp(path.join(tmpdir(), 'fdekit-symbols-'));
+    await mkdir(path.join(rootDir, 'src', 'util'), { recursive: true });
+    await writeFile(path.join(rootDir, 'src', 'util', 'index.ts'), 'export const UTIL = 1;\n', 'utf8');
+    await writeFile(path.join(rootDir, 'src', 'direct.ts'), "import { UTIL } from './util/index.js';\nexport const A = UTIL;\n", 'utf8');
+    await writeFile(path.join(rootDir, 'src', 'dir-style.ts'), "import { UTIL } from './util';\nexport const B = UTIL;\n", 'utf8');
+    await writeFile(path.join(rootDir, 'src', 'unrelated.ts'), 'export const C = 3;\n', 'utf8');
+
+    const index = await loadOrBuildSymbolIndex({ root: rootDir, ignore, maxFileBytes });
+
+    expect(findImporters(index, 'src/util/index.ts')).toEqual(['src/dir-style.ts', 'src/direct.ts']);
+    expect(findImporters(index, 'src/unrelated.ts')).toEqual([]);
   });
 
   it('derives a per-root cache path under the project artifacts directory', () => {

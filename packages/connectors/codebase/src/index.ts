@@ -10,9 +10,9 @@ import {
   toRelativePath,
 } from './helpers/index.js';
 import { escapeRegExp, ripgrepSearch } from './helpers/ripgrep.js';
-import { loadOrBuildSymbolIndex, symbolIndexCachePath } from './helpers/symbol-index.js';
-import type { CodebaseConnectorConfig, CodebaseConnectorOptions, CodebaseFileEntry, CodebaseListFilesArgs, CodebaseReadFileArgs, CodebaseReadFileResult, CodebaseSearchArgs, CodebaseSearchMatch, CodebaseSymbolsArgs, CodebaseSymbolsResult, CodebaseUsagesArgs, CodebaseUsagesResult } from './interfaces/index.js';
-export type { CodebaseConnectorConfig, CodebaseConnectorOptions, CodebaseFileEntry, CodebaseListFilesArgs, CodebaseReadFileArgs, CodebaseReadFileResult, CodebaseSearchArgs, CodebaseSearchMatch, CodebaseSymbolEntry, CodebaseSymbolKind, CodebaseSymbolsArgs, CodebaseSymbolsResult, CodebaseUsagesArgs, CodebaseUsagesResult } from './interfaces/index.js';
+import { findImporters, loadOrBuildSymbolIndex, symbolIndexCachePath } from './helpers/symbol-index.js';
+import type { CodebaseConnectorConfig, CodebaseConnectorOptions, CodebaseContextArgs, CodebaseContextDefinition, CodebaseContextResult, CodebaseDepsArgs, CodebaseDepsResult, CodebaseFileEntry, CodebaseListFilesArgs, CodebaseReadFileArgs, CodebaseReadFileResult, CodebaseSearchArgs, CodebaseSearchMatch, CodebaseSymbolEntry, CodebaseSymbolsArgs, CodebaseSymbolsResult, CodebaseUsagesArgs, CodebaseUsagesResult } from './interfaces/index.js';
+export type { CodebaseConnectorConfig, CodebaseConnectorOptions, CodebaseContextArgs, CodebaseContextDefinition, CodebaseContextResult, CodebaseDepsArgs, CodebaseDepsResult, CodebaseFileEntry, CodebaseListFilesArgs, CodebaseReadFileArgs, CodebaseReadFileResult, CodebaseSearchArgs, CodebaseSearchMatch, CodebaseSymbolEntry, CodebaseSymbolKind, CodebaseSymbolsArgs, CodebaseSymbolsResult, CodebaseUsagesArgs, CodebaseUsagesResult } from './interfaces/index.js';
 
 const defaultIgnore = [
   'artifacts',
@@ -106,6 +106,32 @@ const usagesArgsSchema = {
     maxResults: {
       type: 'number',
       description: 'Maximum number of usage matches to return',
+    },
+  },
+};
+
+const depsArgsSchema = {
+  type: 'object',
+  required: ['filePath'],
+  properties: {
+    filePath: {
+      type: 'string',
+      description: 'Relative source file path to report the import graph for',
+    },
+  },
+};
+
+const contextArgsSchema = {
+  type: 'object',
+  required: ['symbol'],
+  properties: {
+    symbol: {
+      type: 'string',
+      description: 'Symbol name to assemble definition and usage context for',
+    },
+    maxBytes: {
+      type: 'number',
+      description: 'Byte budget for definition bodies (default 8000)',
     },
   },
 };
@@ -269,15 +295,84 @@ export function codebaseConnector(options: CodebaseConnectorOptions = {}): Conne
           const definitions = Object.values(index.files)
             .flatMap((file) => file.symbols)
             .filter((entry) => entry.name === symbol);
-          const maxResults = args.maxResults ?? 30;
-          // Identifier boundary that works identically in ripgrep (no lookaround
-          // support) and the JS fallback; \b misses identifiers that start or
-          // end with $.
-          const pattern = `(^|[^A-Za-z0-9_$])${escapeRegExp(symbol)}([^A-Za-z0-9_$]|$)`;
-          const hits = await ripgrepSearch(root, ignore, maxFileBytes, pattern, maxResults + definitions.length + 5);
-          const usages = hits
-            .filter((hit) => !definitions.some((entry) => entry.filePath === hit.filePath && entry.startLine === hit.line))
-            .slice(0, maxResults);
+          const usages = await findSymbolUsages(root, ignore, maxFileBytes, definitions, symbol, args.maxResults ?? 30);
+
+          return {
+            rootDir: root,
+            symbol,
+            definitions,
+            usages,
+          };
+        },
+      }),
+      defineTool<CodebaseDepsArgs, CodebaseDepsResult>({
+        name: 'codebase.deps',
+        description: 'Import graph for a source file: what it imports and which files import it',
+        scopes: ['codebase:read'],
+        environments: defaultToolEnvironments,
+        category: 'codebase',
+        tags: ['context', 'codebase', 'read', 'nav'],
+        argsSchema: depsArgsSchema,
+        async handler(args) {
+          const root = resolveRoot(rootDir);
+          const index = await loadOrBuildSymbolIndex({
+            root,
+            ignore,
+            maxFileBytes,
+            cacheFilePath: symbolIndexCachePath(projectDir, root),
+          });
+          const entry = index.files[args.filePath];
+
+          if (!entry) {
+            throw new Error(`File is not in the symbol index (not found or not a TS/JS source file): ${args.filePath}`);
+          }
+
+          return {
+            rootDir: root,
+            filePath: args.filePath,
+            imports: entry.imports,
+            importedBy: findImporters(index, args.filePath),
+          };
+        },
+      }),
+      defineTool<CodebaseContextArgs, CodebaseContextResult>({
+        name: 'codebase.context',
+        description: 'Assemble LLM-ready context for a symbol: its definition bodies under a byte budget plus usage previews',
+        scopes: ['codebase:read'],
+        environments: defaultToolEnvironments,
+        category: 'codebase',
+        tags: ['context', 'codebase', 'read', 'nav'],
+        argsSchema: contextArgsSchema,
+        async handler(args) {
+          const root = resolveRoot(rootDir);
+          const symbol = typeof args.symbol === 'string' ? args.symbol.trim() : '';
+
+          if (!symbol) {
+            throw new Error('codebase.context requires a non-empty symbol');
+          }
+
+          const index = await loadOrBuildSymbolIndex({
+            root,
+            ignore,
+            maxFileBytes,
+            cacheFilePath: symbolIndexCachePath(projectDir, root),
+          });
+          const entries = Object.values(index.files)
+            .flatMap((file) => file.symbols)
+            .filter((entry) => entry.name === symbol);
+          let remaining = args.maxBytes ?? 8000;
+          const definitions: CodebaseContextDefinition[] = [];
+
+          for (const entry of entries) {
+            const raw = await readTextFile(resolveSafePath(root, entry.filePath));
+            const body = raw.split(/\r?\n/).slice(entry.startLine - 1, entry.endLine).join('\n');
+            const truncated = Buffer.byteLength(body, 'utf8') > remaining;
+            const content = truncated ? body.slice(0, remaining) : body;
+            remaining = Math.max(0, remaining - Buffer.byteLength(content, 'utf8'));
+            definitions.push({ ...entry, content, truncated });
+          }
+
+          const usages = await findSymbolUsages(root, ignore, maxFileBytes, entries, symbol, 10);
 
           return {
             rootDir: root,
@@ -289,6 +384,25 @@ export function codebaseConnector(options: CodebaseConnectorOptions = {}): Conne
       }),
     ],
   });
+}
+
+async function findSymbolUsages(
+  root: string,
+  ignore: string[],
+  maxFileBytes: number,
+  definitions: CodebaseSymbolEntry[],
+  symbol: string,
+  maxResults: number,
+): Promise<CodebaseSearchMatch[]> {
+  // Identifier boundary that works identically in ripgrep (no lookaround
+  // support) and the JS fallback; \b misses identifiers that start or
+  // end with $.
+  const pattern = `(^|[^A-Za-z0-9_$])${escapeRegExp(symbol)}([^A-Za-z0-9_$]|$)`;
+  const hits = await ripgrepSearch(root, ignore, maxFileBytes, pattern, maxResults + definitions.length + 5);
+
+  return hits
+    .filter((hit) => !definitions.some((entry) => entry.filePath === hit.filePath && entry.startLine === hit.line))
+    .slice(0, maxResults);
 }
 
 function defaultRoot(projectDir: string | undefined): string {

@@ -72,6 +72,34 @@ export interface CodebaseUsagesResult {
   usages: CodebaseSearchMatch[];
 }
 
+export interface CodebaseDepsArgs {
+  filePath: string;
+}
+
+export interface CodebaseDepsResult {
+  rootDir: string;
+  filePath: string;
+  imports: string[];
+  importedBy: string[];
+}
+
+export interface CodebaseContextArgs {
+  symbol: string;
+  maxBytes?: number;
+}
+
+export interface CodebaseContextDefinition extends CodebaseSymbolEntry {
+  content: string;
+  truncated: boolean;
+}
+
+export interface CodebaseContextResult {
+  rootDir: string;
+  symbol: string;
+  definitions: CodebaseContextDefinition[];
+  usages: CodebaseSearchMatch[];
+}
+
 export type CodebaseSymbolKind = 'function' | 'class' | 'interface' | 'type' | 'enum' | 'const' | 'method';
 
 export interface CodebaseSymbolEntry {

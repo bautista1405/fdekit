@@ -145,6 +145,34 @@ export function symbolIndexCachePath(projectDir: string | undefined, root: strin
   return path.join(projectDir, 'artifacts', 'cache', `codebase-symbols-${rootHash}.json`);
 }
 
+/**
+ * Loads the tree-sitter runtime, throwing if the parser or grammars cannot be
+ * initialized. Used by connector readiness diagnostics; the result is cached so
+ * a subsequent navigation call reuses it.
+ */
+export async function probeNavigationRuntime(): Promise<void> {
+  await loadRuntime();
+}
+
+export interface SymbolIndexMeta {
+  builtAt: string;
+  fileCount: number;
+}
+
+export async function readSymbolIndexMeta(cacheFilePath: string | undefined): Promise<SymbolIndexMeta | null> {
+  if (!cacheFilePath) {
+    return null;
+  }
+
+  try {
+    const index = JSON.parse(await fs.readFile(cacheFilePath, 'utf8')) as CodebaseSymbolIndex;
+
+    return { builtAt: index.builtAt, fileCount: Object.keys(index.files ?? {}).length };
+  } catch {
+    return null;
+  }
+}
+
 export async function loadOrBuildSymbolIndex(options: SymbolIndexOptions): Promise<CodebaseSymbolIndex> {
   const runtime = await loadRuntime();
   const cached = memoryCache.get(options.root) ?? await readPersistedIndex(options);

@@ -1,5 +1,5 @@
 import * as path from 'path';
-import { defineConnector, defineTool, type ConnectorDefinition } from '@fdekit/core';
+import { defineConnector, defineTool, type ConnectorDefinition, type ConnectorReadinessCheck } from '@fdekit/core';
 import {
   collectFiles,
   readEnvValue,
@@ -9,8 +9,8 @@ import {
   statFile,
   toRelativePath,
 } from './helpers/index.js';
-import { escapeRegExp, ripgrepSearch } from './helpers/ripgrep.js';
-import { findImporters, loadOrBuildSymbolIndex, symbolIndexCachePath } from './helpers/symbol-index.js';
+import { escapeRegExp, resolveRipgrepPath, ripgrepSearch } from './helpers/ripgrep.js';
+import { findImporters, loadOrBuildSymbolIndex, probeNavigationRuntime, readSymbolIndexMeta, symbolIndexCachePath } from './helpers/symbol-index.js';
 import type { CodebaseConnectorConfig, CodebaseConnectorOptions, CodebaseContextArgs, CodebaseContextDefinition, CodebaseContextResult, CodebaseDepsArgs, CodebaseDepsResult, CodebaseFileEntry, CodebaseListFilesArgs, CodebaseReadFileArgs, CodebaseReadFileResult, CodebaseSearchArgs, CodebaseSearchMatch, CodebaseSymbolEntry, CodebaseSymbolsArgs, CodebaseSymbolsResult, CodebaseUsagesArgs, CodebaseUsagesResult } from './interfaces/index.js';
 export type { CodebaseConnectorConfig, CodebaseConnectorOptions, CodebaseContextArgs, CodebaseContextDefinition, CodebaseContextResult, CodebaseDepsArgs, CodebaseDepsResult, CodebaseFileEntry, CodebaseListFilesArgs, CodebaseReadFileArgs, CodebaseReadFileResult, CodebaseSearchArgs, CodebaseSearchMatch, CodebaseSymbolEntry, CodebaseSymbolKind, CodebaseSymbolsArgs, CodebaseSymbolsResult, CodebaseUsagesArgs, CodebaseUsagesResult } from './interfaces/index.js';
 
@@ -383,6 +383,51 @@ export function codebaseConnector(options: CodebaseConnectorOptions = {}): Conne
         },
       }),
     ],
+    async readiness(): Promise<ConnectorReadinessCheck[]> {
+      const checks: ConnectorReadinessCheck[] = [];
+      const root = resolveRoot(rootDir);
+
+      const runtimeStartedAt = Date.now();
+      try {
+        await probeNavigationRuntime();
+        checks.push({
+          name: 'tree-sitter',
+          ok: true,
+          latencyMs: Date.now() - runtimeStartedAt,
+          message: 'symbol parser and TypeScript/JavaScript grammars loaded',
+        });
+      } catch (err) {
+        checks.push({
+          name: 'tree-sitter',
+          ok: false,
+          latencyMs: Date.now() - runtimeStartedAt,
+          message: `symbol navigation unavailable - ${err instanceof Error ? err.message : String(err)}`,
+        });
+      }
+
+      const rgPath = await resolveRipgrepPath();
+      checks.push({
+        name: 'ripgrep',
+        ok: true,
+        message: rgPath
+          ? `binary present (${rgPath})`
+          : 'binary unavailable - codebase.search and codebase.usages use the built-in JavaScript scanner (slower on large repositories)',
+      });
+
+      const cacheFilePath = symbolIndexCachePath(projectDir, root);
+      const indexMeta = await readSymbolIndexMeta(cacheFilePath);
+      checks.push({
+        name: 'symbol-index',
+        ok: true,
+        message: !cacheFilePath
+          ? 'not persisted (run inside an FDEKit project to cache the index); rebuilt in memory per run'
+          : indexMeta
+            ? `cached ${indexMeta.fileCount} file(s), built ${indexMeta.builtAt}`
+            : 'not built yet; created on the first navigation tool call',
+      });
+
+      return checks;
+    },
   });
 }
 

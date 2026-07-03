@@ -13,7 +13,7 @@ Maturity levels:
 
 | Area | Support | Maturity | Notes |
 | --- | --- | --- | --- |
-| Node.js | `>=18` | Ready | Uses Node ESM/NodeNext and built-in `fetch`. Node 20+ is recommended for active development. |
+| Node.js | `>=22` | Ready | Uses Node ESM/NodeNext and built-in `fetch`. Node 22 (Active LTS) is the minimum; pinned in `.nvmrc` and verified by CI (Node 22 and 24). |
 | Package manager | npm workspaces | Ready | The repo uses npm workspaces and Turbo. Other package managers are not part of the supported path yet. |
 | TypeScript | TS 5.x, ESM output | Ready | Source imports use `.js` specifiers intentionally so emitted NodeNext ESM is valid. |
 | Runtime mode | Local filesystem runtime | Ready | Traces, evals, approvals, audit logs, reports, exports, and console output default to `artifacts/`. |

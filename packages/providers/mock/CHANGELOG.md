@@ -1,5 +1,12 @@
 # @fdekit/provider-mock
 
+## 0.5.1
+
+### Patch Changes
+
+- Updated dependencies [a5f7a9d]
+  - @fdekit/core@0.5.1
+
 ## 0.5.0
 
 ### Patch Changes

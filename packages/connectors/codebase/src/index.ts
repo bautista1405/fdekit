@@ -9,9 +9,10 @@ import {
   statFile,
   toRelativePath,
 } from './helpers/index.js';
-import { ripgrepSearch } from './helpers/ripgrep.js';
-import type { CodebaseConnectorConfig, CodebaseConnectorOptions, CodebaseFileEntry, CodebaseListFilesArgs, CodebaseReadFileArgs, CodebaseReadFileResult, CodebaseSearchArgs, CodebaseSearchMatch } from './interfaces/index.js';
-export type { CodebaseConnectorConfig, CodebaseConnectorOptions, CodebaseFileEntry, CodebaseListFilesArgs, CodebaseReadFileArgs, CodebaseReadFileResult, CodebaseSearchArgs, CodebaseSearchMatch } from './interfaces/index.js';
+import { escapeRegExp, ripgrepSearch } from './helpers/ripgrep.js';
+import { loadOrBuildSymbolIndex, symbolIndexCachePath } from './helpers/symbol-index.js';
+import type { CodebaseConnectorConfig, CodebaseConnectorOptions, CodebaseFileEntry, CodebaseListFilesArgs, CodebaseReadFileArgs, CodebaseReadFileResult, CodebaseSearchArgs, CodebaseSearchMatch, CodebaseSymbolsArgs, CodebaseSymbolsResult, CodebaseUsagesArgs, CodebaseUsagesResult } from './interfaces/index.js';
+export type { CodebaseConnectorConfig, CodebaseConnectorOptions, CodebaseFileEntry, CodebaseListFilesArgs, CodebaseReadFileArgs, CodebaseReadFileResult, CodebaseSearchArgs, CodebaseSearchMatch, CodebaseSymbolEntry, CodebaseSymbolKind, CodebaseSymbolsArgs, CodebaseSymbolsResult, CodebaseUsagesArgs, CodebaseUsagesResult } from './interfaces/index.js';
 
 const defaultIgnore = [
   'artifacts',
@@ -67,6 +68,44 @@ const readFileArgsSchema = {
     endLine: {
       type: 'number',
       description: 'Optional 1-based end line',
+    },
+  },
+};
+
+const symbolsArgsSchema = {
+  type: 'object',
+  properties: {
+    name: {
+      type: 'string',
+      description: 'Exact or prefix symbol name to filter by',
+    },
+    filePath: {
+      type: 'string',
+      description: 'Restrict to declarations in one relative file path',
+    },
+    kind: {
+      type: 'string',
+      enum: ['function', 'class', 'interface', 'type', 'enum', 'const', 'method'],
+      description: 'Restrict to one declaration kind',
+    },
+    maxResults: {
+      type: 'number',
+      description: 'Maximum number of symbols to return',
+    },
+  },
+};
+
+const usagesArgsSchema = {
+  type: 'object',
+  required: ['symbol'],
+  properties: {
+    symbol: {
+      type: 'string',
+      description: 'Symbol name to find references for across the codebase',
+    },
+    maxResults: {
+      type: 'number',
+      description: 'Maximum number of usage matches to return',
     },
   },
 };
@@ -173,6 +212,78 @@ export function codebaseConnector(options: CodebaseConnectorOptions = {}): Conne
             startLine,
             endLine,
             truncated,
+          };
+        },
+      }),
+      defineTool<CodebaseSymbolsArgs, CodebaseSymbolsResult>({
+        name: 'codebase.symbols',
+        description: 'List indexed symbol declarations (functions, classes, interfaces, types, enums, consts, methods) filtered by name, file, or kind',
+        scopes: ['codebase:read'],
+        environments: defaultToolEnvironments,
+        category: 'codebase',
+        tags: ['context', 'codebase', 'read', 'nav'],
+        argsSchema: symbolsArgsSchema,
+        async handler(args) {
+          const root = resolveRoot(rootDir);
+          const index = await loadOrBuildSymbolIndex({
+            root,
+            ignore,
+            maxFileBytes,
+            cacheFilePath: symbolIndexCachePath(projectDir, root),
+          });
+          const symbols = Object.values(index.files)
+            .flatMap((file) => file.symbols)
+            .filter((symbol) =>
+              (!args.name || symbol.name.startsWith(args.name)) &&
+              (!args.filePath || symbol.filePath === args.filePath) &&
+              (!args.kind || symbol.kind === args.kind));
+
+          return {
+            rootDir: root,
+            symbols: symbols.slice(0, args.maxResults ?? 50),
+          };
+        },
+      }),
+      defineTool<CodebaseUsagesArgs, CodebaseUsagesResult>({
+        name: 'codebase.usages',
+        description: 'Find references of a symbol across the codebase, separated from its declaration sites',
+        scopes: ['codebase:read'],
+        environments: defaultToolEnvironments,
+        category: 'codebase',
+        tags: ['context', 'codebase', 'read', 'nav'],
+        argsSchema: usagesArgsSchema,
+        async handler(args) {
+          const root = resolveRoot(rootDir);
+          const symbol = typeof args.symbol === 'string' ? args.symbol.trim() : '';
+
+          if (!symbol) {
+            throw new Error('codebase.usages requires a non-empty symbol');
+          }
+
+          const index = await loadOrBuildSymbolIndex({
+            root,
+            ignore,
+            maxFileBytes,
+            cacheFilePath: symbolIndexCachePath(projectDir, root),
+          });
+          const definitions = Object.values(index.files)
+            .flatMap((file) => file.symbols)
+            .filter((entry) => entry.name === symbol);
+          const maxResults = args.maxResults ?? 30;
+          // Identifier boundary that works identically in ripgrep (no lookaround
+          // support) and the JS fallback; \b misses identifiers that start or
+          // end with $.
+          const pattern = `(^|[^A-Za-z0-9_$])${escapeRegExp(symbol)}([^A-Za-z0-9_$]|$)`;
+          const hits = await ripgrepSearch(root, ignore, maxFileBytes, pattern, maxResults + definitions.length + 5);
+          const usages = hits
+            .filter((hit) => !definitions.some((entry) => entry.filePath === hit.filePath && entry.startLine === hit.line))
+            .slice(0, maxResults);
+
+          return {
+            rootDir: root,
+            symbol,
+            definitions,
+            usages,
           };
         },
       }),

@@ -8,6 +8,10 @@ const run = promisify(execFile);
 
 let ripgrepPathPromise: Promise<string | null> | null = null;
 
+export function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 export async function ripgrepSearch(
   root: string,
   ignore: string[],

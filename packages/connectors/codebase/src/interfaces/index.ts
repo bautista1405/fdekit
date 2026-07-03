@@ -48,6 +48,30 @@ export interface CodebaseReadFileResult {
   truncated: boolean;
 }
 
+export interface CodebaseSymbolsArgs {
+  name?: string;
+  filePath?: string;
+  kind?: CodebaseSymbolKind;
+  maxResults?: number;
+}
+
+export interface CodebaseSymbolsResult {
+  rootDir: string;
+  symbols: CodebaseSymbolEntry[];
+}
+
+export interface CodebaseUsagesArgs {
+  symbol: string;
+  maxResults?: number;
+}
+
+export interface CodebaseUsagesResult {
+  rootDir: string;
+  symbol: string;
+  definitions: CodebaseSymbolEntry[];
+  usages: CodebaseSearchMatch[];
+}
+
 export type CodebaseSymbolKind = 'function' | 'class' | 'interface' | 'type' | 'enum' | 'const' | 'method';
 
 export interface CodebaseSymbolEntry {

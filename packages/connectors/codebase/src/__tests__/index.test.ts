@@ -1,4 +1,4 @@
-import { mkdir, mkdtemp, writeFile } from 'fs/promises';
+import { mkdir, mkdtemp, readdir, writeFile } from 'fs/promises';
 import { tmpdir } from 'os';
 import * as path from 'path';
 import { describe, expect, it } from 'vitest';
@@ -96,4 +96,79 @@ describe('codebaseConnector', () => {
 
     await expect(read?.handler({ filePath: '../secret.txt' }, {})).rejects.toThrow('escapes root');
   });
+
+  it('lists and filters indexed symbol declarations', async () => {
+    const rootDir = await writeNavFixture();
+    const connector = codebaseConnector({ rootDir });
+    const symbols = connector.tools?.find((tool) => tool.name === 'codebase.symbols');
+
+    const all = await symbols?.handler({}, {}) as { symbols: Array<{ name: string; kind: string }> };
+    expect(all.symbols.map((symbol) => symbol.name)).toEqual(expect.arrayContaining(['Invoice', 'syncBilling', 'renderApp']));
+
+    await expect(symbols?.handler({ kind: 'interface' }, {})).resolves.toMatchObject({
+      symbols: [expect.objectContaining({ name: 'Invoice', kind: 'interface', exported: true })],
+    });
+    await expect(symbols?.handler({ name: 'sync' }, {})).resolves.toMatchObject({
+      symbols: [expect.objectContaining({ name: 'syncBilling', filePath: 'src/billing.ts' })],
+    });
+    await expect(symbols?.handler({ filePath: 'src/app.ts' }, {})).resolves.toMatchObject({
+      symbols: [expect.objectContaining({ name: 'renderApp' })],
+    });
+  });
+
+  it('finds usages of a symbol separated from its declaration sites', async () => {
+    const rootDir = await writeNavFixture();
+    const connector = codebaseConnector({ rootDir });
+    const usages = connector.tools?.find((tool) => tool.name === 'codebase.usages');
+
+    const result = await usages?.handler({ symbol: 'syncBilling' }, {}) as {
+      definitions: Array<{ filePath: string; startLine: number }>;
+      usages: Array<{ filePath: string; line: number }>;
+    };
+
+    expect(result.definitions).toEqual([
+      expect.objectContaining({ filePath: 'src/billing.ts', startLine: 4 }),
+    ]);
+    expect(result.usages).toEqual(expect.arrayContaining([
+      expect.objectContaining({ filePath: 'src/app.ts', line: 1 }),
+      expect.objectContaining({ filePath: 'src/app.ts', line: 4 }),
+    ]));
+    expect(result.usages.find((usage) => usage.filePath === 'src/billing.ts' && usage.line === 4)).toBeUndefined();
+
+    await expect(usages?.handler({ symbol: '   ' }, {})).rejects.toThrow('non-empty symbol');
+  });
+
+  it('persists the symbol index under the project artifacts directory when FDEKIT_PROJECT_DIR is set', async () => {
+    const rootDir = await writeNavFixture();
+    const projectDir = await mkdtemp(path.join(tmpdir(), 'fdekit-project-'));
+    const connector = codebaseConnector({ rootDir, env: { FDEKIT_PROJECT_DIR: projectDir } });
+    const symbols = connector.tools?.find((tool) => tool.name === 'codebase.symbols');
+
+    await symbols?.handler({}, {});
+
+    const cacheEntries = await readdir(path.join(projectDir, 'artifacts', 'cache'));
+    expect(cacheEntries.some((entry) => /^codebase-symbols-[0-9a-f]{12}\.json$/.test(entry))).toBe(true);
+  });
 });
+
+async function writeNavFixture(): Promise<string> {
+  const rootDir = await mkdtemp(path.join(tmpdir(), 'fdekit-codebase-'));
+  await mkdir(path.join(rootDir, 'src'), { recursive: true });
+  await writeFile(path.join(rootDir, 'src', 'billing.ts'), [
+    'export interface Invoice {',
+    '  id: string;',
+    '}',
+    'export function syncBilling(): boolean {',
+    '  return true;',
+    '}',
+  ].join('\n'), 'utf8');
+  await writeFile(path.join(rootDir, 'src', 'app.ts'), [
+    "import { syncBilling } from './billing.js';",
+    '',
+    'export function renderApp(): boolean {',
+    '  return syncBilling();',
+    '}',
+  ].join('\n'), 'utf8');
+
+  return rootDir;
+}

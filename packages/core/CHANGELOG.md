@@ -1,5 +1,7 @@
 # @fdekit/core
 
+## 0.5.0
+
 ## 0.4.7
 
 ### Patch Changes

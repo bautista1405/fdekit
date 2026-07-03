@@ -1,4 +1,4 @@
-import { mkdir, mkdtemp, writeFile } from 'fs/promises';
+import { mkdir, mkdtemp, readdir, writeFile } from 'fs/promises';
 import { tmpdir } from 'os';
 import * as path from 'path';
 import { describe, expect, it } from 'vitest';
@@ -13,7 +13,7 @@ describe('codebaseConnector', () => {
     }
   });
 
-  it('documents codebase.search as literal substring matching', () => {
+  it('documents codebase.search as regular expression matching', () => {
     const connector = codebaseConnector();
     const search = connector.tools?.find((tool) => tool.name === 'codebase.search');
     const argsSchema = search?.argsSchema as {
@@ -24,8 +24,8 @@ describe('codebaseConnector', () => {
       };
     };
 
-    expect(search?.description).toContain('literal substring');
-    expect(argsSchema.properties?.query?.description).toContain('not a regex');
+    expect(search?.description).toContain('regular expression');
+    expect(argsSchema.properties?.query?.description).toContain('ripgrep');
   });
 
   it('resolves relative roots from the loaded FDEKit project directory', () => {
@@ -64,8 +64,8 @@ describe('codebaseConnector', () => {
     await expect(listFiles?.handler({ pattern: 'src' }, {})).resolves.toMatchObject({
       files: [{ filePath: 'src/billing.ts' }],
     });
-    await expect(search?.handler({ query: 'TODO(fdekit)' }, {})).resolves.toMatchObject({
-      query: 'TODO(fdekit)',
+    await expect(search?.handler({ query: 'TODO\\(fdekit\\)' }, {})).resolves.toMatchObject({
+      query: 'TODO\\(fdekit\\)',
       matches: [
         {
           filePath: 'src/billing.ts',
@@ -73,6 +73,12 @@ describe('codebaseConnector', () => {
           preview: '// TODO(fdekit): add retry handling before production rollout',
         },
       ],
+    });
+    await expect(search?.handler({ query: 'TODO\\(fdekit\\)|# Demo' }, {})).resolves.toMatchObject({
+      matches: expect.arrayContaining([
+        expect.objectContaining({ filePath: 'README.md', line: 1 }),
+        expect.objectContaining({ filePath: 'src/billing.ts', line: 2 }),
+      ]),
     });
     await expect(read?.handler({ filePath: 'src/billing.ts', startLine: 2, endLine: 2 }, {})).resolves.toMatchObject({
       filePath: 'src/billing.ts',
@@ -90,4 +96,131 @@ describe('codebaseConnector', () => {
 
     await expect(read?.handler({ filePath: '../secret.txt' }, {})).rejects.toThrow('escapes root');
   });
+
+  it('lists and filters indexed symbol declarations', async () => {
+    const rootDir = await writeNavFixture();
+    const connector = codebaseConnector({ rootDir });
+    const symbols = connector.tools?.find((tool) => tool.name === 'codebase.symbols');
+
+    const all = await symbols?.handler({}, {}) as { symbols: Array<{ name: string; kind: string }> };
+    expect(all.symbols.map((symbol) => symbol.name)).toEqual(expect.arrayContaining(['Invoice', 'syncBilling', 'renderApp']));
+
+    await expect(symbols?.handler({ kind: 'interface' }, {})).resolves.toMatchObject({
+      symbols: [expect.objectContaining({ name: 'Invoice', kind: 'interface', exported: true })],
+    });
+    await expect(symbols?.handler({ name: 'sync' }, {})).resolves.toMatchObject({
+      symbols: [expect.objectContaining({ name: 'syncBilling', filePath: 'src/billing.ts' })],
+    });
+    await expect(symbols?.handler({ filePath: 'src/app.ts' }, {})).resolves.toMatchObject({
+      symbols: [expect.objectContaining({ name: 'renderApp' })],
+    });
+  });
+
+  it('finds usages of a symbol separated from its declaration sites', async () => {
+    const rootDir = await writeNavFixture();
+    const connector = codebaseConnector({ rootDir });
+    const usages = connector.tools?.find((tool) => tool.name === 'codebase.usages');
+
+    const result = await usages?.handler({ symbol: 'syncBilling' }, {}) as {
+      definitions: Array<{ filePath: string; startLine: number }>;
+      usages: Array<{ filePath: string; line: number }>;
+    };
+
+    expect(result.definitions).toEqual([
+      expect.objectContaining({ filePath: 'src/billing.ts', startLine: 4 }),
+    ]);
+    expect(result.usages).toEqual(expect.arrayContaining([
+      expect.objectContaining({ filePath: 'src/app.ts', line: 1 }),
+      expect.objectContaining({ filePath: 'src/app.ts', line: 4 }),
+    ]));
+    expect(result.usages.find((usage) => usage.filePath === 'src/billing.ts' && usage.line === 4)).toBeUndefined();
+
+    await expect(usages?.handler({ symbol: '   ' }, {})).rejects.toThrow('non-empty symbol');
+  });
+
+  it('reports the import graph for a source file', async () => {
+    const rootDir = await writeNavFixture();
+    await mkdir(path.join(rootDir, 'src', 'util'), { recursive: true });
+    await writeFile(path.join(rootDir, 'src', 'util', 'index.ts'), 'export const UTIL = 1;\n', 'utf8');
+    await writeFile(path.join(rootDir, 'src', 'uses-util.ts'), [
+      "import { UTIL } from './util';",
+      'export const DOUBLED = UTIL * 2;',
+    ].join('\n'), 'utf8');
+    const connector = codebaseConnector({ rootDir });
+    const deps = connector.tools?.find((tool) => tool.name === 'codebase.deps');
+
+    await expect(deps?.handler({ filePath: 'src/app.ts' }, {})).resolves.toMatchObject({
+      filePath: 'src/app.ts',
+      imports: ['./billing.js'],
+      importedBy: [],
+    });
+    await expect(deps?.handler({ filePath: 'src/billing.ts' }, {})).resolves.toMatchObject({
+      imports: [],
+      importedBy: ['src/app.ts'],
+    });
+    await expect(deps?.handler({ filePath: 'src/util/index.ts' }, {})).resolves.toMatchObject({
+      importedBy: ['src/uses-util.ts'],
+    });
+    await expect(deps?.handler({ filePath: 'missing.ts' }, {})).rejects.toThrow('not in the symbol index');
+  });
+
+  it('assembles definition bodies and usage previews for a symbol', async () => {
+    const rootDir = await writeNavFixture();
+    const connector = codebaseConnector({ rootDir });
+    const context = connector.tools?.find((tool) => tool.name === 'codebase.context');
+
+    const result = await context?.handler({ symbol: 'syncBilling' }, {}) as {
+      definitions: Array<{ filePath: string; content: string; truncated: boolean }>;
+      usages: Array<{ filePath: string; line: number }>;
+    };
+
+    expect(result.definitions).toEqual([
+      expect.objectContaining({ filePath: 'src/billing.ts', truncated: false }),
+    ]);
+    expect(result.definitions[0].content).toContain('export function syncBilling(): boolean {');
+    expect(result.usages).toEqual(expect.arrayContaining([
+      expect.objectContaining({ filePath: 'src/app.ts', line: 4 }),
+    ]));
+
+    const budgeted = await context?.handler({ symbol: 'syncBilling', maxBytes: 10 }, {}) as {
+      definitions: Array<{ content: string; truncated: boolean }>;
+    };
+
+    expect(budgeted.definitions[0].truncated).toBe(true);
+    expect(budgeted.definitions[0].content.length).toBeLessThanOrEqual(10);
+  });
+
+  it('persists the symbol index under the project artifacts directory when FDEKIT_PROJECT_DIR is set', async () => {
+    const rootDir = await writeNavFixture();
+    const projectDir = await mkdtemp(path.join(tmpdir(), 'fdekit-project-'));
+    const connector = codebaseConnector({ rootDir, env: { FDEKIT_PROJECT_DIR: projectDir } });
+    const symbols = connector.tools?.find((tool) => tool.name === 'codebase.symbols');
+
+    await symbols?.handler({}, {});
+
+    const cacheEntries = await readdir(path.join(projectDir, 'artifacts', 'cache'));
+    expect(cacheEntries.some((entry) => /^codebase-symbols-[0-9a-f]{12}\.json$/.test(entry))).toBe(true);
+  });
 });
+
+async function writeNavFixture(): Promise<string> {
+  const rootDir = await mkdtemp(path.join(tmpdir(), 'fdekit-codebase-'));
+  await mkdir(path.join(rootDir, 'src'), { recursive: true });
+  await writeFile(path.join(rootDir, 'src', 'billing.ts'), [
+    'export interface Invoice {',
+    '  id: string;',
+    '}',
+    'export function syncBilling(): boolean {',
+    '  return true;',
+    '}',
+  ].join('\n'), 'utf8');
+  await writeFile(path.join(rootDir, 'src', 'app.ts'), [
+    "import { syncBilling } from './billing.js';",
+    '',
+    'export function renderApp(): boolean {',
+    '  return syncBilling();',
+    '}',
+  ].join('\n'), 'utf8');
+
+  return rootDir;
+}

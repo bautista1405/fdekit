@@ -22,15 +22,14 @@ export async function collectFiles(root: string, ignore: string[], maxFileBytes:
   return files.sort((left, right) => left.filePath.localeCompare(right.filePath));
 }
 
-export async function searchFiles(
+export async function searchFilesRegex(
   root: string,
   ignore: string[],
   maxFileBytes: number,
-  query: string,
+  pattern: RegExp,
   maxResults: number,
 ): Promise<CodebaseSearchMatch[]> {
   const matches: CodebaseSearchMatch[] = [];
-  const queryLower = query.toLowerCase();
 
   await walk(root, ignore, async (absolutePath, stat) => {
     if (matches.length >= maxResults || stat.size > maxFileBytes || isLikelyBinary(absolutePath)) {
@@ -41,14 +40,14 @@ export async function searchFiles(
     const lines = content.split(/\r?\n/);
 
     for (let index = 0; index < lines.length; index += 1) {
-      if (!lines[index].toLowerCase().includes(queryLower)) {
+      if (!pattern.test(lines[index])) {
         continue;
       }
 
       matches.push({
         filePath: toRelativePath(root, absolutePath),
         line: index + 1,
-        preview: lines[index].trim(),
+        preview: lines[index].trim().slice(0, 300),
       });
 
       if (matches.length >= maxResults) {

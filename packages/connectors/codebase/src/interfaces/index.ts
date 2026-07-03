@@ -47,3 +47,78 @@ export interface CodebaseReadFileResult {
   endLine: number;
   truncated: boolean;
 }
+
+export interface CodebaseSymbolsArgs {
+  name?: string;
+  filePath?: string;
+  kind?: CodebaseSymbolKind;
+  maxResults?: number;
+}
+
+export interface CodebaseSymbolsResult {
+  rootDir: string;
+  symbols: CodebaseSymbolEntry[];
+}
+
+export interface CodebaseUsagesArgs {
+  symbol: string;
+  maxResults?: number;
+}
+
+export interface CodebaseUsagesResult {
+  rootDir: string;
+  symbol: string;
+  definitions: CodebaseSymbolEntry[];
+  usages: CodebaseSearchMatch[];
+}
+
+export interface CodebaseDepsArgs {
+  filePath: string;
+}
+
+export interface CodebaseDepsResult {
+  rootDir: string;
+  filePath: string;
+  imports: string[];
+  importedBy: string[];
+}
+
+export interface CodebaseContextArgs {
+  symbol: string;
+  maxBytes?: number;
+}
+
+export interface CodebaseContextDefinition extends CodebaseSymbolEntry {
+  content: string;
+  truncated: boolean;
+}
+
+export interface CodebaseContextResult {
+  rootDir: string;
+  symbol: string;
+  definitions: CodebaseContextDefinition[];
+  usages: CodebaseSearchMatch[];
+}
+
+export type CodebaseSymbolKind = 'function' | 'class' | 'interface' | 'type' | 'enum' | 'const' | 'method';
+
+export interface CodebaseSymbolEntry {
+  name: string;
+  kind: CodebaseSymbolKind;
+  filePath: string;
+  startLine: number;
+  endLine: number;
+  exported: boolean;
+}
+
+export interface CodebaseSymbolIndexFile {
+  mtimeMs: number;
+  symbols: CodebaseSymbolEntry[];
+  imports: string[];
+}
+
+export interface CodebaseSymbolIndex {
+  builtAt: string;
+  root: string;
+  files: Record<string, CodebaseSymbolIndexFile>;
+}

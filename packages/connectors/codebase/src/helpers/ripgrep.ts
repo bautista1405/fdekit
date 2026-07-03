@@ -69,10 +69,10 @@ async function resolveRipgrepPath(): Promise<string | null> {
 
 async function importRipgrepPath(): Promise<string | null> {
   try {
-    // Plain dynamic import for the same reason as helpers/symbol-index.ts: the
-    // package is ESM, the emitted import() is preserved, and a missing optional
-    // peer fails catchably. Missing ripgrep degrades to the JS scanner instead
-    // of erroring, so search keeps working without the peer installed.
+    // @vscode/ripgrep fetches its binary in a postinstall script, which
+    // installs running with --ignore-scripts skip. Treat any load failure as
+    // "binary unavailable" and degrade to the JS scanner so search keeps
+    // working in those environments.
     const module = asRecord(await import('@vscode/ripgrep'));
     const rgPath = module.rgPath;
 

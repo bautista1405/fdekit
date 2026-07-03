@@ -45,13 +45,13 @@ Custom connectors with `defineConnector()` and `defineTool()` are ready for cust
 | Connector | Package / config | Maturity | Notes |
 | --- | --- | --- | --- |
 | Customer API | `@fdekit/connector-customer-api` | Ready | Default support-triage connector for customer-owned HTTP APIs and custom adapter patterns |
-| Codebase | `@fdekit/connector-codebase` | Ready | Local repository search and file reads for codebase-agent workflows |
+| Codebase | `@fdekit/connector-codebase` | Ready | Local repository regex search, file reads, and TS/JS symbol navigation (symbols, usages, import graph, context bundles) for codebase-agent workflows |
 | Slack | `@fdekit/connector-slack` | Beta | Supports demo/local mode and API mode for posting escalation messages with mocked contract coverage |
 | GitHub | `@fdekit/connector-github` | Beta | Supports demo/local mode and API mode for issue creation with mocked contract coverage |
 | Jira | `@fdekit/connector-jira` | Beta | Supports demo/local mode and API mode for issue creation, plus the shared `issue.create` tool pattern |
 | Linear | `@fdekit/connector-linear` | Beta | Supports demo/local mode and API mode for issue creation, plus the shared `issue.create` tool pattern |
 | Postgres | `@fdekit/connector-postgres` | Beta | Governance-first SQL validation, schema discovery, query timeouts, optional pooling, and read-only defaults |
-| k6 load testing | `@fdekit/connector-k6` | Beta | Local mode is a deterministic no-HTTP simulation; measured threshold evidence requires the Grafana k6 CLI installed separately |
+| k6 load testing | `@fdekit/connector-k6` | Beta | Runs governed load tests through deterministic local mode or a local k6 binary, with VU/duration caps and threshold evidence; real k6 execution requires the Grafana k6 CLI installed separately |
 | HubSpot | `@fdekit/connector-hubspot` | Beta | Supports demo/local mode and API mode for sales-research CRM workflows with mocked contract coverage |
 | Salesforce | `@fdekit/connector-salesforce` | Beta | Supports demo/local mode and API mode for sales-research CRM workflows with mocked contract coverage |
 <!-- fdekit-catalog:connector-support:end -->
@@ -96,7 +96,7 @@ This repository uses npm workspaces and Turborepo.
 | Package | Purpose |
 | --- | --- |
 | `@fdekit/connector-customer-api` | Customer API health, customer, ticket, and escalation tools for support deployments |
-| `@fdekit/connector-codebase` | Local repository listing, search, and file reads |
+| `@fdekit/connector-codebase` | Local repository listing, regex search, file reads, and symbol navigation |
 | `@fdekit/connector-slack` | Local/API Slack-style messaging |
 | `@fdekit/connector-github` | Local/API GitHub-style issue creation with common `issue.create` |
 | `@fdekit/connector-jira` | Local/API Jira issue creation with common `issue.create` |

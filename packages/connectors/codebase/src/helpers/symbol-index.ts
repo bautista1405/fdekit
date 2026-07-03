@@ -197,9 +197,9 @@ async function loadRuntime(): Promise<NavRuntime> {
 
 async function createRuntime(): Promise<NavRuntime> {
   try {
-    // Plain dynamic import (not the new Function indirection used by connector-postgres):
-    // this package is ESM, so the emitted import() is preserved, still fails catchably
-    // when the optional peer is missing, and keeps working under the vitest VM.
+    // Imported lazily so loading the connector stays cheap for commands that
+    // never call a navigation tool; the tree-sitter wasm runtime only loads on
+    // first use.
     const module = asRecord(await import('web-tree-sitter'));
     const Parser = module.Parser as TreeSitterParserConstructor | undefined;
     const Language = module.Language as TreeSitterLanguageStatic | undefined;
@@ -228,7 +228,7 @@ async function createRuntime(): Promise<NavRuntime> {
       },
     };
   } catch (err) {
-    throw new Error(`Codebase navigation requires the optional "web-tree-sitter" and "tree-sitter-wasms" packages; install both to enable symbol indexing ${err instanceof Error ? err.message : ''}`.trim());
+    throw new Error(`Failed to load the tree-sitter runtime for codebase navigation; reinstall dependencies (npm install) to restore it ${err instanceof Error ? err.message : ''}`.trim());
   }
 }
 

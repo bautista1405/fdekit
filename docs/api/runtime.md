@@ -3,7 +3,7 @@
 <!-- Maintained via scripts/generate-api-docs.mjs. -->
 Run `npm run docs:api` to refresh this page after changing public exports.
 
-Applies to `@fdekit/runtime` v0.4.2.
+Applies to `@fdekit/runtime` v0.5.1.
 
 Declaration source: `packages/runtime/dist/index.d.ts`.
 
@@ -39,7 +39,7 @@ Declaration source: `packages/runtime/dist/index.d.ts`.
 
 ## Export Count
 
-This page documents 126 public root exports from `@fdekit/runtime`: 48 functions/values and 78 types/interfaces.
+This page documents 135 public root exports from `@fdekit/runtime`: 53 functions/values and 82 types/interfaces.
 
 ## Functions And Values
 
@@ -60,9 +60,11 @@ This page documents 126 public root exports from `@fdekit/runtime`: 48 functions
 | <a id="createdeploymentsnapshot"></a>`createDeploymentSnapshot` | function | [packages/runtime/src/deployments/index.ts](../../packages/runtime/src/deployments/index.ts) |
 | <a id="createdevtrace"></a>`createDevTrace` | function | [packages/runtime/src/dev.ts](../../packages/runtime/src/dev.ts) |
 | <a id="createfileartifactstore"></a>`createFileArtifactStore` | function | [packages/runtime/src/artifact-store/local-store.ts](../../packages/runtime/src/artifact-store/local-store.ts) |
+| <a id="createfssourcereader"></a>`createFsSourceReader` | function | [packages/runtime/src/grader/index.ts](../../packages/runtime/src/grader/index.ts) |
 | <a id="createmockprovider"></a>`createMockProvider` | function | [packages/runtime/src/providers/mock.ts](../../packages/runtime/src/providers/mock.ts) |
 | <a id="creates3artifactstore"></a>`createS3ArtifactStore` | function | [packages/runtime/src/artifact-store/s3-store.ts](../../packages/runtime/src/artifact-store/s3-store.ts) |
 | <a id="diffdeploymentsnapshots"></a>`diffDeploymentSnapshots` | function | [packages/runtime/src/deployments/index.ts](../../packages/runtime/src/deployments/index.ts) |
+| <a id="filterevalsbytarget"></a>`filterEvalsByTarget` | function | [packages/runtime/src/evals/index.ts](../../packages/runtime/src/evals/index.ts) |
 | <a id="findapproval"></a>`findApproval` | function | [packages/runtime/src/governance/index.ts](../../packages/runtime/src/governance/index.ts) |
 | <a id="findconfigfile"></a>`findConfigFile` | function | [packages/runtime/src/config/index.ts](../../packages/runtime/src/config/index.ts) |
 | <a id="findprojectdir"></a>`findProjectDir` | function | [packages/runtime/src/config/index.ts](../../packages/runtime/src/config/index.ts) |
@@ -89,9 +91,12 @@ This page documents 126 public root exports from `@fdekit/runtime`: 48 functions
 | <a id="runagent"></a>`runAgent` | function | [packages/runtime/src/agents/index.ts](../../packages/runtime/src/agents/index.ts) |
 | <a id="runeval"></a>`runEval` | function | [packages/runtime/src/evals/index.ts](../../packages/runtime/src/evals/index.ts) |
 | <a id="runevals"></a>`runEvals` | function | [packages/runtime/src/evals/index.ts](../../packages/runtime/src/evals/index.ts) |
+| <a id="rungrader"></a>`runGrader` | function | [packages/runtime/src/grader/index.ts](../../packages/runtime/src/grader/index.ts) |
 | <a id="runmacroevals"></a>`runMacroEvals` | function | [packages/runtime/src/macro-evals/index.ts](../../packages/runtime/src/macro-evals/index.ts) |
 | <a id="validatedeployment"></a>`validateDeployment` | function | [packages/runtime/src/deployments/validation.ts](../../packages/runtime/src/deployments/validation.ts) |
+| <a id="verifyfindinglocations"></a>`verifyFindingLocations` | function | [packages/runtime/src/grader/index.ts](../../packages/runtime/src/grader/index.ts) |
 | <a id="writejsonartifact"></a>`writeJsonArtifact` | function | [packages/runtime/src/artifact-store/operations.ts](../../packages/runtime/src/artifact-store/operations.ts) |
+| <a id="writereviewartifact"></a>`writeReviewArtifact` | function | [packages/runtime/src/grader/index.ts](../../packages/runtime/src/grader/index.ts) |
 | <a id="writetextartifact"></a>`writeTextArtifact` | function | [packages/runtime/src/artifact-store/operations.ts](../../packages/runtime/src/artifact-store/operations.ts) |
 
 ## Types And Interfaces
@@ -141,6 +146,8 @@ This page documents 126 public root exports from `@fdekit/runtime`: 48 functions
 | <a id="evalcaseresult"></a>`EvalCaseResult` | interface | [packages/runtime/src/evals/interfaces/index.ts](../../packages/runtime/src/evals/interfaces/index.ts) |
 | <a id="evalsuiteresult"></a>`EvalSuiteResult` | interface | [packages/runtime/src/evals/interfaces/index.ts](../../packages/runtime/src/evals/interfaces/index.ts) |
 | <a id="fileartifactstoreoptions"></a>`FileArtifactStoreOptions` | interface | [packages/runtime/src/artifact-store/types.ts](../../packages/runtime/src/artifact-store/types.ts) |
+| <a id="gradedfindings"></a>`GradedFindings` | interface | [packages/runtime/src/grader/index.ts](../../packages/runtime/src/grader/index.ts) |
+| <a id="graderdeps"></a>`GraderDeps` | interface | [packages/runtime/src/grader/index.ts](../../packages/runtime/src/grader/index.ts) |
 | <a id="loadedeval"></a>`LoadedEval` | interface | [packages/runtime/src/evals/interfaces/index.ts](../../packages/runtime/src/evals/interfaces/index.ts) |
 | <a id="macroevalartifact"></a>`MacroEvalArtifact` | interface | [packages/runtime/src/macro-evals/interfaces/index.ts](../../packages/runtime/src/macro-evals/interfaces/index.ts) |
 | <a id="macroevalfinding"></a>`MacroEvalFinding` | interface | [packages/runtime/src/macro-evals/interfaces/index.ts](../../packages/runtime/src/macro-evals/interfaces/index.ts) |
@@ -174,5 +181,7 @@ This page documents 126 public root exports from `@fdekit/runtime`: 48 functions
 | <a id="snapshotgovernance"></a>`SnapshotGovernance` | interface | [packages/runtime/src/deployments/interfaces/index.ts](../../packages/runtime/src/deployments/interfaces/index.ts) |
 | <a id="snapshotprovider"></a>`SnapshotProvider` | interface | [packages/runtime/src/deployments/interfaces/index.ts](../../packages/runtime/src/deployments/interfaces/index.ts) |
 | <a id="snapshottool"></a>`SnapshotTool` | interface | [packages/runtime/src/deployments/interfaces/index.ts](../../packages/runtime/src/deployments/interfaces/index.ts) |
+| <a id="sourcefile"></a>`SourceFile` | interface | [packages/runtime/src/grader/index.ts](../../packages/runtime/src/grader/index.ts) |
+| <a id="sourcereader"></a>`SourceReader` | type | [packages/runtime/src/grader/index.ts](../../packages/runtime/src/grader/index.ts) |
 | <a id="traceartifact"></a>`TraceArtifact` | interface | [packages/runtime/src/traces/interfaces/index.ts](../../packages/runtime/src/traces/interfaces/index.ts) |
 | <a id="traceevent"></a>`TraceEvent` | interface | [packages/runtime/src/traces/interfaces/index.ts](../../packages/runtime/src/traces/interfaces/index.ts) |

@@ -9,10 +9,11 @@ import {
   statFile,
   toRelativePath,
 } from './helpers/index.js';
+import { gitDiff } from './helpers/git-diff.js';
 import { escapeRegExp, resolveRipgrepPath, ripgrepSearch } from './helpers/ripgrep.js';
 import { findImporters, loadOrBuildSymbolIndex, probeNavigationRuntime, readSymbolIndexMeta, symbolIndexCachePath } from './helpers/symbol-index.js';
-import type { CodebaseConnectorConfig, CodebaseConnectorOptions, CodebaseContextArgs, CodebaseContextDefinition, CodebaseContextResult, CodebaseDepsArgs, CodebaseDepsResult, CodebaseFileEntry, CodebaseListFilesArgs, CodebaseReadFileArgs, CodebaseReadFileResult, CodebaseSearchArgs, CodebaseSearchMatch, CodebaseSymbolEntry, CodebaseSymbolsArgs, CodebaseSymbolsResult, CodebaseUsagesArgs, CodebaseUsagesResult } from './interfaces/index.js';
-export type { CodebaseConnectorConfig, CodebaseConnectorOptions, CodebaseContextArgs, CodebaseContextDefinition, CodebaseContextResult, CodebaseDepsArgs, CodebaseDepsResult, CodebaseFileEntry, CodebaseListFilesArgs, CodebaseReadFileArgs, CodebaseReadFileResult, CodebaseSearchArgs, CodebaseSearchMatch, CodebaseSymbolEntry, CodebaseSymbolKind, CodebaseSymbolsArgs, CodebaseSymbolsResult, CodebaseUsagesArgs, CodebaseUsagesResult } from './interfaces/index.js';
+import type { CodebaseConnectorConfig, CodebaseConnectorOptions, CodebaseContextArgs, CodebaseContextDefinition, CodebaseContextResult, CodebaseDepsArgs, CodebaseDepsResult, CodebaseDiffArgs, CodebaseDiffResult, CodebaseFileEntry, CodebaseListFilesArgs, CodebaseReadFileArgs, CodebaseReadFileResult, CodebaseSearchArgs, CodebaseSearchMatch, CodebaseSymbolEntry, CodebaseSymbolsArgs, CodebaseSymbolsResult, CodebaseUsagesArgs, CodebaseUsagesResult } from './interfaces/index.js';
+export type { CodebaseConnectorConfig, CodebaseConnectorOptions, CodebaseContextArgs, CodebaseContextDefinition, CodebaseContextResult, CodebaseDepsArgs, CodebaseDepsResult, CodebaseDiffArgs, CodebaseDiffFile, CodebaseDiffHunk, CodebaseDiffResult, CodebaseDiffStatus, CodebaseFileEntry, CodebaseListFilesArgs, CodebaseReadFileArgs, CodebaseReadFileResult, CodebaseSearchArgs, CodebaseSearchMatch, CodebaseSymbolEntry, CodebaseSymbolKind, CodebaseSymbolsArgs, CodebaseSymbolsResult, CodebaseUsagesArgs, CodebaseUsagesResult } from './interfaces/index.js';
 
 const defaultIgnore = [
   'artifacts',
@@ -132,6 +133,25 @@ const contextArgsSchema = {
     maxBytes: {
       type: 'number',
       description: 'Byte budget for definition bodies (default 8000)',
+    },
+  },
+};
+
+const diffArgsSchema = {
+  type: 'object',
+  required: ['base'],
+  properties: {
+    base: {
+      type: 'string',
+      description: 'Base ref to compare from (for example main)',
+    },
+    head: {
+      type: 'string',
+      description: 'Head ref to compare to; defaults to HEAD',
+    },
+    maxFiles: {
+      type: 'number',
+      description: 'Maximum number of changed files to return (default 50)',
     },
   },
 };
@@ -379,6 +399,35 @@ export function codebaseConnector(options: CodebaseConnectorOptions = {}): Conne
             symbol,
             definitions,
             usages,
+          };
+        },
+      }),
+      defineTool<CodebaseDiffArgs, CodebaseDiffResult>({
+        name: 'codebase.diff',
+        description: 'Structured git diff between two refs of the codebase: changed files with hunks, line stats, and rename detection',
+        scopes: ['codebase:read'],
+        environments: defaultToolEnvironments,
+        category: 'codebase',
+        tags: ['context', 'codebase', 'read', 'review'],
+        argsSchema: diffArgsSchema,
+        async handler(args) {
+          const root = resolveRoot(rootDir);
+          const base = typeof args.base === 'string' ? args.base.trim() : '';
+
+          if (!base) {
+            throw new Error('codebase.diff requires a non-empty base ref');
+          }
+
+          const head = args.head?.trim() || 'HEAD';
+          const files = await gitDiff(root, base, head, maxFileBytes);
+          const cap = args.maxFiles ?? 50;
+
+          return {
+            rootDir: root,
+            base,
+            head,
+            files: files.slice(0, cap),
+            truncated: files.length > cap,
           };
         },
       }),

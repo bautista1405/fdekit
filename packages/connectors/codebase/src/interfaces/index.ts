@@ -100,6 +100,40 @@ export interface CodebaseContextResult {
   usages: CodebaseSearchMatch[];
 }
 
+export interface CodebaseDiffArgs {
+  base: string;
+  head?: string;
+  maxFiles?: number;
+}
+
+export interface CodebaseDiffHunk {
+  header: string;
+  newStart: number;
+  newLines: number;
+  patch: string;
+}
+
+export type CodebaseDiffStatus = 'added' | 'modified' | 'deleted' | 'renamed';
+
+export interface CodebaseDiffFile {
+  filePath: string;
+  previousPath?: string;
+  status: CodebaseDiffStatus;
+  additions: number;
+  deletions: number;
+  binary: boolean;
+  patchTruncated: boolean;
+  hunks: CodebaseDiffHunk[];
+}
+
+export interface CodebaseDiffResult {
+  rootDir: string;
+  base: string;
+  head: string;
+  files: CodebaseDiffFile[];
+  truncated: boolean;
+}
+
 export type CodebaseSymbolKind = 'function' | 'class' | 'interface' | 'type' | 'enum' | 'const' | 'method';
 
 export interface CodebaseSymbolEntry {

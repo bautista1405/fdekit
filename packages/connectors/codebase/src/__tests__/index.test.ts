@@ -1,8 +1,12 @@
+import { execFile } from 'child_process';
 import { mkdir, mkdtemp, readdir, writeFile } from 'fs/promises';
 import { tmpdir } from 'os';
 import * as path from 'path';
+import { promisify } from 'util';
 import { describe, expect, it } from 'vitest';
 import { codebaseConnector } from '../index.js';
+
+const execFileAsync = promisify(execFile);
 
 describe('codebaseConnector', () => {
   it('declares allowed environments on every tool', () => {
@@ -188,6 +192,39 @@ describe('codebaseConnector', () => {
 
     expect(budgeted.definitions[0].truncated).toBe(true);
     expect(budgeted.definitions[0].content.length).toBeLessThanOrEqual(10);
+  });
+
+  it('exposes structured git diffs through codebase.diff', async () => {
+    const rootDir = await writeNavFixture();
+    const git = (...args: string[]) => execFileAsync('git', args, { cwd: rootDir });
+    await git('init', '-q', '-b', 'main');
+    await git('config', 'user.email', 'test@fdekit.dev');
+    await git('config', 'user.name', 'FDEKit Test');
+    await git('add', '.');
+    await git('commit', '-q', '-m', 'base');
+    await writeFile(path.join(rootDir, 'src', 'billing.ts'), [
+      'export interface Invoice {',
+      '  id: string;',
+      '  total: number;',
+      '}',
+      'export function syncBilling(): boolean {',
+      '  return true;',
+      '}',
+    ].join('\n'), 'utf8');
+    await git('commit', '-aqm', 'change');
+
+    const connector = codebaseConnector({ rootDir });
+    const diff = connector.tools?.find((tool) => tool.name === 'codebase.diff');
+
+    await expect(diff?.handler({ base: 'HEAD~1' }, {})).resolves.toMatchObject({
+      base: 'HEAD~1',
+      head: 'HEAD',
+      truncated: false,
+      files: [
+        expect.objectContaining({ filePath: 'src/billing.ts', status: 'modified', additions: 1 }),
+      ],
+    });
+    await expect(diff?.handler({ base: '   ' }, {})).rejects.toThrow('non-empty base ref');
   });
 
   it('reports navigation readiness for tree-sitter, ripgrep, and the symbol index', async () => {

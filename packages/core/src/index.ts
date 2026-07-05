@@ -15,3 +15,4 @@ export * from './providers/index.js';
 export * from './resilience/index.js';
 export * from './policies/index.js';
 export * from './evals/index.js';
+export * from './reviews/index.js';

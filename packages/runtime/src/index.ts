@@ -5,6 +5,7 @@ export * from './deployments/index.js';
 export * from './dev.js';
 export * from './evals/index.js';
 export * from './governance/index.js';
+export * from './grader/index.js';
 export * from './macro-evals/index.js';
 export * from './providers/index.js';
 export * from './reports.js';

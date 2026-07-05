@@ -4,6 +4,7 @@ export * from './deployment.js';
 export * from './environment.js';
 export * from './eval.js';
 export * from './governance.js';
+export * from './grader.js';
 export * from './harness.js';
 export * from './policy.js';
 export * from './provider.js';

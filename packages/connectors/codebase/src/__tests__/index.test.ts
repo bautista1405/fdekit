@@ -227,6 +227,44 @@ describe('codebaseConnector', () => {
     await expect(diff?.handler({ base: '   ' }, {})).rejects.toThrow('non-empty base ref');
   });
 
+  it('ranks changed files by churn and fan-in through codebase.rankDiff', async () => {
+    const rootDir = await writeNavFixture();
+    await writeFile(path.join(rootDir, 'README.md'), '# Demo\n', 'utf8');
+    const git = (...args: string[]) => execFileAsync('git', args, { cwd: rootDir });
+    await git('init', '-q', '-b', 'main');
+    await git('config', 'user.email', 'test@fdekit.dev');
+    await git('config', 'user.name', 'FDEKit Test');
+    await git('add', '.');
+    await git('commit', '-q', '-m', 'base');
+    // billing.ts is imported by app.ts (fan-in 1); README has churn but no fan-in.
+    await writeFile(path.join(rootDir, 'src', 'billing.ts'), [
+      'export interface Invoice {',
+      '  id: string;',
+      '  total: number;',
+      '  currency: string;',
+      '}',
+      'export function syncBilling(): boolean {',
+      '  return true;',
+      '}',
+    ].join('\n'), 'utf8');
+    await writeFile(path.join(rootDir, 'README.md'), '# Demo\nMore words.\n', 'utf8');
+    await git('commit', '-aqm', 'change');
+
+    const connector = codebaseConnector({ rootDir });
+    const rankDiff = connector.tools?.find((tool) => tool.name === 'codebase.rankDiff');
+
+    const result = await rankDiff?.handler({ base: 'HEAD~1' }, {}) as {
+      totalChanged: number;
+      files: Array<{ filePath: string; fanIn: number; score: number }>;
+    };
+
+    expect(result.totalChanged).toBe(2);
+    expect(result.files[0]).toMatchObject({ filePath: 'src/billing.ts', fanIn: 1 });
+    expect(result.files[0].score).toBeGreaterThan(result.files[1].score);
+
+    await expect(rankDiff?.handler({ base: '' }, {})).rejects.toThrow('non-empty base ref');
+  });
+
   it('reports navigation readiness for tree-sitter, ripgrep, and the symbol index', async () => {
     const rootDir = await writeNavFixture();
     const projectDir = await mkdtemp(path.join(tmpdir(), 'fdekit-project-'));

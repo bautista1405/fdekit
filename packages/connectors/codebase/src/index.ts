@@ -10,10 +10,11 @@ import {
   toRelativePath,
 } from './helpers/index.js';
 import { gitDiff } from './helpers/git-diff.js';
+import { rankDiffFiles } from './helpers/rank.js';
 import { escapeRegExp, resolveRipgrepPath, ripgrepSearch } from './helpers/ripgrep.js';
 import { findImporters, loadOrBuildSymbolIndex, probeNavigationRuntime, readSymbolIndexMeta, symbolIndexCachePath } from './helpers/symbol-index.js';
-import type { CodebaseConnectorConfig, CodebaseConnectorOptions, CodebaseContextArgs, CodebaseContextDefinition, CodebaseContextResult, CodebaseDepsArgs, CodebaseDepsResult, CodebaseDiffArgs, CodebaseDiffResult, CodebaseFileEntry, CodebaseListFilesArgs, CodebaseReadFileArgs, CodebaseReadFileResult, CodebaseSearchArgs, CodebaseSearchMatch, CodebaseSymbolEntry, CodebaseSymbolsArgs, CodebaseSymbolsResult, CodebaseUsagesArgs, CodebaseUsagesResult } from './interfaces/index.js';
-export type { CodebaseConnectorConfig, CodebaseConnectorOptions, CodebaseContextArgs, CodebaseContextDefinition, CodebaseContextResult, CodebaseDepsArgs, CodebaseDepsResult, CodebaseDiffArgs, CodebaseDiffFile, CodebaseDiffHunk, CodebaseDiffResult, CodebaseDiffStatus, CodebaseFileEntry, CodebaseListFilesArgs, CodebaseReadFileArgs, CodebaseReadFileResult, CodebaseSearchArgs, CodebaseSearchMatch, CodebaseSymbolEntry, CodebaseSymbolKind, CodebaseSymbolsArgs, CodebaseSymbolsResult, CodebaseUsagesArgs, CodebaseUsagesResult } from './interfaces/index.js';
+import type { CodebaseConnectorConfig, CodebaseConnectorOptions, CodebaseContextArgs, CodebaseContextDefinition, CodebaseContextResult, CodebaseDepsArgs, CodebaseDepsResult, CodebaseDiffArgs, CodebaseDiffResult, CodebaseFileEntry, CodebaseListFilesArgs, CodebaseRankDiffResult, CodebaseReadFileArgs, CodebaseReadFileResult, CodebaseSearchArgs, CodebaseSearchMatch, CodebaseSymbolEntry, CodebaseSymbolsArgs, CodebaseSymbolsResult, CodebaseUsagesArgs, CodebaseUsagesResult } from './interfaces/index.js';
+export type { CodebaseConnectorConfig, CodebaseConnectorOptions, CodebaseContextArgs, CodebaseContextDefinition, CodebaseContextResult, CodebaseDepsArgs, CodebaseDepsResult, CodebaseDiffArgs, CodebaseDiffFile, CodebaseDiffHunk, CodebaseDiffResult, CodebaseDiffStatus, CodebaseFileEntry, CodebaseListFilesArgs, CodebaseRankDiffResult, CodebaseRankedFile, CodebaseReadFileArgs, CodebaseReadFileResult, CodebaseSearchArgs, CodebaseSearchMatch, CodebaseSymbolEntry, CodebaseSymbolKind, CodebaseSymbolsArgs, CodebaseSymbolsResult, CodebaseUsagesArgs, CodebaseUsagesResult } from './interfaces/index.js';
 
 const defaultIgnore = [
   'artifacts',
@@ -152,6 +153,25 @@ const diffArgsSchema = {
     maxFiles: {
       type: 'number',
       description: 'Maximum number of changed files to return (default 50)',
+    },
+  },
+};
+
+const rankDiffArgsSchema = {
+  type: 'object',
+  required: ['base'],
+  properties: {
+    base: {
+      type: 'string',
+      description: 'Base ref to compare from (for example main)',
+    },
+    head: {
+      type: 'string',
+      description: 'Head ref to compare to; defaults to HEAD',
+    },
+    maxFiles: {
+      type: 'number',
+      description: 'Maximum number of ranked files to return (default 20)',
     },
   },
 };
@@ -428,6 +448,44 @@ export function codebaseConnector(options: CodebaseConnectorOptions = {}): Conne
             head,
             files: files.slice(0, cap),
             truncated: files.length > cap,
+          };
+        },
+      }),
+      defineTool<CodebaseDiffArgs, CodebaseRankDiffResult>({
+        name: 'codebase.rankDiff',
+        description: 'Rank the changed files of a diff by review risk: churn weighted by fan-in from the import graph of the current working tree, with human-readable risk reasons',
+        scopes: ['codebase:read'],
+        environments: defaultToolEnvironments,
+        category: 'codebase',
+        tags: ['context', 'codebase', 'read', 'review', 'nav'],
+        argsSchema: rankDiffArgsSchema,
+        async handler(args) {
+          const root = resolveRoot(rootDir);
+          const base = typeof args.base === 'string' ? args.base.trim() : '';
+
+          if (!base) {
+            throw new Error('codebase.rankDiff requires a non-empty base ref');
+          }
+
+          const head = args.head?.trim() || 'HEAD';
+          const [files, index] = await Promise.all([
+            gitDiff(root, base, head, maxFileBytes),
+            loadOrBuildSymbolIndex({
+              root,
+              ignore,
+              maxFileBytes,
+              cacheFilePath: symbolIndexCachePath(projectDir, root),
+            }),
+          ]);
+          const ranked = rankDiffFiles(files, index);
+          const cap = args.maxFiles ?? 20;
+
+          return {
+            rootDir: root,
+            base,
+            head,
+            totalChanged: ranked.length,
+            files: ranked.slice(0, cap),
           };
         },
       }),

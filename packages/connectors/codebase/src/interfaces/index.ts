@@ -134,6 +134,23 @@ export interface CodebaseDiffResult {
   truncated: boolean;
 }
 
+export interface CodebaseRankedFile {
+  filePath: string;
+  status: CodebaseDiffStatus;
+  churn: number;
+  fanIn: number;
+  score: number;
+  reasons: string[];
+}
+
+export interface CodebaseRankDiffResult {
+  rootDir: string;
+  base: string;
+  head: string;
+  totalChanged: number;
+  files: CodebaseRankedFile[];
+}
+
 export type CodebaseSymbolKind = 'function' | 'class' | 'interface' | 'type' | 'enum' | 'const' | 'method';
 
 export interface CodebaseSymbolEntry {

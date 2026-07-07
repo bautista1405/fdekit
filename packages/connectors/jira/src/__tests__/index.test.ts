@@ -10,6 +10,85 @@ describe('jiraConnector', () => {
     }
   });
 
+  it('reads a Jira issue deterministically in local mode', async () => {
+    const connector = jiraConnector();
+    const tool = connector.tools?.find((candidate) => candidate.name === 'jira.issue.get');
+
+    await expect(tool?.handler({ key: 'KAN-7' }, {})).resolves.toMatchObject({
+      mode: 'local',
+      key: 'KAN-7',
+      title: 'Local fixture: KAN-7',
+      status: 'In Progress',
+      url: 'https://jira.local/browse/KAN-7',
+    });
+    await expect(tool?.handler({ key: '' }, {})).rejects.toThrow('non-empty issue key');
+  });
+
+  it('fetches issues and posts comments through Jira Cloud REST in API mode', async () => {
+    const calls: Array<{ url: string; init?: RequestInit }> = [];
+    const env = {
+      JIRA_BASE_URL: 'https://company.atlassian.net',
+      JIRA_EMAIL: 'fde@company.dev',
+      JIRA_API_TOKEN: 'jira_test',
+    };
+    const connector = jiraConnector({
+      mode: 'api',
+      env,
+      fetch: async (input, init) => {
+        calls.push({ url: String(input), init });
+
+        if (String(input).endsWith('/comment')) {
+          return Response.json({ id: '1000' });
+        }
+
+        return Response.json({
+          id: '10001',
+          key: 'KAN-7',
+          fields: {
+            summary: 'Add retries',
+            status: { name: 'In Progress' },
+            description: {
+              type: 'doc',
+              version: 1,
+              content: [
+                { type: 'paragraph', content: [{ type: 'text', text: 'Retry transient failures.' }] },
+                { type: 'paragraph', content: [{ type: 'text', text: 'Do not block renewals.' }] },
+              ],
+            },
+          },
+        });
+      },
+    });
+
+    const get = connector.tools?.find((candidate) => candidate.name === 'jira.issue.get');
+    await expect(get?.handler({ key: 'KAN-7' }, {})).resolves.toMatchObject({
+      mode: 'api',
+      key: 'KAN-7',
+      id: '10001',
+      title: 'Add retries',
+      description: 'Retry transient failures.\nDo not block renewals.',
+      status: 'In Progress',
+      url: 'https://company.atlassian.net/browse/KAN-7',
+    });
+    expect(calls[0].url).toBe('https://company.atlassian.net/rest/api/3/issue/KAN-7?fields=summary,description,status');
+    expect(calls[0].init?.headers).toMatchObject({
+      authorization: `Basic ${btoa('fde@company.dev:jira_test')}`,
+    });
+
+    const comment = connector.tools?.find((candidate) => candidate.name === 'jira.issue.comment');
+    await expect(comment?.handler({ key: 'KAN-7', body: 'Review posted: 2 findings' }, {})).resolves.toMatchObject({
+      posted: true,
+      url: 'https://company.atlassian.net/browse/KAN-7',
+    });
+    const commentCall = calls.find((call) => call.url.endsWith('/comment'));
+    expect(commentCall?.url).toBe('https://company.atlassian.net/rest/api/3/issue/KAN-7/comment');
+    expect(JSON.parse(String(commentCall?.init?.body))).toMatchObject({
+      body: { type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Review posted: 2 findings' }] }] },
+    });
+
+    await expect(comment?.handler({ key: 'KAN-7', body: '  ' }, {})).rejects.toThrow('non-empty body');
+  });
+
   it('creates deterministic local Jira issues', async () => {
     const connector = jiraConnector({ projectKey: 'SUP' });
     const tool = connector.tools?.find((candidate) => candidate.name === 'jira.issue.create');

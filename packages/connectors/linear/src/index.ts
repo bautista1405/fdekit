@@ -1,7 +1,7 @@
 import { createHttpReq, defineConnector, defineTool, type ConnectorDefinition } from '@fdekit/core';
-import { asRecord, createLinearIssue, getString, normalizeBaseUrl, readEnvValue, requireToken } from './helpers/index.js';
-import type { CreateLinearIssueArgs, CreateLinearIssueResult, LinearConnectorConfig, LinearConnectorMode, LinearConnectorOptions } from './interfaces/index.js';
-export type { CreateLinearIssueArgs, CreateLinearIssueResult, LinearConnectorConfig, LinearConnectorMode, LinearConnectorOptions } from './interfaces/index.js';
+import { asRecord, createLinearComment, createLinearIssue, getLinearIssue, getString, normalizeBaseUrl, readEnvValue, requireToken } from './helpers/index.js';
+import type { CreateLinearIssueArgs, CreateLinearIssueResult, LinearConnectorConfig, LinearConnectorMode, LinearConnectorOptions, LinearIssueCommentArgs, LinearIssueCommentResult, LinearIssueGetArgs, LinearIssueGetResult } from './interfaces/index.js';
+export type { CreateLinearIssueArgs, CreateLinearIssueResult, LinearConnectorConfig, LinearConnectorMode, LinearConnectorOptions, LinearIssueCommentArgs, LinearIssueCommentResult, LinearIssueGetArgs, LinearIssueGetResult } from './interfaces/index.js';
 
 const defaultToolEnvironments = ['local', 'development', 'staging'];
 const linearPriorityAliases: Record<string, number> = {
@@ -13,6 +13,32 @@ const linearPriorityAliases: Record<string, number> = {
   normal: 3,
   medium: 3,
   low: 4,
+};
+
+const issueGetArgsSchema = {
+  type: 'object',
+  required: ['key'],
+  properties: {
+    key: {
+      type: 'string',
+      description: 'Linear issue identifier, for example ENG-123',
+    },
+  },
+};
+
+const issueCommentArgsSchema = {
+  type: 'object',
+  required: ['key', 'body'],
+  properties: {
+    key: {
+      type: 'string',
+      description: 'Linear issue identifier, for example ENG-123',
+    },
+    body: {
+      type: 'string',
+      description: 'Comment body, for example a review status summary',
+    },
+  },
 };
 
 const createLinearIssueArgsSchema = {
@@ -116,7 +142,7 @@ export function linearConnector(options: LinearConnectorOptions = {}): Connector
 
   return defineConnector({
     name: 'linear',
-    description: 'Create Linear issues; local mode returns deterministic issues; API mode calls Linear GraphQL',
+    description: 'Create and read Linear issues and post comments; local mode returns deterministic fixtures; API mode calls Linear GraphQL',
     config: {
       mode,
       apiBaseUrl,
@@ -158,6 +184,111 @@ export function linearConnector(options: LinearConnectorOptions = {}): Connector
         tags: ['action', 'escalation', 'issue'],
         argsSchema: createLinearIssueArgsSchema,
         handler: createIssue,
+      }),
+      defineTool<LinearIssueGetArgs, LinearIssueGetResult>({
+        name: 'linear.issue.get',
+        description: 'Fetch a Linear issue (title, description, state) referenced by a pull request, to check the implementation against its intent',
+        scopes: ['issues:read'],
+        environments: defaultToolEnvironments,
+        category: 'issue',
+        tags: ['context', 'issue', 'read', 'review'],
+        argsSchema: issueGetArgsSchema,
+        async handler(args) {
+          const key = typeof args.key === 'string' ? args.key.trim() : '';
+
+          if (!key) {
+            throw new Error('linear.issue.get requires a non-empty issue key');
+          }
+
+          if (mode === 'api') {
+            const response = await getLinearIssue({
+              apiBaseUrl,
+              token: requireToken(tokenEnv, options.env),
+              fetchImpl,
+              key,
+            });
+            const record = asRecord(asRecord(asRecord(response).data).issue);
+
+            if (!getString(record.id)) {
+              throw new Error(`Linear issue not found: ${key}`);
+            }
+
+            return {
+              mode,
+              key: getString(record.identifier) ?? key,
+              id: getString(record.id),
+              title: getString(record.title) ?? '',
+              description: getString(record.description) ?? '',
+              state: getString(asRecord(record.state).name),
+              url: getString(record.url),
+              response,
+            };
+          }
+
+          return {
+            mode,
+            key,
+            id: `local_linear_${key}`,
+            title: `Local fixture: ${key}`,
+            description: 'Add retry handling with exponential backoff to the billing sync so transient failures do not block renewals.',
+            state: 'In Progress',
+            url: `https://linear.local/${key}`,
+          };
+        },
+      }),
+      defineTool<LinearIssueCommentArgs, LinearIssueCommentResult>({
+        name: 'linear.issue.comment',
+        description: 'Post a short status comment back to a Linear issue, for example a review summary',
+        scopes: ['issues:write'],
+        environments: defaultToolEnvironments,
+        category: 'issue',
+        tags: ['action', 'issue', 'write', 'review'],
+        argsSchema: issueCommentArgsSchema,
+        async handler(args) {
+          const key = typeof args.key === 'string' ? args.key.trim() : '';
+
+          if (!key) {
+            throw new Error('linear.issue.comment requires a non-empty issue key');
+          }
+
+          if (!args.body?.trim()) {
+            throw new Error('linear.issue.comment requires a non-empty body');
+          }
+
+          if (mode === 'api') {
+            const token = requireToken(tokenEnv, options.env);
+            const issueResponse = await getLinearIssue({ apiBaseUrl, token, fetchImpl, key });
+            const issueId = getString(asRecord(asRecord(asRecord(issueResponse).data).issue).id);
+
+            if (!issueId) {
+              throw new Error(`Linear issue not found: ${key}`);
+            }
+
+            const response = await createLinearComment({
+              apiBaseUrl,
+              token,
+              fetchImpl,
+              issueId,
+              body: args.body,
+            });
+            const comment = asRecord(asRecord(asRecord(asRecord(response).data).commentCreate).comment);
+
+            return {
+              mode,
+              key,
+              posted: true,
+              url: getString(comment.url),
+              response,
+            };
+          }
+
+          return {
+            mode,
+            key,
+            posted: true,
+            url: `https://linear.local/${key}#comment-local`,
+          };
+        },
       }),
     ],
   });

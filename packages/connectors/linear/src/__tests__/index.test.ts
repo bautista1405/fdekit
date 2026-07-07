@@ -10,6 +10,73 @@ describe('linearConnector', () => {
     }
   });
 
+  it('reads a Linear issue deterministically in local mode', async () => {
+    const connector = linearConnector();
+    const tool = connector.tools?.find((candidate) => candidate.name === 'linear.issue.get');
+
+    await expect(tool?.handler({ key: 'ENG-123' }, {})).resolves.toMatchObject({
+      mode: 'local',
+      key: 'ENG-123',
+      title: 'Local fixture: ENG-123',
+      state: 'In Progress',
+      url: 'https://linear.local/ENG-123',
+    });
+    await expect(tool?.handler({ key: '  ' }, {})).rejects.toThrow('non-empty issue key');
+  });
+
+  it('fetches and comments on Linear issues through GraphQL in API mode', async () => {
+    const calls: Array<{ body: Record<string, unknown> }> = [];
+    const connector = linearConnector({
+      mode: 'api',
+      env: { LINEAR_API_KEY: 'lin_test' },
+      fetch: async (_input, init) => {
+        const body = JSON.parse(String(init?.body)) as Record<string, unknown>;
+        calls.push({ body });
+
+        if (String(body.query).includes('FDEKitCommentCreate')) {
+          return Response.json({
+            data: { commentCreate: { success: true, comment: { id: 'c1', url: 'https://linear.app/team/comment/c1' } } },
+          });
+        }
+
+        return Response.json({
+          data: {
+            issue: {
+              id: 'uuid-1',
+              identifier: 'ENG-123',
+              title: 'Add retries',
+              description: 'Retry transient billing failures.',
+              url: 'https://linear.app/team/issue/ENG-123',
+              state: { name: 'In Progress' },
+            },
+          },
+        });
+      },
+    });
+
+    const get = connector.tools?.find((candidate) => candidate.name === 'linear.issue.get');
+    await expect(get?.handler({ key: 'ENG-123' }, {})).resolves.toMatchObject({
+      mode: 'api',
+      key: 'ENG-123',
+      id: 'uuid-1',
+      title: 'Add retries',
+      description: 'Retry transient billing failures.',
+      state: 'In Progress',
+      url: 'https://linear.app/team/issue/ENG-123',
+    });
+
+    const comment = connector.tools?.find((candidate) => candidate.name === 'linear.issue.comment');
+    await expect(comment?.handler({ key: 'ENG-123', body: 'Review posted: 2 findings' }, {})).resolves.toMatchObject({
+      posted: true,
+      url: 'https://linear.app/team/comment/c1',
+    });
+
+    const commentCall = calls.find((call) => String(call.body.query).includes('FDEKitCommentCreate'));
+    expect(commentCall?.body.variables).toEqual({
+      input: { issueId: 'uuid-1', body: 'Review posted: 2 findings' },
+    });
+  });
+
   it('creates deterministic local Linear issues', async () => {
     const connector = linearConnector({ teamId: 'team_123' });
     const tool = connector.tools?.find((candidate) => candidate.name === 'linear.issue.create');

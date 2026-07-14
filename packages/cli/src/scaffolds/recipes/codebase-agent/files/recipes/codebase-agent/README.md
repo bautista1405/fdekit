@@ -2,11 +2,13 @@
 
 This recipe installs a production-shaped local codebase review deployment:
 
-- A deterministic codebase agent.
-- A sample local repository for the first run.
-- A scoped codebase connector for file listing, search, and reads.
-- A selected GitHub, Jira, or Linear connector; each exposes the common `issue.create` capability for the agent.
-- Policy checks, permission scopes, environment separation, eval dataset, reports, traces, and console dashboard.
+- A deterministic codebase agent with two flows: repository findings and pull request review.
+- A sample local repository (and a local fixture pull request) for the first run.
+- A scoped codebase connector for listing, regex search, reads, symbol navigation, and diff risk ranking.
+- A selected GitHub, Jira, or Linear connector; each exposes the common `issue.create` capability, plus PR review tools (GitHub) and linked-ticket reads (Jira/Linear).
+- A Slack connector for reviewer notifications.
+- A graded review runner (`recipes/codebase-agent/review.mjs`) that verifies and scores findings before anything is posted.
+- Policy checks, permission scopes, environment separation, eval datasets (including an injection-resistance suite), reports, traces, and console dashboard.
 - A workflow scorecard and rollout plan in `recipes/codebase-agent/workflow.md`.
 
 ## Run Locally
@@ -25,6 +27,35 @@ npm run fdekit:codebase:console
 ```
 
 The config reads `.env` automatically; choose `FDEKIT_PROVIDER=mock`, `localOllama`, `openai`, `anthropic`, or `google` per customer environment; set `FDEKIT_MODEL` only when you want to override the selected provider's default model.
+
+## Review A Pull Request
+
+The graded review pipeline runs the agent read-only, validates every finding
+against the [review findings contract](https://github.com/bautista1405/fdekit/blob/main/docs/specs/review-findings-contract.md)
+(evidence required), verifies cited locations against the working tree, scores
+each survivor with a judge agent, persists `artifacts/reviews/<runId>.json`,
+and only then posts:
+
+```bash
+# Shadow (default): grade and persist, post nothing.
+npm run fdekit:codebase:review
+
+# Advisory: post surviving findings as inline PR comments + a Slack reviewer card.
+node recipes/codebase-agent/review.mjs --pr 1 --mode advisory
+
+# Request changes: may escalate the recommendation on high-severity findings.
+node recipes/codebase-agent/review.mjs --pr 1 --mode request-changes
+```
+
+- The agent can never approve a pull request; humans approve.
+- With `FDEKIT_CONNECTOR_MODE=local` (the default) the PR is a deterministic
+  local fixture and posting is simulated; switch to `api` with `GITHUB_TOKEN`
+  and `GITHUB_REPOSITORY` to review real pull requests.
+- Content read from the repository or PR is treated as data: the injection
+  eval suite (`evals/codebase-agent-review-injection.json`) verifies embedded
+  instructions are flagged as security findings, never executed.
+- Live providers need a tool-use-reliable model; small local models fail the
+  multi-step review flow.
 
 ## Use A Customer Codebase
 

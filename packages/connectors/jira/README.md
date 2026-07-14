@@ -2,7 +2,7 @@
 
 ## Purpose
 
-`@fdekit/connector-jira` lets FDEKit agents create Jira issues through both `jira.issue.create` and the common `issue.create` capability. Local mode returns deterministic issues; API mode calls Jira Cloud REST.
+`@fdekit/connector-jira` lets FDEKit agents create Jira issues through both `jira.issue.create` and the common `issue.create` capability, read linked tickets through `jira.issue.get` (for PR intent checks), and post status comments through `jira.issue.comment`. Local mode returns deterministic issues; API mode calls Jira Cloud REST.
 
 ## Who should use this package
 

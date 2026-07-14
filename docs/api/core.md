@@ -41,7 +41,7 @@ Declaration source: `packages/core/dist/index.d.ts`.
 
 ## Export Count
 
-This page documents 194 public root exports from `@fdekit/core`: 82 functions/values and 112 types/interfaces.
+This page documents 197 public root exports from `@fdekit/core`: 84 functions/values and 113 types/interfaces.
 
 ## Functions And Values
 
@@ -86,7 +86,9 @@ This page documents 194 public root exports from `@fdekit/core`: 82 functions/va
 | <a id="escaperegexp"></a>`escapeRegExp` | function | [packages/core/src/helpers/index.ts](../../packages/core/src/helpers/index.ts) |
 | <a id="expectedapprovaloutcome"></a>`expectedApprovalOutcome` | function | [packages/core/src/evals/index.ts](../../packages/core/src/evals/index.ts) |
 | <a id="expectedfinalanswer"></a>`expectedFinalAnswer` | function | [packages/core/src/evals/index.ts](../../packages/core/src/evals/index.ts) |
+| <a id="expectedfinding"></a>`expectedFinding` | function | [packages/core/src/evals/index.ts](../../packages/core/src/evals/index.ts) |
 | <a id="expectedtoolcall"></a>`expectedToolCall` | function | [packages/core/src/evals/index.ts](../../packages/core/src/evals/index.ts) |
+| <a id="expectinjectionresistance"></a>`expectInjectionResistance` | function | [packages/core/src/evals/index.ts](../../packages/core/src/evals/index.ts) |
 | <a id="extractproviderjson"></a>`extractProviderJson` | function | [packages/core/src/provider-planner/index.ts](../../packages/core/src/provider-planner/index.ts) |
 | <a id="finding-categories"></a>`FINDING_CATEGORIES` | const | [packages/core/src/reviews/index.ts](../../packages/core/src/reviews/index.ts) |
 | <a id="formatdroppedfindings"></a>`formatDroppedFindings` | function | [packages/core/src/reviews/index.ts](../../packages/core/src/reviews/index.ts) |
@@ -171,6 +173,7 @@ This page documents 194 public root exports from `@fdekit/core`: 82 functions/va
 | <a id="evalcase"></a>`EvalCase` | interface | [packages/core/src/types/eval.ts](../../packages/core/src/types/eval.ts) |
 | <a id="evaldefinition"></a>`EvalDefinition` | interface | [packages/core/src/types/eval.ts](../../packages/core/src/types/eval.ts) |
 | <a id="evalruncontext"></a>`EvalRunContext` | interface | [packages/core/src/types/eval.ts](../../packages/core/src/types/eval.ts) |
+| <a id="expectedfindingmatch"></a>`ExpectedFindingMatch` | interface | [packages/core/src/evals/index.ts](../../packages/core/src/evals/index.ts) |
 | <a id="findingcategory"></a>`FindingCategory` | type | [packages/core/src/reviews/index.ts](../../packages/core/src/reviews/index.ts) |
 | <a id="findingseverity"></a>`FindingSeverity` | type | [packages/core/src/reviews/index.ts](../../packages/core/src/reviews/index.ts) |
 | <a id="governancedefinition"></a>`GovernanceDefinition` | interface | [packages/core/src/types/governance.ts](../../packages/core/src/types/governance.ts) |

@@ -29,10 +29,11 @@ Use this track when a demo needs to become a pilot or production-shaped deployme
 Use this track when customer systems do not fit the built-in connector packages.
 
 1. [Connector Cookbook](./cookbook/connectors.md): build a customer-specific connector with `defineConnector()` and `defineTool()`.
-2. [Public API Reference](./api-reference.md): confirm package boundaries and symbol ownership.
-3. [`@fdekit/core` API](./api/core.md): inspect authoring helpers, tool schemas, policy helpers, and eval assertions.
-4. [Local Environment Cookbook](./cookbook/local-environments.md): separate agent-facing connectors from operator-facing environment setup.
-5. [Maintainer Architecture](./architecture.md): follow package boundaries when promoting custom code into a package.
+2. [PR Review Cookbook](./cookbook/pr-review.md): review pull requests with grounded, graded findings and a human approval boundary.
+3. [Public API Reference](./api-reference.md): confirm package boundaries and symbol ownership.
+4. [`@fdekit/core` API](./api/core.md): inspect authoring helpers, tool schemas, policy helpers, and eval assertions.
+5. [Local Environment Cookbook](./cookbook/local-environments.md): separate agent-facing connectors from operator-facing environment setup.
+6. [Maintainer Architecture](./architecture.md): follow package boundaries when promoting custom code into a package.
 
 ## Concept-To-Command Index
 

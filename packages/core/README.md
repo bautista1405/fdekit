@@ -2,7 +2,7 @@
 
 ## Purpose
 
-`@fdekit/core` is the authoring contract for FDEKit deployments. It contains the TypeScript helpers and types used in `fde.config.ts`: deployments, agents, tools, connectors, providers, governance, evals, harnesses, recipes, workflow metadata, rollout metadata, schema helpers, policy helpers, and provider-planner contracts.
+`@fdekit/core` is the authoring contract for FDEKit deployments. It contains the TypeScript helpers and types used in `fde.config.ts`: deployments, agents, tools, connectors, providers, governance, evals, harnesses, recipes, workflow metadata, rollout metadata, schema helpers, policy helpers, provider-planner contracts, and the review findings contract ([spec](../../docs/specs/review-findings-contract.md)).
 
 Use core when you are describing what a deployment is. Do not put runtime file I/O, artifact persistence, CLI behavior, or provider HTTP calls here.
 

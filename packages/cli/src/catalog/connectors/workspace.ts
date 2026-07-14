@@ -37,7 +37,7 @@ export const workspaceConnectorManifests: ConnectorManifest[] = [
     displayName: 'Codebase',
     packageName: '@fdekit/connector-codebase',
     configFactory: 'codebaseConnector()',
-    tools: ['codebase.listFiles', 'codebase.search', 'codebase.readFile', 'codebase.symbols', 'codebase.usages', 'codebase.deps', 'codebase.context'],
+    tools: ['codebase.listFiles', 'codebase.search', 'codebase.readFile', 'codebase.symbols', 'codebase.usages', 'codebase.deps', 'codebase.context', 'codebase.diff', 'codebase.rankDiff'],
     maturity: 'Ready',
     supportNote: 'Local repository regex search, file reads, and TS/JS symbol navigation (symbols, usages, import graph, context bundles) for codebase-agent workflows',
     packagePurpose: 'Local repository listing, regex search, file reads, and symbol navigation',

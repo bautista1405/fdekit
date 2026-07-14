@@ -4,6 +4,7 @@ export function isDefaultCodebasePrompt(prompt: string): boolean {
 }
 
 export function isDefaultCodebaseEval(evalJson: string): boolean {
+  // Match both the pre-0.5 literal query and the escaped regex form.
   return evalJson.includes('todo marker creates issue')
-    && evalJson.includes('TODO(fdekit)');
+    && (evalJson.includes('TODO(fdekit)') || evalJson.includes('TODO\\\\(fdekit\\\\)'));
 }

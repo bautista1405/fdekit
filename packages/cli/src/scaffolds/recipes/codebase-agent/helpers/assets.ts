@@ -10,8 +10,28 @@ export function codebaseAgentEvals() {
   return readRecipeJsonAsset(assetsUrl, '../files/evals/codebase-agent.json');
 }
 
+export function codebaseAgentReviewEvals() {
+  return readRecipeJsonAsset(assetsUrl, '../files/evals/codebase-agent-review.json');
+}
+
+export function codebaseAgentReviewInjectionEvals() {
+  return readRecipeJsonAsset(assetsUrl, '../files/evals/codebase-agent-review-injection.json');
+}
+
+export function sampleOnboardingSource(): string {
+  return readRecipeAsset(assetsUrl, '../files/sample-repo/src/onboarding.ts');
+}
+
 export function codebaseAgentMockPlanner(): string {
   return readRecipeAsset(assetsUrl, '../files/recipes/codebase-agent/mock-planner.mjs');
+}
+
+export function codebaseAgentReviewRunner(): string {
+  return readRecipeAsset(assetsUrl, '../files/recipes/codebase-agent/review.mjs');
+}
+
+export function reviewJudgePrompt(): string {
+  return readRecipeAsset(assetsUrl, '../files/agents/review-judge.md');
 }
 
 export function codebaseAgentDemoRunner(): string {

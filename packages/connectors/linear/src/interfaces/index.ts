@@ -42,3 +42,31 @@ export interface CreateLinearIssueResult {
   ticketId?: string;
   response?: unknown;
 }
+
+export interface LinearIssueGetArgs {
+  key: string;
+}
+
+export interface LinearIssueGetResult {
+  mode: LinearConnectorMode;
+  key: string;
+  id?: string;
+  title: string;
+  description: string;
+  state?: string;
+  url?: string;
+  response?: unknown;
+}
+
+export interface LinearIssueCommentArgs {
+  key: string;
+  body: string;
+}
+
+export interface LinearIssueCommentResult {
+  mode: LinearConnectorMode;
+  key: string;
+  posted: boolean;
+  url?: string;
+  response?: unknown;
+}

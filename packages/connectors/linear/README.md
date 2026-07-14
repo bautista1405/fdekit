@@ -2,7 +2,7 @@
 
 ## Purpose
 
-`@fdekit/connector-linear` lets FDEKit agents create Linear issues through both `linear.issue.create` and the common `issue.create` capability. Local mode returns deterministic issues; API mode calls Linear GraphQL.
+`@fdekit/connector-linear` lets FDEKit agents create Linear issues through both `linear.issue.create` and the common `issue.create` capability, read linked tickets through `linear.issue.get` (for PR intent checks), and post status comments through `linear.issue.comment`. Local mode returns deterministic issues; API mode calls Linear GraphQL.
 
 ## Who should use this package
 

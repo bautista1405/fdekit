@@ -8,6 +8,7 @@ import type {
   EnvironmentEndpointRef,
   EvalDefinition,
   GovernanceDefinition,
+  GraderDefinition,
   HarnessDefinition,
   HarnessDefinitionInput,
   OutcomeMetricDefinition,
@@ -166,6 +167,11 @@ export function definePolicy<T extends PolicyDefinition>(policy: T): T {
 //define evals and assertions
 export function defineEval<T extends EvalDefinition>(definition: T): T {
   return definition;
+}
+
+//define a grader: an LLM judge that re-scores review findings and suppresses noise before anything is posted
+export function defineGrader<T extends GraderDefinition>(grader: T): T {
+  return grader;
 }
 
 //define and create recipes, which can be reusable

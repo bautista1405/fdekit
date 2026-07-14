@@ -46,6 +46,8 @@ Tools exposed to agents:
 | `codebase.usages` | Find references of a symbol, separated from its declaration sites |
 | `codebase.deps` | Import graph for one file: `imports` and `importedBy` |
 | `codebase.context` | Definition bodies under a byte budget plus usage previews |
+| `codebase.diff` | Structured git diff between two refs: files, hunks, stats, renames |
+| `codebase.rankDiff` | Rank changed files by review risk (churn weighted by import fan-in) |
 
 ## Symbol navigation
 

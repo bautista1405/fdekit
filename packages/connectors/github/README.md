@@ -2,7 +2,7 @@
 
 ## Purpose
 
-`@fdekit/connector-github` lets FDEKit agents create engineering issues through a stable `issue.create` tool. Local mode returns deterministic issue artifacts; API mode calls the GitHub REST API.
+`@fdekit/connector-github` lets FDEKit agents create engineering issues through a stable `issue.create` tool, and review pull requests through `github.pr.diff`, `github.review.post` (comment or request-changes only - approving is structurally impossible; humans approve), and `github.pr.reply`. Local mode returns deterministic fixtures, including a local fixture pull request; API mode calls the GitHub REST API.
 
 ## Who should use this package
 

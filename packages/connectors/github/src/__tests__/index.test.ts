@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { extractTicketRefs } from '../helpers/index.js';
 import { githubConnector } from '../index.js';
 
 describe('githubConnector', () => {
@@ -130,6 +131,183 @@ describe('githubConnector', () => {
       title: 'Issue',
       body: 'Body',
     }, {})).rejects.toThrow('Missing GitHub token');
+  });
+
+  it('returns a deterministic local pull request diff with extracted ticket references', async () => {
+    const connector = githubConnector({ repository: 'company/app' });
+    const tool = connector.tools?.find((candidate) => candidate.name === 'github.pr.diff');
+
+    const result = await tool?.handler({ number: 7 }, {}) as {
+      ticketRefs: Array<{ kind: string; ref: string }>;
+    };
+
+    expect(result).toMatchObject({
+      mode: 'local',
+      repository: 'company/app',
+      number: 7,
+      baseRef: 'main',
+      truncated: false,
+      files: [expect.objectContaining({ filePath: 'src/billing.ts', status: 'modified' })],
+      url: 'https://github.local/company/app/pull/7',
+    });
+    expect(result.ticketRefs).toEqual(expect.arrayContaining([
+      { kind: 'issue-key', ref: 'ENG-123' },
+      { kind: 'github-issue', ref: '42' },
+    ]));
+  });
+
+  it('fetches pull request metadata and files in API mode', async () => {
+    const calls: Array<{ input: RequestInfo | URL; init?: RequestInit }> = [];
+    const connector = githubConnector({
+      mode: 'api',
+      repository: 'company/app',
+      apiBaseUrl: 'https://github.test/api/',
+      env: { GITHUB_TOKEN: 'ghp_test' },
+      fetch: async (input, init) => {
+        calls.push({ input, init });
+        const url = String(input);
+
+        if (url.includes('/files')) {
+          return Response.json([
+            { filename: 'src/billing.ts', status: 'modified', additions: 3, deletions: 1, patch: '@@ -1 +1,3 @@' },
+            { filename: 'src/app.ts', status: 'modified', additions: 1, deletions: 0, patch: '@@ -5 +5 @@' },
+          ]);
+        }
+
+        return Response.json({
+          title: 'Retry billing sync',
+          body: 'Fixes ENG-9.',
+          user: { login: 'octocat' },
+          base: { ref: 'main' },
+          head: { ref: 'feature/retries' },
+          additions: 4,
+          deletions: 1,
+          html_url: 'https://github.com/company/app/pull/7',
+        });
+      },
+    });
+    const tool = connector.tools?.find((candidate) => candidate.name === 'github.pr.diff');
+
+    await expect(tool?.handler({ number: 7, maxFiles: 1 }, {})).resolves.toMatchObject({
+      mode: 'api',
+      title: 'Retry billing sync',
+      author: 'octocat',
+      baseRef: 'main',
+      headRef: 'feature/retries',
+      additions: 4,
+      files: [expect.objectContaining({ filePath: 'src/billing.ts' })],
+      truncated: true,
+      ticketRefs: expect.arrayContaining([{ kind: 'issue-key', ref: 'ENG-9' }]),
+      url: 'https://github.com/company/app/pull/7',
+    });
+
+    const urls = calls.map((call) => String(call.input)).sort();
+    expect(urls).toEqual([
+      'https://github.test/api/repos/company/app/pulls/7',
+      'https://github.test/api/repos/company/app/pulls/7/files?per_page=100',
+    ]);
+    expect(calls[0].init?.headers).toMatchObject({ authorization: 'Bearer ghp_test' });
+  });
+
+  it('never approves: review.post rejects approve structurally and maps recommendations to events', async () => {
+    const connector = githubConnector({ repository: 'company/app' });
+    const tool = connector.tools?.find((candidate) => candidate.name === 'github.review.post');
+    const argsSchema = tool?.argsSchema as { properties?: { recommendation?: { enum?: string[] } } };
+
+    expect(argsSchema.properties?.recommendation?.enum).toEqual(['comment', 'request-changes']);
+
+    await expect(tool?.handler({
+      number: 7,
+      summary: 'Two findings, recommend changes',
+      recommendation: 'request-changes',
+      comments: [{ path: 'src/billing.ts', line: 2, body: 'Missing retry cap' }],
+    }, {})).resolves.toMatchObject({
+      event: 'REQUEST_CHANGES',
+      commentCount: 1,
+      url: 'https://github.local/company/app/pull/7#review',
+    });
+
+    await expect(tool?.handler({
+      number: 7,
+      summary: 'lgtm',
+      recommendation: 'approve',
+    } as never, {})).rejects.toThrow('humans approve');
+  });
+
+  it('posts reviews to the GitHub REST API with RIGHT-side inline comments', async () => {
+    const calls: Array<{ input: RequestInfo | URL; init?: RequestInit }> = [];
+    const connector = githubConnector({
+      mode: 'api',
+      repository: 'company/app',
+      apiBaseUrl: 'https://github.test/api/',
+      env: { GITHUB_TOKEN: 'ghp_test' },
+      fetch: async (input, init) => {
+        calls.push({ input, init });
+
+        return Response.json({ id: 1, html_url: 'https://github.com/company/app/pull/7#pullrequestreview-1' });
+      },
+    });
+    const tool = connector.tools?.find((candidate) => candidate.name === 'github.review.post');
+
+    await expect(tool?.handler({
+      number: 7,
+      summary: 'One finding',
+      recommendation: 'comment',
+      comments: [{ path: 'src/billing.ts', line: 2, body: 'Consider a retry cap' }],
+    }, {})).resolves.toMatchObject({
+      event: 'COMMENT',
+      url: 'https://github.com/company/app/pull/7#pullrequestreview-1',
+    });
+
+    expect(String(calls[0].input)).toBe('https://github.test/api/repos/company/app/pulls/7/reviews');
+    expect(JSON.parse(String(calls[0].init?.body))).toEqual({
+      event: 'COMMENT',
+      body: 'One finding',
+      comments: [{ path: 'src/billing.ts', line: 2, side: 'RIGHT', body: 'Consider a retry cap' }],
+    });
+  });
+
+  it('replies to review comment threads locally and through the REST API', async () => {
+    const local = githubConnector({ repository: 'company/app' });
+    const localTool = local.tools?.find((candidate) => candidate.name === 'github.pr.reply');
+
+    await expect(localTool?.handler({ number: 7, commentId: 99, body: 'Fixed in the next push' }, {})).resolves.toMatchObject({
+      mode: 'local',
+      commentId: 99,
+      url: 'https://github.local/company/app/pull/7#discussion-r99',
+    });
+
+    const calls: Array<{ input: RequestInfo | URL; init?: RequestInit }> = [];
+    const api = githubConnector({
+      mode: 'api',
+      repository: 'company/app',
+      apiBaseUrl: 'https://github.test/api/',
+      env: { GITHUB_TOKEN: 'ghp_test' },
+      fetch: async (input, init) => {
+        calls.push({ input, init });
+
+        return Response.json({ id: 2, html_url: 'https://github.com/company/app/pull/7#discussion_r100' });
+      },
+    });
+    const apiTool = api.tools?.find((candidate) => candidate.name === 'github.pr.reply');
+
+    await expect(apiTool?.handler({ number: 7, commentId: 99, body: 'Fixed' }, {})).resolves.toMatchObject({
+      url: 'https://github.com/company/app/pull/7#discussion_r100',
+    });
+    expect(String(calls[0].input)).toBe('https://github.test/api/repos/company/app/pulls/7/comments/99/replies');
+    expect(JSON.parse(String(calls[0].init?.body))).toEqual({ body: 'Fixed' });
+  });
+
+  it('extracts issue keys, github refs, and urls from PR text', () => {
+    expect(extractTicketRefs('Implements ENG-123 and KAN-7 (see #42, https://linear.app/team/issue/ENG-123).')).toEqual(
+      expect.arrayContaining([
+        { kind: 'issue-key', ref: 'ENG-123' },
+        { kind: 'issue-key', ref: 'KAN-7' },
+        { kind: 'github-issue', ref: '42' },
+        { kind: 'url', ref: 'https://linear.app/team/issue/ENG-123' },
+      ]),
+    );
+    expect(extractTicketRefs('no refs here')).toEqual([]);
   });
 
   it('retries retryable GitHub REST responses and opens the circuit after repeated failures', async () => {

@@ -2,7 +2,7 @@
 
 ## Purpose
 
-`@fdekit/connector-slack` lets FDEKit agents send escalation messages through `slack.message`. Local mode returns deterministic message artifacts; API mode calls Slack `chat.postMessage`.
+`@fdekit/connector-slack` lets FDEKit agents send escalation messages through `slack.message` and reviewer notification cards through `slack.notify` (recommendation, top findings, risk reasons, links). Local mode returns deterministic message artifacts; API mode calls Slack `chat.postMessage`.
 
 ## Who should use this package
 

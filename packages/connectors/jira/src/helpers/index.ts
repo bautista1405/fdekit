@@ -51,6 +51,92 @@ export function toAtlassianDocument(text: string): Record<string, unknown> {
   };
 }
 
+/** Flattens an Atlassian Document Format value to plain text (paragraph-level newlines; list/table structure is not preserved). */
+export function fromAtlassianDocument(value: unknown): string {
+  if (typeof value === 'string') {
+    return value;
+  }
+
+  const content = asRecord(value).content;
+
+  if (!Array.isArray(content)) {
+    return '';
+  }
+
+  return content
+    .map((node) => flattenAtlassianNode(node))
+    .filter(Boolean)
+    .join('\n');
+}
+
+function flattenAtlassianNode(node: unknown): string {
+  const record = asRecord(node);
+
+  if (record.type === 'text') {
+    return getString(record.text) ?? '';
+  }
+
+  const content = record.content;
+
+  if (!Array.isArray(content)) {
+    return '';
+  }
+
+  return content.map((child) => flattenAtlassianNode(child)).join('');
+}
+
+export async function getJiraIssue(options: {
+  baseUrl: string;
+  email: string;
+  apiToken: string;
+  fetchImpl: typeof globalThis.fetch;
+  key: string;
+}): Promise<unknown> {
+  return requestConnectorJson({
+    connectorName: 'jiraConnector API mode',
+    fetchImpl: options.fetchImpl,
+    url: `${options.baseUrl}/rest/api/3/issue/${options.key}?fields=summary,description,status`,
+    init: {
+      headers: {
+        authorization: `Basic ${btoa(`${options.email}:${options.apiToken}`)}`,
+      },
+    },
+    defaultHeaders: {
+      accept: 'application/json',
+    },
+    errorMessage: (value, response) => `Jira issue fetch failed: ${jiraErrorMessage(value, response)}`,
+  });
+}
+
+export async function createJiraComment(options: {
+  baseUrl: string;
+  email: string;
+  apiToken: string;
+  fetchImpl: typeof globalThis.fetch;
+  key: string;
+  body: string;
+}): Promise<unknown> {
+  return requestConnectorJson({
+    connectorName: 'jiraConnector API mode',
+    fetchImpl: options.fetchImpl,
+    url: `${options.baseUrl}/rest/api/3/issue/${options.key}/comment`,
+    init: {
+      method: 'POST',
+      headers: {
+        authorization: `Basic ${btoa(`${options.email}:${options.apiToken}`)}`,
+      },
+      body: JSON.stringify({
+        body: toAtlassianDocument(options.body),
+      }),
+    },
+    defaultHeaders: {
+      accept: 'application/json',
+      'content-type': 'application/json',
+    },
+    errorMessage: (value, response) => `Jira comment creation failed: ${jiraErrorMessage(value, response)}`,
+  });
+}
+
 export function requireEnv(name: string, label: string, env?: Record<string, string | undefined>): string {
   return requireEnvValue(
     name,

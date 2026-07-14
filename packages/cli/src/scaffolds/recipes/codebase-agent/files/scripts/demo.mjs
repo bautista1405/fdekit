@@ -4,7 +4,7 @@ import { join } from 'node:path';
 
 const runInput = {
   task: 'Find TODO(fdekit) markers and create an engineering issue',
-  query: 'TODO(fdekit)',
+  query: 'TODO\\(fdekit\\)',
 };
 
 printHeader('FDEKit Codebase Agent Demo');

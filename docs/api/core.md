@@ -3,7 +3,7 @@
 <!-- Maintained via scripts/generate-api-docs.mjs. -->
 Run `npm run docs:api` to refresh this page after changing public exports.
 
-Applies to `@fdekit/core` v0.4.2.
+Applies to `@fdekit/core` v0.5.1.
 
 Declaration source: `packages/core/dist/index.d.ts`.
 
@@ -41,7 +41,7 @@ Declaration source: `packages/core/dist/index.d.ts`.
 
 ## Export Count
 
-This page documents 179 public root exports from `@fdekit/core`: 78 functions/values and 101 types/interfaces.
+This page documents 197 public root exports from `@fdekit/core`: 84 functions/values and 113 types/interfaces.
 
 ## Functions And Values
 
@@ -70,6 +70,7 @@ This page documents 179 public root exports from `@fdekit/core`: 78 functions/va
 | <a id="defineenvironment"></a>`defineEnvironment` | function | [packages/core/src/definitions/index.ts](../../packages/core/src/definitions/index.ts) |
 | <a id="defineeval"></a>`defineEval` | function | [packages/core/src/definitions/index.ts](../../packages/core/src/definitions/index.ts) |
 | <a id="definegovernance"></a>`defineGovernance` | function | [packages/core/src/definitions/index.ts](../../packages/core/src/definitions/index.ts) |
+| <a id="definegrader"></a>`defineGrader` | function | [packages/core/src/definitions/index.ts](../../packages/core/src/definitions/index.ts) |
 | <a id="defineharness"></a>`defineHarness` | function | [packages/core/src/definitions/index.ts](../../packages/core/src/definitions/index.ts) |
 | <a id="defineoutcomemetric"></a>`defineOutcomeMetric` | function | [packages/core/src/definitions/index.ts](../../packages/core/src/definitions/index.ts) |
 | <a id="definepolicy"></a>`definePolicy` | function | [packages/core/src/definitions/index.ts](../../packages/core/src/definitions/index.ts) |
@@ -85,8 +86,12 @@ This page documents 179 public root exports from `@fdekit/core`: 78 functions/va
 | <a id="escaperegexp"></a>`escapeRegExp` | function | [packages/core/src/helpers/index.ts](../../packages/core/src/helpers/index.ts) |
 | <a id="expectedapprovaloutcome"></a>`expectedApprovalOutcome` | function | [packages/core/src/evals/index.ts](../../packages/core/src/evals/index.ts) |
 | <a id="expectedfinalanswer"></a>`expectedFinalAnswer` | function | [packages/core/src/evals/index.ts](../../packages/core/src/evals/index.ts) |
+| <a id="expectedfinding"></a>`expectedFinding` | function | [packages/core/src/evals/index.ts](../../packages/core/src/evals/index.ts) |
 | <a id="expectedtoolcall"></a>`expectedToolCall` | function | [packages/core/src/evals/index.ts](../../packages/core/src/evals/index.ts) |
+| <a id="expectinjectionresistance"></a>`expectInjectionResistance` | function | [packages/core/src/evals/index.ts](../../packages/core/src/evals/index.ts) |
 | <a id="extractproviderjson"></a>`extractProviderJson` | function | [packages/core/src/provider-planner/index.ts](../../packages/core/src/provider-planner/index.ts) |
+| <a id="finding-categories"></a>`FINDING_CATEGORIES` | const | [packages/core/src/reviews/index.ts](../../packages/core/src/reviews/index.ts) |
+| <a id="formatdroppedfindings"></a>`formatDroppedFindings` | function | [packages/core/src/reviews/index.ts](../../packages/core/src/reviews/index.ts) |
 | <a id="gethttpresilienceoptions"></a>`getHttpResilienceOptions` | function | [packages/core/src/provider-planner/index.ts](../../packages/core/src/provider-planner/index.ts) |
 | <a id="getnumber"></a>`getNumber` | function | [packages/core/src/helpers/index.ts](../../packages/core/src/helpers/index.ts) |
 | <a id="getstring"></a>`getString` | function | [packages/core/src/helpers/index.ts](../../packages/core/src/helpers/index.ts) |
@@ -108,6 +113,7 @@ This page documents 179 public root exports from `@fdekit/core`: 78 functions/va
 | <a id="numberfromenv"></a>`numberFromEnv` | function | [packages/core/src/helpers/index.ts](../../packages/core/src/helpers/index.ts) |
 | <a id="objectargs"></a>`objectArgs` | function | [packages/core/src/schema/index.ts](../../packages/core/src/schema/index.ts) |
 | <a id="parseenvironmentendpointconfigvalue"></a>`parseEnvironmentEndpointConfigValue` | function | [packages/core/src/definitions/index.ts](../../packages/core/src/definitions/index.ts) |
+| <a id="parsefindings"></a>`parseFindings` | function | [packages/core/src/reviews/index.ts](../../packages/core/src/reviews/index.ts) |
 | <a id="parseproviderplannerstep"></a>`parseProviderPlannerStep` | function | [packages/core/src/provider-planner/index.ts](../../packages/core/src/provider-planner/index.ts) |
 | <a id="pick"></a>`pick` | function | [packages/core/src/helpers/index.ts](../../packages/core/src/helpers/index.ts) |
 | <a id="providererrormessage"></a>`providerErrorMessage` | function | [packages/core/src/provider-planner/index.ts](../../packages/core/src/provider-planner/index.ts) |
@@ -143,11 +149,13 @@ This page documents 179 public root exports from `@fdekit/core`: 78 functions/va
 | <a id="connectordefinition"></a>`ConnectorDefinition` | interface | [packages/core/src/types/connector.ts](../../packages/core/src/types/connector.ts) |
 | <a id="connectorjsonrequestoptions"></a>`ConnectorJsonRequestOptions` | interface | [packages/core/src/connector-http/index.ts](../../packages/core/src/connector-http/index.ts) |
 | <a id="connectorname"></a>`ConnectorName` | type | [packages/core/src/types/shared.ts](../../packages/core/src/types/shared.ts) |
+| <a id="connectorreadinesscheck"></a>`ConnectorReadinessCheck` | interface | [packages/core/src/types/connector.ts](../../packages/core/src/types/connector.ts) |
 | <a id="datalayersdefinition"></a>`DataLayersDefinition` | interface | [packages/core/src/types/workflow.ts](../../packages/core/src/types/workflow.ts) |
 | <a id="dataprotectionconfig"></a>`DataProtectionConfig` | interface | [packages/core/src/types/governance.ts](../../packages/core/src/types/governance.ts) |
 | <a id="deploymentdefinition"></a>`DeploymentDefinition` | interface | [packages/core/src/types/deployment.ts](../../packages/core/src/types/deployment.ts) |
 | <a id="deploymentenvironmentdefinition"></a>`DeploymentEnvironmentDefinition` | interface | [packages/core/src/types/environment.ts](../../packages/core/src/types/environment.ts) |
 | <a id="deploymentenvironmentkind"></a>`DeploymentEnvironmentKind` | type | [packages/core/src/types/environment.ts](../../packages/core/src/types/environment.ts) |
+| <a id="droppedfinding"></a>`DroppedFinding` | interface | [packages/core/src/reviews/index.ts](../../packages/core/src/reviews/index.ts) |
 | <a id="environmentcheckresult"></a>`EnvironmentCheckResult` | interface | [packages/core/src/types/environment.ts](../../packages/core/src/types/environment.ts) |
 | <a id="environmentcommanddefinition"></a>`EnvironmentCommandDefinition` | interface | [packages/core/src/types/environment.ts](../../packages/core/src/types/environment.ts) |
 | <a id="environmentendpointdefinition"></a>`EnvironmentEndpointDefinition` | interface | [packages/core/src/types/environment.ts](../../packages/core/src/types/environment.ts) |
@@ -165,7 +173,11 @@ This page documents 179 public root exports from `@fdekit/core`: 78 functions/va
 | <a id="evalcase"></a>`EvalCase` | interface | [packages/core/src/types/eval.ts](../../packages/core/src/types/eval.ts) |
 | <a id="evaldefinition"></a>`EvalDefinition` | interface | [packages/core/src/types/eval.ts](../../packages/core/src/types/eval.ts) |
 | <a id="evalruncontext"></a>`EvalRunContext` | interface | [packages/core/src/types/eval.ts](../../packages/core/src/types/eval.ts) |
+| <a id="expectedfindingmatch"></a>`ExpectedFindingMatch` | interface | [packages/core/src/evals/index.ts](../../packages/core/src/evals/index.ts) |
+| <a id="findingcategory"></a>`FindingCategory` | type | [packages/core/src/reviews/index.ts](../../packages/core/src/reviews/index.ts) |
+| <a id="findingseverity"></a>`FindingSeverity` | type | [packages/core/src/reviews/index.ts](../../packages/core/src/reviews/index.ts) |
 | <a id="governancedefinition"></a>`GovernanceDefinition` | interface | [packages/core/src/types/governance.ts](../../packages/core/src/types/governance.ts) |
+| <a id="graderdefinition"></a>`GraderDefinition` | interface | [packages/core/src/types/grader.ts](../../packages/core/src/types/grader.ts) |
 | <a id="harnessdefinition"></a>`HarnessDefinition` | interface | [packages/core/src/types/harness.ts](../../packages/core/src/types/harness.ts) |
 | <a id="harnessdefinitioninput"></a>`HarnessDefinitionInput` | interface | [packages/core/src/types/harness.ts](../../packages/core/src/types/harness.ts) |
 | <a id="harnessevalref"></a>`HarnessEvalRef` | type | [packages/core/src/types/harness.ts](../../packages/core/src/types/harness.ts) |
@@ -190,6 +202,7 @@ This page documents 179 public root exports from `@fdekit/core`: 78 functions/va
 | <a id="numberargoptions"></a>`NumberArgOptions` | interface | [packages/core/src/types/tool.ts](../../packages/core/src/types/tool.ts) |
 | <a id="objectargsoptions"></a>`ObjectArgsOptions` | interface | [packages/core/src/types/tool.ts](../../packages/core/src/types/tool.ts) |
 | <a id="outcomemetricdefinition"></a>`OutcomeMetricDefinition` | interface | [packages/core/src/types/workflow.ts](../../packages/core/src/types/workflow.ts) |
+| <a id="parsedfindings"></a>`ParsedFindings` | interface | [packages/core/src/reviews/index.ts](../../packages/core/src/reviews/index.ts) |
 | <a id="permissiongrantdefinition"></a>`PermissionGrantDefinition` | interface | [packages/core/src/types/governance.ts](../../packages/core/src/types/governance.ts) |
 | <a id="permissionscopedefinition"></a>`PermissionScopeDefinition` | interface | [packages/core/src/types/governance.ts](../../packages/core/src/types/governance.ts) |
 | <a id="permissionscopesconfig"></a>`PermissionScopesConfig` | interface | [packages/core/src/types/governance.ts](../../packages/core/src/types/governance.ts) |
@@ -213,6 +226,10 @@ This page documents 179 public root exports from `@fdekit/core`: 78 functions/va
 | <a id="recipedefinition"></a>`RecipeDefinition` | interface | [packages/core/src/types/deployment.ts](../../packages/core/src/types/deployment.ts) |
 | <a id="recipereference"></a>`RecipeReference` | interface | [packages/core/src/types/deployment.ts](../../packages/core/src/types/deployment.ts) |
 | <a id="retrypolicy"></a>`RetryPolicy` | interface | [packages/core/src/types/provider.ts](../../packages/core/src/types/provider.ts) |
+| <a id="reviewartifact"></a>`ReviewArtifact` | interface | [packages/core/src/reviews/index.ts](../../packages/core/src/reviews/index.ts) |
+| <a id="reviewartifactsource"></a>`ReviewArtifactSource` | interface | [packages/core/src/reviews/index.ts](../../packages/core/src/reviews/index.ts) |
+| <a id="reviewartifactticket"></a>`ReviewArtifactTicket` | interface | [packages/core/src/reviews/index.ts](../../packages/core/src/reviews/index.ts) |
+| <a id="reviewfinding"></a>`ReviewFinding` | interface | [packages/core/src/reviews/index.ts](../../packages/core/src/reviews/index.ts) |
 | <a id="rolloutdefinition"></a>`RolloutDefinition` | interface | [packages/core/src/types/workflow.ts](../../packages/core/src/types/workflow.ts) |
 | <a id="rolloutstagename"></a>`RolloutStageName` | type | [packages/core/src/types/workflow.ts](../../packages/core/src/types/workflow.ts) |
 | <a id="s3artifactclient"></a>`S3ArtifactClient` | interface | [packages/core/src/types/deployment.ts](../../packages/core/src/types/deployment.ts) |
@@ -223,6 +240,7 @@ This page documents 179 public root exports from `@fdekit/core`: 78 functions/va
 | <a id="s3listobjectsv2output"></a>`S3ListObjectsV2Output` | interface | [packages/core/src/types/deployment.ts](../../packages/core/src/types/deployment.ts) |
 | <a id="s3putobjectinput"></a>`S3PutObjectInput` | interface | [packages/core/src/types/deployment.ts](../../packages/core/src/types/deployment.ts) |
 | <a id="stringargoptions"></a>`StringArgOptions` | interface | [packages/core/src/types/tool.ts](../../packages/core/src/types/tool.ts) |
+| <a id="suppressedreviewfinding"></a>`SuppressedReviewFinding` | interface | [packages/core/src/reviews/index.ts](../../packages/core/src/reviews/index.ts) |
 | <a id="toolargsschema"></a>`ToolArgsSchema` | type | [packages/core/src/types/tool.ts](../../packages/core/src/types/tool.ts) |
 | <a id="toolcallcontext"></a>`ToolCallContext` | interface | [packages/core/src/types/tool.ts](../../packages/core/src/types/tool.ts) |
 | <a id="tooldefinition"></a>`ToolDefinition` | interface | [packages/core/src/types/tool.ts](../../packages/core/src/types/tool.ts) |

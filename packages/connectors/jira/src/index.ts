@@ -1,15 +1,18 @@
 import { createHttpReq, defineConnector, defineTool, type ConnectorDefinition } from '@fdekit/core';
 import {
   asRecord,
+  createJiraComment,
   createJiraIssue,
+  fromAtlassianDocument,
+  getJiraIssue,
   getString,
   normalizeBaseUrl,
   readEnvValue,
   requireEnv,
   toAtlassianDocument,
 } from './helpers/index.js';
-import type { CreateJiraIssueArgs, CreateJiraIssueResult, JiraConnectorConfig, JiraConnectorMode, JiraConnectorOptions } from './interfaces/index.js';
-export type { CreateJiraIssueArgs, CreateJiraIssueResult, JiraConnectorConfig, JiraConnectorMode, JiraConnectorOptions } from './interfaces/index.js';
+import type { CreateJiraIssueArgs, CreateJiraIssueResult, JiraConnectorConfig, JiraConnectorMode, JiraConnectorOptions, JiraIssueCommentArgs, JiraIssueCommentResult, JiraIssueGetArgs, JiraIssueGetResult } from './interfaces/index.js';
+export type { CreateJiraIssueArgs, CreateJiraIssueResult, JiraConnectorConfig, JiraConnectorMode, JiraConnectorOptions, JiraIssueCommentArgs, JiraIssueCommentResult, JiraIssueGetArgs, JiraIssueGetResult } from './interfaces/index.js';
 
 const defaultToolEnvironments = ['local', 'development', 'staging'];
 const jiraPriorityAliases: Record<string, string> = {
@@ -66,6 +69,32 @@ const createJiraIssueArgsSchema = {
     fields: {
       type: 'object',
       description: 'Advanced Jira fields override',
+    },
+  },
+};
+
+const issueGetArgsSchema = {
+  type: 'object',
+  required: ['key'],
+  properties: {
+    key: {
+      type: 'string',
+      description: 'Jira issue key, for example KAN-7',
+    },
+  },
+};
+
+const issueCommentArgsSchema = {
+  type: 'object',
+  required: ['key', 'body'],
+  properties: {
+    key: {
+      type: 'string',
+      description: 'Jira issue key, for example KAN-7',
+    },
+    body: {
+      type: 'string',
+      description: 'Comment body, for example a review status summary',
     },
   },
 };
@@ -143,9 +172,23 @@ export function jiraConnector(options: JiraConnectorOptions = {}): ConnectorDefi
     };
   };
 
+  const resolveApiAccess = () => {
+    const siteUrl = baseUrl ?? readEnvValue(baseUrlEnv, options.env);
+
+    if (!siteUrl) {
+      throw new Error(`Missing Jira base URL; set ${baseUrlEnv} or pass jiraConnector({ baseUrl })`);
+    }
+
+    return {
+      baseUrl: normalizeBaseUrl(siteUrl),
+      email: requireEnv(emailEnv, 'Jira email', options.env),
+      apiToken: requireEnv(apiTokenEnv, 'Jira API token', options.env),
+    };
+  };
+
   return defineConnector({
     name: 'jira',
-    description: 'Create Jira issues; local mode returns deterministic issues; API mode calls Jira Cloud REST',
+    description: 'Create and read Jira issues and post comments; local mode returns deterministic fixtures; API mode calls Jira Cloud REST',
     config: {
       mode,
       baseUrl,
@@ -200,6 +243,90 @@ export function jiraConnector(options: JiraConnectorOptions = {}): ConnectorDefi
         tags: ['action', 'escalation', 'issue'],
         argsSchema: createJiraIssueArgsSchema,
         handler: createIssue,
+      }),
+      defineTool<JiraIssueGetArgs, JiraIssueGetResult>({
+        name: 'jira.issue.get',
+        description: 'Fetch a Jira issue (summary, description, status) referenced by a pull request, to check the implementation against its intent',
+        scopes: ['issues:read'],
+        environments: defaultToolEnvironments,
+        category: 'issue',
+        tags: ['context', 'issue', 'read', 'review'],
+        argsSchema: issueGetArgsSchema,
+        async handler(args) {
+          const key = typeof args.key === 'string' ? args.key.trim() : '';
+
+          if (!key) {
+            throw new Error('jira.issue.get requires a non-empty issue key');
+          }
+
+          if (mode === 'api') {
+            const access = resolveApiAccess();
+            const response = await getJiraIssue({ ...access, fetchImpl, key });
+            const record = asRecord(response);
+            const fields = asRecord(record.fields);
+
+            return {
+              mode,
+              key: getString(record.key) ?? key,
+              id: getString(record.id),
+              title: getString(fields.summary) ?? '',
+              description: fromAtlassianDocument(fields.description),
+              status: getString(asRecord(fields.status).name),
+              url: `${access.baseUrl}/browse/${getString(record.key) ?? key}`,
+              response,
+            };
+          }
+
+          return {
+            mode,
+            key,
+            id: `local_jira_${key}`,
+            title: `Local fixture: ${key}`,
+            description: 'Add retry handling with exponential backoff to the billing sync so transient failures do not block renewals.',
+            status: 'In Progress',
+            url: `https://jira.local/browse/${key}`,
+          };
+        },
+      }),
+      defineTool<JiraIssueCommentArgs, JiraIssueCommentResult>({
+        name: 'jira.issue.comment',
+        description: 'Post a short status comment back to a Jira issue, for example a review summary',
+        scopes: ['issues:write'],
+        environments: defaultToolEnvironments,
+        category: 'issue',
+        tags: ['action', 'issue', 'write', 'review'],
+        argsSchema: issueCommentArgsSchema,
+        async handler(args) {
+          const key = typeof args.key === 'string' ? args.key.trim() : '';
+
+          if (!key) {
+            throw new Error('jira.issue.comment requires a non-empty issue key');
+          }
+
+          if (!args.body?.trim()) {
+            throw new Error('jira.issue.comment requires a non-empty body');
+          }
+
+          if (mode === 'api') {
+            const access = resolveApiAccess();
+            const response = await createJiraComment({ ...access, fetchImpl, key, body: args.body });
+
+            return {
+              mode,
+              key,
+              posted: true,
+              url: `${access.baseUrl}/browse/${key}`,
+              response,
+            };
+          }
+
+          return {
+            mode,
+            key,
+            posted: true,
+            url: `https://jira.local/browse/${key}#comment-local`,
+          };
+        },
       }),
     ],
   });

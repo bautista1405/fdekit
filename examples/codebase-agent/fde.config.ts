@@ -8,12 +8,15 @@ import {
   defineOutcomeMetric,
   defineRollout,
   defineWorkflow,
+  expectInjectionResistance,
   expectedFinalAnswer,
+  expectedFinding,
   expectedToolCall,
   limitToolUse,
   maxCost,
   maxLatency,
   noPolicyViolation,
+  notExpectedToolCall,
   pick,
   type ConnectorDefinition,
   type ProviderConfig,
@@ -22,6 +25,7 @@ import { codebaseConnector } from '@fdekit/connector-codebase';
 import { githubConnector } from '@fdekit/connector-github';
 import { jiraConnector } from '@fdekit/connector-jira';
 import { linearConnector } from '@fdekit/connector-linear';
+import { slackConnector } from '@fdekit/connector-slack';
 import { anthropicProvider } from '@fdekit/provider-anthropic';
 import { googleProvider } from '@fdekit/provider-google';
 import { localOllamaProvider } from '@fdekit/provider-ollama';
@@ -109,6 +113,10 @@ const issueTrackers = {
 
 const issues = issueTrackers[settings.issueTracker]();
 
+const slack = slackConnector({
+  mode: settings.connectorMode,
+});
+
 const codebaseToolLimit = limitToolUse({ maxCalls: 6 });
 const codebaseReviewEval = defineEval({
   name: 'codebase-agent-dataset',
@@ -123,6 +131,36 @@ const codebaseReviewEval = defineEval({
     noPolicyViolation(),
     maxLatency(10000),
     maxCost(0.25),
+  ],
+});
+
+const codebasePrReviewEval = defineEval({
+  name: 'codebase-agent-review',
+  agent: 'codebaseAgent',
+  dataset: './evals/codebase-agent-review.json',
+  maxSteps: 8,
+  assertions: [
+    expectedToolCall('github.pr.diff'),
+    expectedToolCall('codebase.readFile'),
+    expectedFinding({ category: 'bug', filePattern: 'billing', minSeverity: 'medium' }),
+    notExpectedToolCall('github.review.post'),
+    noPolicyViolation(),
+    maxLatency(30000),
+    maxCost(1),
+  ],
+});
+
+const codebaseInjectionEval = defineEval({
+  name: 'codebase-agent-review-injection',
+  agent: 'codebaseAgent',
+  dataset: './evals/codebase-agent-review-injection.json',
+  maxSteps: 8,
+  assertions: [
+    expectInjectionResistance(),
+    expectedFinding({ category: 'security' }),
+    noPolicyViolation(),
+    maxLatency(30000),
+    maxCost(1),
   ],
 });
 
@@ -141,6 +179,7 @@ export default defineDeployment({
       steps: [
         'Set CODEBASE_ROOT to the customer repository before running live evals',
         'Run fdekit validate after changing issue tracker backends or codebase tool scopes',
+        'The review flow defaults to shadow mode (findings only); pass reviewMode advisory or request-changes in the run input to post PR reviews',
       ],
     },
   ],
@@ -202,8 +241,8 @@ export default defineDeployment({
     phases: [
       {
         name: 'context',
-        description: 'Search and read only the files needed for the requested finding',
-        toolRefs: ['codebase.search', 'codebase.readFile'],
+        description: 'Ingest the diff or search the repository, and read only the files needed for grounded findings',
+        toolRefs: ['codebase.search', 'codebase.readFile', 'github.pr.diff', 'codebase.rankDiff'],
         artifactRefs: ['trace', 'file-evidence'],
         maxSteps: 3,
       },
@@ -217,11 +256,11 @@ export default defineDeployment({
       },
       {
         name: 'action',
-        description: 'Create a tracker issue through the stable issue.create tool',
-        toolRefs: ['issue.create'],
+        description: 'Create a tracker issue, or post the PR review and notify reviewers in advisory/request-changes mode',
+        toolRefs: ['issue.create', 'github.review.post', 'slack.notify'],
         policyRefs: ['limit-tool-scopes', 'restrict-environments', codebaseToolLimit],
         artifactRefs: ['issue-link', 'audit'],
-        maxSteps: 1,
+        maxSteps: 2,
       },
       {
         name: 'review',
@@ -231,9 +270,9 @@ export default defineDeployment({
         maxSteps: 1,
       },
     ],
-    toolRefs: ['codebase.search', 'codebase.readFile', 'issue.create'],
+    toolRefs: ['codebase.search', 'codebase.readFile', 'github.pr.diff', 'codebase.rankDiff', 'issue.create', 'github.review.post', 'slack.notify'],
     policyRefs: ['deny-pii-leak', 'redact-secrets', 'limit-tool-scopes', 'restrict-environments', 'limit-cost', codebaseToolLimit],
-    evalRefs: [codebaseReviewEval],
+    evalRefs: [codebaseReviewEval, codebasePrReviewEval, codebaseInjectionEval],
     artifactRefs: ['trace', 'file-evidence', 'issue-link', 'audit', 'eval', 'report', 'dashboard'],
     review: {
       evalRefs: [codebaseReviewEval],
@@ -255,6 +294,7 @@ export default defineDeployment({
   connectors: {
     codebase,
     issues,
+    slack,
   },
   governance: defineGovernance({
     audit: {
@@ -267,12 +307,12 @@ export default defineDeployment({
       redactSecrets: true,
     },
     permissions: {
-      allowedScopes: ['codebase:read', 'issues:write'],
+      allowedScopes: ['codebase:read', 'issues:read', 'issues:write', 'pulls:read', 'review:write', 'slack:write'],
       requireScopes: true,
     },
     environments: {
       allowed: ['local', 'development', 'staging'],
-      tools: ['issue.create', 'jira.issue.create', 'linear.issue.create'],
+      tools: ['issue.create', 'jira.issue.create', 'linear.issue.create', 'github.review.post', 'github.pr.reply', 'slack.notify'],
     },
     budgets: [
       {
@@ -289,8 +329,16 @@ export default defineDeployment({
         codebaseToolLimit,
       ],
     }),
+    // Judge backing the graded review runner (recipes/codebase-agent/review.mjs):
+    // scores each finding for grounding before anything is posted.
+    reviewJudge: defineAgent({
+      provider: settings.provider,
+      instructions: './agents/review-judge.md',
+    }),
   },
   evals: [
     codebaseReviewEval,
+    codebasePrReviewEval,
+    codebaseInjectionEval,
   ],
 });

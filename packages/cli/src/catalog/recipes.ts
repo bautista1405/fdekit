@@ -13,9 +13,9 @@ export const recipeManifests: RecipeManifest[] = [
     kind: 'recipe',
     id: 'codebase-agent',
     displayName: 'Codebase Agent',
-    whatItProves: 'Search/read a customer repo, create an engineering issue, run codebase evals',
-    localByDefault: 'Local sample repo and local issue creation',
-    livePath: 'GitHub, Jira, or Linear',
+    whatItProves: 'Search/read a customer repo, review a pull request with grounded findings and injection resistance, create an engineering issue, run codebase evals',
+    localByDefault: 'Local sample repo, local fixture pull request, and local issue creation',
+    livePath: 'GitHub, Jira, or Linear, plus Slack reviewer notifications',
   },
   {
     kind: 'recipe',

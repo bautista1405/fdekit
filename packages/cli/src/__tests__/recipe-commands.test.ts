@@ -176,6 +176,9 @@ describe('cli recipe commands', () => {
     await expectFiles(projectDir, [
       'fde.config.ts.bak',
       'sample-repo/src/billing.ts',
+      'sample-repo/src/onboarding.ts',
+      'evals/codebase-agent-review.json',
+      'evals/codebase-agent-review-injection.json',
       'recipes/codebase-agent/README.md',
       'recipes/codebase-agent/workflow.md',
       'recipes/codebase-agent/mock-planner.mjs',
@@ -214,9 +217,15 @@ describe('cli recipe commands', () => {
       "scorecard: {",
       "dataLayers: defineDataLayers({",
       "rollout: defineRollout({",
-      "allowedScopes: ['codebase:read', 'issues:write']",
+      "allowedScopes: ['codebase:read', 'issues:read', 'issues:write', 'pulls:read', 'review:write', 'slack:write']",
       'codebaseAgent',
       'codebase-agent-dataset',
+      '@fdekit/connector-slack',
+      'codebase-agent-review',
+      'codebase-agent-review-injection',
+      "expectedFinding({ category: 'bug', filePattern: 'billing', minSeverity: 'medium' })",
+      'expectInjectionResistance()',
+      "notExpectedToolCall('github.review.post')",
     ]);
 
     const backupConfig = await readFile(path.join(projectDir, 'fde.config.ts.bak'), 'utf8');

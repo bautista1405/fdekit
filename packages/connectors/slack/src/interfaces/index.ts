@@ -37,3 +37,22 @@ export interface SlackMessageResult {
   ts: string;
   response?: unknown;
 }
+
+export interface SlackNotifyArgs {
+  title: string;
+  recommendation: 'comment' | 'request-changes';
+  prUrl: string;
+  ticketUrl?: string;
+  findingsSummary?: string[];
+  riskReasons?: string[];
+  channel?: string;
+}
+
+export interface SlackNotifyResult {
+  ok: boolean;
+  mode: SlackConnectorMode;
+  channel: string;
+  text: string;
+  ts: string;
+  response?: unknown;
+}

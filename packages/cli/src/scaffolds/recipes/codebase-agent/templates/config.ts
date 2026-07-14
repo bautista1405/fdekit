@@ -355,6 +355,12 @@ function deploymentBlock(projectName: string): string {
         codebaseToolLimit,
       ],
     }),
+    // Judge backing the graded review runner (recipes/codebase-agent/review.mjs):
+    // scores each finding for grounding before anything is posted.
+    reviewJudge: defineAgent({
+      provider: settings.provider,
+      instructions: './agents/review-judge.md',
+    }),
   },
   evals: [
     codebaseReviewEval,

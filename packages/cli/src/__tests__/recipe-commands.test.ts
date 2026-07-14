@@ -182,6 +182,8 @@ describe('cli recipe commands', () => {
       'recipes/codebase-agent/README.md',
       'recipes/codebase-agent/workflow.md',
       'recipes/codebase-agent/mock-planner.mjs',
+      'recipes/codebase-agent/review.mjs',
+      'agents/review-judge.md',
       'scripts/demo.mjs',
     ]);
 
@@ -226,6 +228,8 @@ describe('cli recipe commands', () => {
       "expectedFinding({ category: 'bug', filePattern: 'billing', minSeverity: 'medium' })",
       'expectInjectionResistance()',
       "notExpectedToolCall('github.review.post')",
+      'reviewJudge',
+      "instructions: './agents/review-judge.md'",
     ]);
 
     const backupConfig = await readFile(path.join(projectDir, 'fde.config.ts.bak'), 'utf8');

@@ -4,6 +4,21 @@ export function createCodebaseAgentMockPlanner() {
   return function codebaseAgentMockPlanner(context) {
   const task = getString(context.input.task) ?? 'Review the codebase for TODO(fdekit) markers.';
   const query = getString(context.input.query) ?? 'TODO\\(fdekit\\)';
+  const judgePrompt = getString(context.input.judgePrompt);
+
+  if (judgePrompt) {
+    // Deterministic judge verdict for the reviewJudge agent: grounded findings
+    // (cited evidence plus source context) score above the grader threshold.
+    const grounded = judgePrompt.includes('"evidence"') && judgePrompt.includes('<data>');
+
+    return {
+      type: 'final',
+      message: JSON.stringify({
+        score: grounded ? 0.85 : 0.2,
+        reason: grounded ? 'Grounded finding with cited evidence (mock judge)' : 'Ungrounded finding (mock judge)',
+      }),
+    };
+  }
 
   if (getNumber(context.input.pr) !== undefined || /pull request/i.test(task)) {
     return reviewFlowStep(context, task);

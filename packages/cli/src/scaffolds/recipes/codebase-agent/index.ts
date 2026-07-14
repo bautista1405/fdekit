@@ -19,7 +19,9 @@ import {
   codebaseAgentReviewEvals,
   codebaseAgentReviewInjectionEvals,
   codebaseAgentMockPlanner,
+  codebaseAgentReviewRunner,
   codebaseAgentDemoRunner,
+  reviewJudgePrompt,
   sampleRepoReadme,
   sampleRepoPackage,
   sampleBillingSource,
@@ -40,8 +42,10 @@ export const codebaseAgentRecipe: RecipeSpec = {
     { path: 'recipes/codebase-agent/README.md', contents: recipeReadme },
     { path: 'recipes/codebase-agent/workflow.md', contents: workflowDoc },
     { path: 'recipes/codebase-agent/mock-planner.mjs', contents: codebaseAgentMockPlanner },
+    { path: 'recipes/codebase-agent/review.mjs', contents: codebaseAgentReviewRunner },
     { path: 'scripts/demo.mjs', contents: codebaseAgentDemoRunner },
     { path: 'agents/codebase-agent.md', contents: codebaseAgentPrompt, overwriteDefault: isDefaultCodebasePrompt },
+    { path: 'agents/review-judge.md', contents: reviewJudgePrompt },
     { kind: 'json', path: 'evals/codebase-agent.json', value: codebaseAgentEvals, overwriteDefault: isDefaultCodebaseEval },
     { kind: 'json', path: 'evals/codebase-agent-review.json', value: codebaseAgentReviewEvals },
     { kind: 'json', path: 'evals/codebase-agent-review-injection.json', value: codebaseAgentReviewInjectionEvals },
@@ -59,7 +63,7 @@ export const codebaseAgentRecipe: RecipeSpec = {
     },
     scripts: {
       demo: 'node scripts/demo.mjs',
-      'fdekit:codebase:review': 'fdekit run codebaseAgent --input \'{"task":"Review pull request #1 in shadow mode","pr":1,"reviewMode":"shadow"}\'',
+      'fdekit:codebase:review': 'node recipes/codebase-agent/review.mjs --pr 1 --mode shadow',
     },
     scriptsIfMissing: 'base',
     dependencies: fdekitDependencies([
@@ -73,6 +77,7 @@ export const codebaseAgentRecipe: RecipeSpec = {
       '@fdekit/provider-google',
       '@fdekit/provider-ollama',
       '@fdekit/provider-openai',
+      '@fdekit/runtime',
     ]),
     devDependencies: {
       '@fdekit/cli': fdekitDependencyVersion,

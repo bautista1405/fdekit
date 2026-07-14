@@ -26,6 +26,14 @@ export function codebaseAgentMockPlanner(): string {
   return readRecipeAsset(assetsUrl, '../files/recipes/codebase-agent/mock-planner.mjs');
 }
 
+export function codebaseAgentReviewRunner(): string {
+  return readRecipeAsset(assetsUrl, '../files/recipes/codebase-agent/review.mjs');
+}
+
+export function reviewJudgePrompt(): string {
+  return readRecipeAsset(assetsUrl, '../files/agents/review-judge.md');
+}
+
 export function codebaseAgentDemoRunner(): string {
   return readRecipeAsset(assetsUrl, '../files/scripts/demo.mjs');
 }

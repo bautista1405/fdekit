@@ -1,5 +1,13 @@
 # @fdekit/console
 
+## 0.5.2
+
+### Patch Changes
+
+- Updated dependencies [0757ffc]
+  - @fdekit/core@0.5.2
+  - @fdekit/runtime@0.5.2
+
 ## 0.5.1
 
 ### Patch Changes

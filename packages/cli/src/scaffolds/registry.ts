@@ -2,7 +2,10 @@ import { promises as fs } from 'fs';
 import * as path from 'path';
 import { asRecord, escapeRegExp } from '@fdekit/core';
 import { writeBakFile, writeFileIfMissing } from '../utils/files.js';
+import { mergeProjectScripts } from './script-merge.js';
 import { isDefaultStarterConfig } from './starter.js';
+
+export { baseScripts, mergeProjectScripts } from './script-merge.js';
 
 export interface RecipeInstallResult {
   projectDir: string;
@@ -82,17 +85,6 @@ export function jsonFile(
 export function env(name: string, value: string, description: string): EnvLine {
   return { name, value, description };
 }
-
-export const baseScripts = {
-  doctor: 'fdekit doctor',
-  dev: 'fdekit dev',
-  validate: 'fdekit validate',
-  'validate:strict': 'fdekit validate --strict',
-  diff: 'fdekit diff',
-  eval: 'fdekit eval run',
-  macro: 'fdekit eval macro',
-  report: 'fdekit report',
-} satisfies Record<string, string>;
 
 export function providerEnv(): EnvLine[] {
   return [
@@ -262,8 +254,7 @@ async function upsertPackageJson(
     };
   }
 
-  const scripts = asRecord(pkg.scripts);
-  Object.assign(scripts, patch.scripts ?? {});
+  const scripts = mergeProjectScripts(asRecord(pkg.scripts), patch.scripts ?? {});
   setMissingValues(scripts, patch.scriptsIfMissing);
 
   if (patch.type) {

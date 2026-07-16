@@ -188,10 +188,12 @@ describe('cli runtime commands', () => {
       args: ['supportTriage', '--ticket', 'tick_1001'],
     }));
 
-    expect(firstRun.exitCode).toBe(1);
+    // Paused-for-human gets a distinct exit code so CI can tell it from failure.
+    expect(firstRun.exitCode).toBe(2);
     expect(firstRun.stdout).toContain('Status: waiting_approval');
     expect(firstRun.stdout).toContain('Approvals: appr_');
     expect(firstRun.stdout).toContain('Next: fdekit approvals approve');
+    expect(firstRun.stdout).toContain('--resume');
 
     const approvals = await readJsonDir(path.join(projectDir, 'artifacts', 'approvals')) as Array<{
       id: string;

@@ -392,7 +392,13 @@ describe('cli scaffold and setup commands', () => {
     defineEval({ name: 'my-eval', assertions: [noPolicyViolation()] }),
   ],
   policies: [
-    definePolicy({ name: 'my-policy' }),
+    definePolicy({
+      name: 'my-policy',
+      description: 'TODO: describe what this policy enforces',
+      beforeToolCall(toolName, args, context) {`);
+    expect(config).toContain(`        return { allowed: true };
+      },
+    }),
   ],
   agents: {`);
     expect(config).not.toMatch(/^(evals|policies|agents):/m);
@@ -619,7 +625,7 @@ describe('cli scaffold and setup commands', () => {
     expect(runOutput.exitCode).toBe(1);
     expect(runOutput.stderr).toContain('Usage: fdekit run');
     expect(evalOutput.exitCode).toBe(1);
-    expect(evalOutput.stderr).toContain('Usage: fdekit eval <run [target]|macro [--min-frequency <n>]>');
+    expect(evalOutput.stderr).toContain('Usage: fdekit eval <run [target] [--require-approvals]|macro [--min-frequency <n>]>');
   });
 
 

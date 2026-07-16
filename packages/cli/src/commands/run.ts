@@ -5,6 +5,7 @@ import {
   AgentRunError,
   loadDeployment,
   requireConfigFile,
+  resumeAgentRun,
   runAgent,
   type AgentRunResult,
   writeJsonArtifact,
@@ -13,7 +14,10 @@ import type { CommandContext } from '../context.js';
 import { CliUserError } from '../errors.js';
 import { builtinProviderRegistry } from '../providers/registry.js';
 
-const RUN_USAGE = 'fdekit run <agent> [--ticket <id>] [--input <json-object>] [--max-steps <n>] [--strict]';
+const RUN_USAGE = 'fdekit run <agent> [--ticket <id>] [--input <json-object>] [--max-steps <n>] [--strict] [--resume [runId]]';
+
+/** Distinct exit code for "paused for a human decision" so scripts and CI can tell it from failure. */
+export const WAITING_APPROVAL_EXIT_CODE = 2;
 
 export async function cmdRun(ctx: CommandContext): Promise<void> {
   const agentName = ctx.args[0];
@@ -32,16 +36,26 @@ export async function cmdRun(ctx: CommandContext): Promise<void> {
   let result: AgentRunResult;
 
   try {
-    result = await runAgent({
-      deployment,
-      projectDir,
-      agentName,
-      input: options.input,
-      maxSteps: options.maxSteps,
-      strict: options.strict,
-      providerRegistry: builtinProviderRegistry,
-      artifactStore,
-    });
+    result = options.resume
+      ? await resumeAgentRun({
+        deployment,
+        projectDir,
+        runId: options.resume.runId,
+        agentName,
+        strict: options.strict,
+        providerRegistry: builtinProviderRegistry,
+        artifactStore,
+      })
+      : await runAgent({
+        deployment,
+        projectDir,
+        agentName,
+        input: options.input,
+        maxSteps: options.maxSteps,
+        strict: options.strict,
+        providerRegistry: builtinProviderRegistry,
+        artifactStore,
+      });
   } catch (err) {
     if (!(err instanceof AgentRunError)) {
       throw err;
@@ -64,26 +78,58 @@ export async function cmdRun(ctx: CommandContext): Promise<void> {
     console.warn(`Warning: ${warning}`);
   }
 
+  const failedCalls = result.toolCalls.filter((call) => call.is_error);
+
   console.log(`Agent: ${result.agent}`);
   console.log(`Status: ${result.status}`);
-  console.log(`Tool calls: ${result.toolCalls.length > 0 ? result.toolCalls.map((call) => call.name).join(', ') : 'none'}`);
+  console.log(`Tool calls: ${result.toolCalls.length > 0 ? result.toolCalls.map(describeToolCall).join(', ') : 'none'}`);
+
+  if (failedCalls.length > 0) {
+    console.log(`Failed tool calls: ${failedCalls.length}`);
+
+    for (const call of failedCalls) {
+      console.log(`  ✗ ${call.name}: ${toolCallErrorMessage(call.result)}`);
+    }
+  }
+
   if (result.approvals.length > 0) {
     console.log(`Approvals: ${result.approvals.map((approval) => `${approval.id} (${approval.status})`).join(', ')}`);
   }
   console.log(`Trace written: ${tracePath}`);
   console.log(`Final answer: ${result.finalAnswer}`);
 
-  if (result.status !== 'completed') {
-    if (result.status === 'waiting_approval') {
-      const pending = result.approvals.find((approval) => approval.status === 'pending');
+  if (result.status === 'completed_with_errors') {
+    console.log('Run completed, but one or more tool calls failed; see the failures above and the trace for details.');
+  }
 
-      if (pending) {
-        console.log(`Next: fdekit approvals approve ${pending.id} --by <name> --reason "<reason>", then rerun this agent`);
-      }
+  if (result.status === 'rejected') {
+    const rejected = result.approvals.find((approval) => approval.status === 'rejected');
+    console.log(`Run stopped: approval ${rejected ? `${rejected.id} for ${rejected.toolName} ` : ''}was rejected. This decision is final unless it is changed with --force.`);
+  }
+
+  if (result.status === 'waiting_approval') {
+    const pending = result.approvals.find((approval) => approval.status === 'pending');
+
+    if (pending) {
+      console.log(`Next: fdekit approvals approve ${pending.id} --by <name> --reason "<reason>", then continue with: fdekit run ${result.agent} --resume ${result.id}`);
     }
 
+    process.exitCode = WAITING_APPROVAL_EXIT_CODE;
+    return;
+  }
+
+  if (result.status !== 'completed') {
     process.exitCode = 1;
   }
+}
+
+function describeToolCall(call: { name: string; is_error?: boolean }): string {
+  return call.is_error ? `${call.name} (FAILED)` : call.name;
+}
+
+function toolCallErrorMessage(result: unknown): string {
+  const error = asRecord(asRecord(result).error);
+  return getString(error.message) ?? 'unknown error';
 }
 
 export function collectRunWarnings(trace: { events?: unknown[] }): string[] {
@@ -109,16 +155,30 @@ export function collectRunWarnings(trace: { events?: unknown[] }): string[] {
   });
 }
 
-function parseRunArgs(args: string[]): { input: Record<string, unknown>; maxSteps?: number; strict?: boolean } {
+interface ParsedRunArgs {
+  input: Record<string, unknown>;
+  maxSteps?: number;
+  strict?: boolean;
+  resume?: { runId?: string };
+}
+
+function parseRunArgs(args: string[]): ParsedRunArgs {
   const input: Record<string, unknown> = {};
   let maxSteps: number | undefined;
   let strict = false;
+  let resume: { runId?: string } | undefined;
 
   for (let index = 0; index < args.length; index += 1) {
     const arg = args[index];
     const next = args[index + 1];
 
-    if (arg === '--ticket') {
+    if (arg === '--resume') {
+      resume = { runId: isMissingFlagValue(next) ? undefined : next };
+
+      if (resume.runId !== undefined) {
+        index += 1;
+      }
+    } else if (arg === '--ticket') {
       if (isMissingFlagValue(next)) {
         throw new CliUserError('Missing value for --ticket', { usage: RUN_USAGE });
       }
@@ -153,7 +213,13 @@ function parseRunArgs(args: string[]): { input: Record<string, unknown>; maxStep
     }
   }
 
-  return { input, maxSteps, strict };
+  if (resume && Object.keys(input).length > 0) {
+    throw new CliUserError('--resume continues a paused run with its original input; it cannot be combined with --ticket or --input', {
+      usage: RUN_USAGE,
+    });
+  }
+
+  return { input, maxSteps, strict, resume };
 }
 
 function isMissingFlagValue(value: string | undefined): boolean {

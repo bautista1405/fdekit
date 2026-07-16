@@ -18,7 +18,7 @@ import type { CommandContext } from '../context.js';
 import { CliUserError } from '../errors.js';
 import { builtinProviderRegistry } from '../providers/registry.js';
 
-const EVAL_USAGE = 'fdekit eval <run [target]|macro [--min-frequency <n>]>';
+const EVAL_USAGE = 'fdekit eval <run [target] [--require-approvals]|macro [--min-frequency <n>]>';
 
 export async function cmdEval(ctx: CommandContext): Promise<void> {
   const [subcommand, ...args] = ctx.args;
@@ -30,7 +30,8 @@ export async function cmdEval(ctx: CommandContext): Promise<void> {
   }
 
   const macroOptions = subcommand === 'macro' ? parseMacroOptions(args) : null;
-  const runTarget = subcommand === 'run' ? parseRunTarget(args) : undefined;
+  const runOptions = subcommand === 'run' ? parseRunOptions(args) : undefined;
+  const runTarget = runOptions?.target;
 
   const configPath = await requireConfigFile(ctx.cwd);
   const deployment = await loadDeployment(configPath);
@@ -66,6 +67,7 @@ export async function cmdEval(ctx: CommandContext): Promise<void> {
     writeTraces: true,
     providerRegistry: builtinProviderRegistry,
     artifactStore,
+    approvals: runOptions?.requireApprovals ? 'require' : 'auto',
   });
   const latestPath = await writeJsonArtifact(projectDir, 'evals', 'latest.json', artifact, artifactStore);
 
@@ -76,6 +78,9 @@ export async function cmdEval(ctx: CommandContext): Promise<void> {
     console.log(`Eval target: ${runTarget}`);
   }
   console.log(`Eval suites: ${artifact.results.length}`);
+
+  printFailedAssertions(artifact);
+
   console.log(`Results written: ${latestPath}`);
 
   if (artifact.status !== 'passed') {
@@ -83,22 +88,53 @@ export async function cmdEval(ctx: CommandContext): Promise<void> {
   }
 }
 
-function parseRunTarget(args: string[]): string | undefined {
-  if (args.length === 0) {
-    return undefined;
+function printFailedAssertions(artifact: EvalArtifact): void {
+  for (const suite of artifact.results) {
+    if (suite.status === 'passed') {
+      continue;
+    }
+
+    console.log(`\nFailed suite: ${suite.name} (${suite.scope})`);
+
+    for (const assertion of suite.assertions ?? []) {
+      if (!assertion.passed) {
+        console.log(`  ✗ ${assertion.message ?? 'assertion failed'}`);
+      }
+    }
+
+    for (const evalCase of suite.cases ?? []) {
+      if (evalCase.status === 'passed') {
+        continue;
+      }
+
+      console.log(`  Case: ${evalCase.name}${evalCase.traceId ? ` (trace ${evalCase.traceId})` : ''}`);
+
+      for (const assertion of evalCase.assertions) {
+        if (!assertion.passed) {
+          console.log(`    ✗ ${assertion.message ?? 'assertion failed'}`);
+        }
+      }
+    }
+  }
+}
+
+function parseRunOptions(args: string[]): { target?: string; requireApprovals: boolean } {
+  let target: string | undefined;
+  let requireApprovals = false;
+
+  for (const arg of args) {
+    if (arg === '--require-approvals') {
+      requireApprovals = true;
+    } else if (arg.startsWith('--')) {
+      throw new CliUserError(`Unknown eval run option: ${arg}`, { usage: EVAL_USAGE });
+    } else if (target === undefined) {
+      target = arg;
+    } else {
+      throw new CliUserError(`Unknown eval run option: ${arg}`, { usage: EVAL_USAGE });
+    }
   }
 
-  if (args.length > 1) {
-    throw new CliUserError(`Unknown eval run option: ${args[1]}`, { usage: EVAL_USAGE });
-  }
-
-  const target = args[0];
-
-  if (target.startsWith('--')) {
-    throw new CliUserError(`Unknown eval run option: ${target}`, { usage: EVAL_USAGE });
-  }
-
-  return target;
+  return { target, requireApprovals };
 }
 
 function selectDeploymentEvalTarget(

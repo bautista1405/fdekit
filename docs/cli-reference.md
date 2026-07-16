@@ -71,9 +71,11 @@ See [Versioning And Migration Notes](./cookbook/versioning-and-migrations.md) fo
 | --- | --- |
 | `fdekit dev` | Load the deployment and write a trace. |
 | `fdekit run <agent> [--input <json>] [--strict]` | Run an agent loop and write a trace. `--strict` requires every available tool to declare `argsSchema`, `scopes`, and `environments`, then validates tool args before handlers run. |
-| `fdekit approvals list` | Show approval requests. |
-| `fdekit approvals approve <id> --by <user> --reason <reason>` | Approve a queued request. |
-| `fdekit approvals reject <id> --by <user> --reason <reason>` | Reject a queued request. |
+| `fdekit run <agent> --resume [runId]` | Continue a run paused on an approval: executes the exact approved tool call (no re-planning) and resumes the loop without replaying earlier writes. Without `runId`, resumes the agent's latest paused run. |
+| `fdekit approvals list [--status <s>] [--tool <t>] [--json]` | Show approval requests with their args and execution target; filter by status or tool. |
+| `fdekit approvals show <id> [--json]` | Show one request in full: args, target system, decision history, execution record. |
+| `fdekit approvals approve <id> [--by <user>] [--reason <reason>] [--force]` | Approve a queued request. `--by` defaults to the OS username; `--force` is required to overturn an existing decision (history is preserved). |
+| `fdekit approvals reject <id> [--by <user>] [--reason <reason>] [--force]` | Reject a queued request; a rejected run reports `Status: rejected`. |
 | `fdekit audit [--limit <n>]` | Show recent audit log entries. |
 | `fdekit feedback export [--json]` | Export approval/audit feedback into eval candidates. |
 | `fdekit trace` | Generate an HTML trace viewer. |
@@ -81,6 +83,8 @@ See [Versioning And Migration Notes](./cookbook/versioning-and-migrations.md) fo
 | `fdekit console` | Generate an HTML dashboard and export artifacts. |
 
 Runtime evidence commands write through the configured artifact store. With no `deployment.artifacts` config, outputs stay under local `artifacts/`. With S3 configured, command output prints `s3://...` URIs.
+
+`fdekit run` exit codes: `0` completed, `1` failed (including `completed_with_errors`, where a tool call failed but the loop finished, and `rejected`), `2` paused waiting for approval. Approvals are fingerprinted against the execution target (connector name, mode, repository/channel/base URL), so approvals granted against simulated connectors do not authorize live-mode writes.
 
 ## Evals
 
@@ -109,18 +113,20 @@ nor audit event contains a recoverable run input.
 
 | Command | Purpose |
 | --- | --- |
-| `fdekit eval run [target]` | Run all lower-level evals, or one agent/eval suite target. |
+| `fdekit eval run [target] [--require-approvals]` | Run all lower-level evals, or one agent/eval suite target. Approval gates are auto-decided by default (recorded as `eval-runner`; cases with `expected.shouldProceed: false` auto-reject); `--require-approvals` keeps production pause behavior. |
 | `fdekit eval macro [--min-frequency <n>]` | Discover recurring behavior patterns across traces. |
+
+Failing suites print their failing assertions inline; full results stay in `artifacts/evals/latest.json`. The `approvalRequested(toolName?)` assertion from `@fdekit/core` passes when a run requested an approval, so gating itself becomes testable.
 
 ## Runtime Environments
 
 | Command | Purpose |
 | --- | --- |
-| `fdekit env start` | Start the configured runtime environment. |
+| `fdekit env start` | Start the configured runtime environment. Commands marked `background: true` run detached with a pidfile, and start returns once health checks pass; if the environment is already healthy, start is a no-op. |
 | `fdekit env seed` | Seed the environment if a seed command is configured. |
-| `fdekit env doctor` | Check the environment health checks. |
-| `fdekit env stop` | Stop the environment. |
-| `fdekit env describe` | Print environment metadata and evidence. |
+| `fdekit env doctor [--json]` | Check the environment health checks. Command-based checks print their output only on failure. |
+| `fdekit env stop` | Stop the environment: runs stop commands, then stops any recorded background processes. |
+| `fdekit env describe` | Print environment metadata, evidence, commands, and health checks. |
 
 See [Local Environment Cookbook](./cookbook/local-environments.md) for Docker and Floci examples.
 

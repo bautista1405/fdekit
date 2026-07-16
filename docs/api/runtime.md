@@ -3,7 +3,7 @@
 <!-- Maintained via scripts/generate-api-docs.mjs. -->
 Run `npm run docs:api` to refresh this page after changing public exports.
 
-Applies to `@fdekit/runtime` v0.5.1.
+Applies to `@fdekit/runtime` v0.5.2.
 
 Declaration source: `packages/runtime/dist/index.d.ts`.
 
@@ -39,7 +39,7 @@ Declaration source: `packages/runtime/dist/index.d.ts`.
 
 ## Export Count
 
-This page documents 135 public root exports from `@fdekit/runtime`: 53 functions/values and 82 types/interfaces.
+This page documents 141 public root exports from `@fdekit/runtime`: 56 functions/values and 85 types/interfaces.
 
 ## Functions And Values
 
@@ -48,6 +48,7 @@ This page documents 135 public root exports from `@fdekit/runtime`: 53 functions
 | <a id="agentrunerror"></a>`AgentRunError` | class | [packages/runtime/src/agents/index.ts](../../packages/runtime/src/agents/index.ts) |
 | <a id="appendauditlog"></a>`appendAuditLog` | function | [packages/runtime/src/governance/index.ts](../../packages/runtime/src/governance/index.ts) |
 | <a id="appendjsonlartifact"></a>`appendJsonlArtifact` | function | [packages/runtime/src/artifact-store/operations.ts](../../packages/runtime/src/artifact-store/operations.ts) |
+| <a id="approvaldecisionconflicterror"></a>`ApprovalDecisionConflictError` | class | [packages/runtime/src/governance/index.ts](../../packages/runtime/src/governance/index.ts) |
 | <a id="approvalfingerprint"></a>`approvalFingerprint` | function | [packages/runtime/src/governance/index.ts](../../packages/runtime/src/governance/index.ts) |
 | <a id="approveapproval"></a>`approveApproval` | function | [packages/runtime/src/governance/index.ts](../../packages/runtime/src/governance/index.ts) |
 | <a id="ass3artifactclient"></a>`asS3ArtifactClient` | function | [packages/runtime/src/artifact-store/s3-store.ts](../../packages/runtime/src/artifact-store/s3-store.ts) |
@@ -70,6 +71,7 @@ This page documents 135 public root exports from `@fdekit/runtime`: 53 functions
 | <a id="findprojectdir"></a>`findProjectDir` | function | [packages/runtime/src/config/index.ts](../../packages/runtime/src/config/index.ts) |
 | <a id="joinnames"></a>`joinNames` | function | [packages/runtime/src/utils.ts](../../packages/runtime/src/utils.ts) |
 | <a id="loaddeployment"></a>`loadDeployment` | function | [packages/runtime/src/config/index.ts](../../packages/runtime/src/config/index.ts) |
+| <a id="markapprovalexecuted"></a>`markApprovalExecuted` | function | [packages/runtime/src/governance/index.ts](../../packages/runtime/src/governance/index.ts) |
 | <a id="parsejsonl"></a>`parseJsonl` | function | [packages/runtime/src/artifact-store/json.ts](../../packages/runtime/src/artifact-store/json.ts) |
 | <a id="readapproval"></a>`readApproval` | function | [packages/runtime/src/governance/index.ts](../../packages/runtime/src/governance/index.ts) |
 | <a id="readapprovals"></a>`readApprovals` | function | [packages/runtime/src/governance/index.ts](../../packages/runtime/src/governance/index.ts) |
@@ -88,6 +90,7 @@ This page documents 135 public root exports from `@fdekit/runtime`: 53 functions
 | <a id="rendertraceviewer"></a>`renderTraceViewer` | function | [packages/runtime/src/traces/index.ts](../../packages/runtime/src/traces/index.ts) |
 | <a id="requestapproval"></a>`requestApproval` | function | [packages/runtime/src/governance/index.ts](../../packages/runtime/src/governance/index.ts) |
 | <a id="requireconfigfile"></a>`requireConfigFile` | function | [packages/runtime/src/config/index.ts](../../packages/runtime/src/config/index.ts) |
+| <a id="resumeagentrun"></a>`resumeAgentRun` | function | [packages/runtime/src/agents/index.ts](../../packages/runtime/src/agents/index.ts) |
 | <a id="runagent"></a>`runAgent` | function | [packages/runtime/src/agents/index.ts](../../packages/runtime/src/agents/index.ts) |
 | <a id="runeval"></a>`runEval` | function | [packages/runtime/src/evals/index.ts](../../packages/runtime/src/evals/index.ts) |
 | <a id="runevals"></a>`runEvals` | function | [packages/runtime/src/evals/index.ts](../../packages/runtime/src/evals/index.ts) |
@@ -104,12 +107,14 @@ This page documents 135 public root exports from `@fdekit/runtime`: 53 functions
 | Symbol | Kind | Defined in |
 | --- | --- | --- |
 | <a id="agentprovider"></a>`AgentProvider` | interface | [packages/core/src/types/provider.ts](../../packages/core/src/types/provider.ts) |
+| <a id="agentresumeoptions"></a>`AgentResumeOptions` | interface | [packages/runtime/src/agents/interfaces/index.ts](../../packages/runtime/src/agents/interfaces/index.ts) |
 | <a id="agentrunoptions"></a>`AgentRunOptions` | interface | [packages/runtime/src/agents/interfaces/index.ts](../../packages/runtime/src/agents/interfaces/index.ts) |
 | <a id="agentrunresult"></a>`AgentRunResult` | interface | [packages/runtime/src/agents/interfaces/index.ts](../../packages/runtime/src/agents/interfaces/index.ts) |
 | <a id="agentrunstatus"></a>`AgentRunStatus` | type | [packages/runtime/src/agents/interfaces/index.ts](../../packages/runtime/src/agents/interfaces/index.ts) |
 | <a id="agenttoolcall"></a>`AgentToolCall` | interface | [packages/runtime/src/agents/interfaces/index.ts](../../packages/runtime/src/agents/interfaces/index.ts) |
 | <a id="approvalartifact"></a>`ApprovalArtifact` | interface | [packages/runtime/src/governance/interfaces/index.ts](../../packages/runtime/src/governance/interfaces/index.ts) |
 | <a id="approvaldecisionoptions"></a>`ApprovalDecisionOptions` | interface | [packages/runtime/src/governance/interfaces/index.ts](../../packages/runtime/src/governance/interfaces/index.ts) |
+| <a id="approvaldecisionrecord"></a>`ApprovalDecisionRecord` | interface | [packages/runtime/src/governance/interfaces/index.ts](../../packages/runtime/src/governance/interfaces/index.ts) |
 | <a id="approvalrequestinput"></a>`ApprovalRequestInput` | interface | [packages/runtime/src/governance/interfaces/index.ts](../../packages/runtime/src/governance/interfaces/index.ts) |
 | <a id="approvalstatus"></a>`ApprovalStatus` | type | [packages/runtime/src/governance/interfaces/index.ts](../../packages/runtime/src/governance/interfaces/index.ts) |
 | <a id="artifactref"></a>`ArtifactRef` | interface | [packages/runtime/src/artifact-store/types.ts](../../packages/runtime/src/artifact-store/types.ts) |
@@ -156,6 +161,7 @@ This page documents 135 public root exports from `@fdekit/runtime`: 53 functions
 | <a id="macroevaltracedocument"></a>`MacroEvalTraceDocument` | interface | [packages/runtime/src/macro-evals/interfaces/index.ts](../../packages/runtime/src/macro-evals/interfaces/index.ts) |
 | <a id="mockplanner"></a>`MockPlanner` | type | [packages/runtime/src/providers/mock.ts](../../packages/runtime/src/providers/mock.ts) |
 | <a id="mockprovideroptions"></a>`MockProviderOptions` | interface | [packages/runtime/src/providers/mock.ts](../../packages/runtime/src/providers/mock.ts) |
+| <a id="pausedrunartifact"></a>`PausedRunArtifact` | interface | [packages/runtime/src/agents/interfaces/index.ts](../../packages/runtime/src/agents/interfaces/index.ts) |
 | <a id="policyviolation"></a>`PolicyViolation` | interface | [packages/runtime/src/agents/interfaces/index.ts](../../packages/runtime/src/agents/interfaces/index.ts) |
 | <a id="providerfinalstep"></a>`ProviderFinalStep` | interface | [packages/core/src/types/provider.ts](../../packages/core/src/types/provider.ts) |
 | <a id="providerplancontext"></a>`ProviderPlanContext` | interface | [packages/core/src/types/provider.ts](../../packages/core/src/types/provider.ts) |

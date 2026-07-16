@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest';
 import {
   asRecord,
   defineAgent,
+  defineConnector,
   defineDeployment,
   defineGovernance,
   defineHarness,
@@ -22,8 +23,15 @@ import {
   type ProviderToolResult,
   type ToolDefinition,
 } from '@fdekit/core';
-import { AgentRunError, runAgent } from '../agents/index.js';
-import { approveApproval, readAuditLog } from '../governance/index.js';
+import { AgentRunError, resumeAgentRun, runAgent, type PausedRunArtifact } from '../agents/index.js';
+import {
+  ApprovalDecisionConflictError,
+  approveApproval,
+  readApprovals,
+  readAuditLog,
+  rejectApproval,
+} from '../governance/index.js';
+import { readJsonArtifact } from '../artifact-store/index.js';
 
 describe('runAgent', () => {
   it('runs a deterministic support escalation loop with tool calls and traces', async () => {
@@ -220,7 +228,8 @@ describe('runAgent', () => {
       maxSteps: 4,
     });
 
-    expect(result.status).toBe('completed');
+    // The loop recovered, but the failed external call must stay visible in the status.
+    expect(result.status).toBe('completed_with_errors');
     expect(result.finalAnswer).toBe('Recovered after fetching the ticket first');
     expect(result.toolCalls.map((call) => call.name)).toEqual(['customer.get', 'ticket.get']);
     expect(result.toolCalls[0]).toMatchObject({
@@ -552,7 +561,8 @@ describe('runAgent', () => {
 
     expect(pending.status).toBe('waiting_approval');
     expect(pending.toolCalls.map((call) => call.name)).toEqual(['ticket.get', 'customer.get']);
-    expect(pending.policyViolations).toHaveLength(1);
+    // Waiting on a human decision is an approval outcome, not a policy violation.
+    expect(pending.policyViolations).toHaveLength(0);
     expect(pending.approvals).toHaveLength(1);
     expect(pending.approvals[0]).toMatchObject({
       status: 'pending',
@@ -951,3 +961,229 @@ function classifySupportCase(ticket: Record<string, unknown>, customer: Record<s
     reason: reasons.join(', ') || 'standard support request',
   };
 }
+
+describe('approval review loop', () => {
+  function createGatedDeployment(counters: Record<string, number>, connectorMode = 'local'): DeploymentDefinition {
+    const countingTool = (name: string, result: Record<string, unknown> = { ok: true }) => defineTool({
+      name,
+      handler() {
+        counters[name] = (counters[name] ?? 0) + 1;
+        return { ...result, execution: counters[name] };
+      },
+    });
+
+    return defineDeployment({
+      name: 'test-approval-loop',
+      environment: 'local',
+      providers: {
+        sequential: {
+          name: 'sequential',
+          runtime: {
+            name: 'sequential',
+            planNextStep(context) {
+              for (const toolName of ['ticket.get', 'issue.create', 'slack.message']) {
+                if (!context.toolResults.some((call) => call.name === toolName)) {
+                  return {
+                    type: 'tool_call',
+                    toolName,
+                    args: toolName === 'issue.create'
+                      ? { title: 'Billing outage blocks renewal', labels: ['billing'] }
+                      : { ticketId: 'tick_1001' },
+                  };
+                }
+              }
+
+              return { type: 'final', message: 'Escalation completed with all writes executed' };
+            },
+          },
+        },
+      },
+      connectors: {
+        tracker: defineConnector({
+          name: 'tracker',
+          config: {
+            mode: connectorMode,
+            repository: 'company/support-triage',
+          },
+          tools: [countingTool('issue.create', { issueId: 'ISSUE-1' })],
+        }),
+      },
+      agents: {
+        triage: defineAgent({
+          provider: 'sequential',
+          instructions: 'Escalate the ticket through gated writes',
+          tools: [
+            countingTool('ticket.get', { id: 'tick_1001' }),
+            countingTool('slack.message', { channel: '#alerts' }),
+          ],
+          policies: [
+            requireApproval({ tools: ['issue.create', 'slack.message'], reason: 'External writes need review' }),
+          ],
+        }),
+      },
+    });
+  }
+
+  it('resumes a paused run without replaying earlier writes and converges', async () => {
+    const counters: Record<string, number> = {};
+    const deployment = createGatedDeployment(counters);
+    const projectDir = await mkRunProjectDir();
+
+    const paused = await runAgent({
+      deployment,
+      projectDir,
+      agentName: 'triage',
+      input: { ticketId: 'tick_1001' },
+    });
+
+    expect(paused.status).toBe('waiting_approval');
+    expect(counters).toEqual({ 'ticket.get': 1 });
+
+    const pausedArtifact = await readJsonArtifact<PausedRunArtifact>(projectDir, 'runs', `${paused.id}.json`);
+    expect(pausedArtifact).toMatchObject({
+      status: 'paused',
+      runId: paused.id,
+      agent: 'triage',
+      pending: {
+        toolName: 'issue.create',
+        args: { title: 'Billing outage blocks renewal', labels: ['billing'] },
+      },
+    });
+
+    await approveApproval(projectDir, paused.approvals[0].id, { actor: 'reviewer' });
+
+    const secondPause = await resumeAgentRun({ deployment, projectDir, agentName: 'triage' });
+
+    expect(secondPause.status).toBe('waiting_approval');
+    expect(secondPause.id).toBe(paused.id);
+    // The approved write executed exactly once; nothing earlier was replayed.
+    expect(counters).toEqual({ 'ticket.get': 1, 'issue.create': 1 });
+
+    const nextApproval = secondPause.approvals.find((approval) => approval.status === 'pending');
+    expect(nextApproval?.toolName).toBe('slack.message');
+    await approveApproval(projectDir, nextApproval!.id, { actor: 'reviewer' });
+
+    const completed = await resumeAgentRun({ deployment, projectDir, runId: paused.id });
+
+    expect(completed.status).toBe('completed');
+    expect(completed.finalAnswer).toBe('Escalation completed with all writes executed');
+    expect(counters).toEqual({ 'ticket.get': 1, 'issue.create': 1, 'slack.message': 1 });
+    expect(completed.trace.events.filter((event) => event.type === 'agent.run.resumed')).toHaveLength(2);
+
+    const consumed = await readJsonArtifact<PausedRunArtifact>(projectDir, 'runs', `${paused.id}.json`);
+    expect(consumed?.status).toBe('consumed');
+    await expect(resumeAgentRun({ deployment, projectDir, runId: paused.id })).rejects.toThrow('already resumed');
+
+    const approvals = await readApprovals(projectDir);
+    const executed = approvals.find((approval) => approval.toolName === 'issue.create');
+    expect(executed).toMatchObject({ status: 'approved', executedRunId: paused.id });
+    expect(executed?.executedAt).toBeTruthy();
+  });
+
+  it('scopes approvals to the connector target so mode flips require fresh review', async () => {
+    const counters: Record<string, number> = {};
+    const projectDir = await mkRunProjectDir();
+    const localDeployment = createGatedDeployment(counters, 'local');
+
+    const paused = await runAgent({
+      deployment: localDeployment,
+      projectDir,
+      agentName: 'triage',
+      input: { ticketId: 'tick_1001' },
+    });
+    const localApproval = paused.approvals[0];
+    expect(localApproval.target).toMatchObject({ connector: 'tracker', mode: 'local', repository: 'company/support-triage' });
+
+    await approveApproval(projectDir, localApproval.id, { actor: 'reviewer' });
+
+    // Same deployment, same args, but connectors flipped to live mode: the
+    // previously granted approval must not authorize the real write.
+    const apiDeployment = createGatedDeployment(counters, 'api');
+    const apiRun = await runAgent({
+      deployment: apiDeployment,
+      projectDir,
+      agentName: 'triage',
+      input: { ticketId: 'tick_1001' },
+    });
+
+    expect(apiRun.status).toBe('waiting_approval');
+    const apiApproval = apiRun.approvals.find((approval) => approval.status === 'pending');
+    expect(apiApproval?.toolName).toBe('issue.create');
+    expect(apiApproval?.id).not.toBe(localApproval.id);
+    expect(apiApproval?.target).toMatchObject({ mode: 'api' });
+    // The live write never executed without fresh review.
+    expect(counters['issue.create']).toBeUndefined();
+  });
+
+  it('reports a rejected decision as a distinct run status', async () => {
+    const counters: Record<string, number> = {};
+    const deployment = createGatedDeployment(counters);
+    const projectDir = await mkRunProjectDir();
+
+    const paused = await runAgent({ deployment, projectDir, agentName: 'triage', input: {} });
+    await rejectApproval(projectDir, paused.approvals[0].id, { actor: 'reviewer', reason: 'Not during the change freeze' });
+
+    const resumed = await resumeAgentRun({ deployment, projectDir, agentName: 'triage' });
+    expect(resumed.status).toBe('rejected');
+
+    const rerun = await runAgent({ deployment, projectDir, agentName: 'triage', input: {} });
+    expect(rerun.status).toBe('rejected');
+    expect(counters['issue.create']).toBeUndefined();
+  });
+
+  it('auto-decides approvals when an override is configured (eval runs)', async () => {
+    const counters: Record<string, number> = {};
+    const deployment = createGatedDeployment(counters);
+    const projectDir = await mkRunProjectDir();
+
+    const approvedRun = await runAgent({
+      deployment,
+      projectDir,
+      agentName: 'triage',
+      input: {},
+      approvalOverride: { decision: 'approved', actor: 'eval-runner' },
+    });
+
+    expect(approvedRun.status).toBe('completed');
+    expect(counters).toEqual({ 'ticket.get': 1, 'issue.create': 1, 'slack.message': 1 });
+    expect(approvedRun.approvals.every((approval) => approval.decidedBy === 'eval-runner')).toBe(true);
+    expect(approvedRun.policyViolations).toHaveLength(0);
+
+    const rejectedProject = await mkRunProjectDir();
+    const rejectedCounters: Record<string, number> = {};
+    const rejectedRun = await runAgent({
+      deployment: createGatedDeployment(rejectedCounters),
+      projectDir: rejectedProject,
+      agentName: 'triage',
+      input: {},
+      approvalOverride: { decision: 'rejected', actor: 'eval-runner' },
+    });
+
+    expect(rejectedRun.status).toBe('rejected');
+    expect(rejectedCounters['issue.create']).toBeUndefined();
+  });
+
+  it('keeps decision history and requires force to overturn a decision', async () => {
+    const deployment = createGatedDeployment({});
+    const projectDir = await mkRunProjectDir();
+
+    const paused = await runAgent({ deployment, projectDir, agentName: 'triage', input: {} });
+    const id = paused.approvals[0].id;
+
+    await rejectApproval(projectDir, id, { actor: 'first-reviewer', reason: 'Wrong repository' });
+
+    await expect(approveApproval(projectDir, id, { actor: 'second-reviewer' }))
+      .rejects.toBeInstanceOf(ApprovalDecisionConflictError);
+
+    const flipped = await approveApproval(projectDir, id, {
+      actor: 'second-reviewer',
+      reason: 'Repository fixed',
+      force: true,
+    });
+
+    expect(flipped.status).toBe('approved');
+    expect(flipped.decisions).toHaveLength(2);
+    expect(flipped.decisions?.map((decision) => decision.status)).toEqual(['rejected', 'approved']);
+    expect(flipped.decisions?.[0]).toMatchObject({ decidedBy: 'first-reviewer', reason: 'Wrong repository' });
+  });
+});

@@ -47,6 +47,7 @@ export async function runAgentEvalCase(
       maxSteps: evalItem.definition.maxSteps,
       providerRegistry: options.providerRegistry,
       artifactStore: options.artifactStore,
+      approvalOverride: evalApprovalOverride(evalCase, options),
     });
 
     if (options.writeTraces) {
@@ -108,6 +109,26 @@ export async function runAgentEvalCase(
   }
 }
 
+function evalApprovalOverride(
+  evalCase: MaterializedEvalCase,
+  options: RunEvalsOptions,
+): { decision: 'approved' | 'rejected'; actor: string; reason: string } | undefined {
+  if (options.approvals === 'require') {
+    return undefined;
+  }
+
+  const expected = asRecord(evalCase.expected);
+  const decision = expected.shouldProceed === false ? 'rejected' : 'approved';
+
+  return {
+    decision,
+    actor: 'eval-runner',
+    reason: decision === 'rejected'
+      ? `Auto-rejected by the eval runner: case "${evalCase.name}" replays a human rejection (expected.shouldProceed = false)`
+      : `Auto-approved by the eval runner so approval-gated tools can execute inside evals`,
+  };
+}
+
 async function evaluateRunAssertions(
   assertions: EvalAssertion[],
   evalCase: MaterializedEvalCase,
@@ -125,6 +146,13 @@ async function evaluateRunAssertions(
       finalAnswer: runResult.finalAnswer,
       toolCalls: runResult.toolCalls,
       policyViolations: runResult.policyViolations,
+      approvals: runResult.approvals.map((approval) => ({
+        id: approval.id,
+        status: approval.status,
+        toolName: approval.toolName,
+        policy: approval.policy,
+        decidedBy: approval.decidedBy,
+      })),
       costUsd: runResult.costUsd,
       latencyMs: runResult.latencyMs,
       metadata: {

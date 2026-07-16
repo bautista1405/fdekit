@@ -23,10 +23,11 @@ interface SteeringState {
   feedback: ProviderToolResult[];
 }
 
-export async function runProviderLoop(state: RunState, maxSteps: number): Promise<string> {
+export async function runProviderLoop(state: RunState, maxSteps: number, startStep = 0): Promise<string> {
   const steering = createSteeringState(state);
 
-  for (let stepIndex = 0; stepIndex < maxSteps; stepIndex += 1) {
+  for (let stepIndex = startStep; stepIndex < maxSteps; stepIndex += 1) {
+    state.lastStepIndex = stepIndex;
     const step = await state.provider.planNextStep({
       deployment: state.deployment,
       agentName: state.agentName,

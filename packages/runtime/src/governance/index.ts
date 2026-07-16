@@ -4,6 +4,7 @@ import { appendJsonlArtifact, readJsonArtifacts, readJsonlArtifact } from '../ar
 import type {
   ApprovalArtifact,
   ApprovalDecisionOptions,
+  ApprovalDecisionRecord,
   ApprovalRequestInput,
   ApprovalStatus,
   AuditLogEntry,
@@ -22,6 +23,7 @@ import {
 export type {
   ApprovalArtifact,
   ApprovalDecisionOptions,
+  ApprovalDecisionRecord,
   ApprovalRequestInput,
   ApprovalStatus,
   AuditLogEntry,
@@ -31,7 +33,7 @@ export type {
 export { redactForGovernance } from './helpers/index.js';
 
 export function approvalFingerprint(input: Pick<ApprovalRequestInput,
-  'deployment' | 'environment' | 'agent' | 'policy' | 'phase' | 'toolName' | 'args'
+  'deployment' | 'environment' | 'agent' | 'policy' | 'phase' | 'toolName' | 'args' | 'target'
 >): string {
   return createHash('sha256')
     .update(stableStringify({
@@ -42,6 +44,12 @@ export function approvalFingerprint(input: Pick<ApprovalRequestInput,
       phase: input.phase,
       toolName: input.toolName,
       args: redactForGovernance(input.args),
+      // Approvals are scoped to the execution target: flipping a connector from
+      // simulated to live mode (or pointing it at another repo/channel/API) must
+      // invalidate previously granted approvals rather than authorize new writes.
+      target: input.target && Object.keys(input.target).length > 0
+        ? redactForGovernance(input.target)
+        : undefined,
     }))
     .digest('hex');
 }
@@ -75,6 +83,9 @@ export async function requestApproval(
     phase: input.phase,
     toolName: input.toolName,
     args: redactForGovernance(input.args),
+    target: input.target && Object.keys(input.target).length > 0
+      ? redactForGovernance(input.target) as Record<string, unknown>
+      : undefined,
     reason: input.reason ?? `Tool call "${input.toolName}" requires approval`,
     requestedBy: input.requestedBy ?? 'agent',
   };
@@ -104,7 +115,7 @@ export async function requestApproval(
 
 export async function findApproval(
   projectDir: string,
-  input: Pick<ApprovalRequestInput, 'deployment' | 'environment' | 'agent' | 'policy' | 'phase' | 'toolName' | 'args'>,
+  input: Pick<ApprovalRequestInput, 'deployment' | 'environment' | 'agent' | 'policy' | 'phase' | 'toolName' | 'args' | 'target'>,
   artifactStore?: ArtifactStore,
 ): Promise<ApprovalArtifact | null> {
   return readApproval(projectDir, approvalIdFromFingerprint(approvalFingerprint(input)), artifactStore);
@@ -144,6 +155,30 @@ export async function rejectApproval(
   return decideApproval(projectDir, id, 'rejected', options, artifactStore);
 }
 
+export async function markApprovalExecuted(
+  projectDir: string,
+  id: string,
+  runId: string,
+  artifactStore?: ArtifactStore,
+): Promise<ApprovalArtifact | null> {
+  const approval = await readApproval(projectDir, id, artifactStore);
+
+  if (!approval || approval.status !== 'approved') {
+    return approval;
+  }
+
+  const next: ApprovalArtifact = {
+    ...approval,
+    updatedAt: new Date().toISOString(),
+    executedAt: new Date().toISOString(),
+    executedRunId: runId,
+  };
+
+  await writeApproval(projectDir, next, artifactStore);
+
+  return next;
+}
+
 export async function appendAuditLog(
   projectDir: string,
   input: AuditLogInput,
@@ -178,6 +213,17 @@ export async function readAuditLog(
   return readJsonlArtifact<AuditLogEntry>(projectDir, 'audit', 'audit.jsonl', artifactStore);
 }
 
+export class ApprovalDecisionConflictError extends Error {
+  constructor(public readonly approval: ApprovalArtifact, requestedStatus: ApprovalStatus) {
+    super(
+      `Approval ${approval.id} is already ${approval.status} `
+      + `(by ${approval.decidedBy ?? 'unknown'} at ${approval.decidedAt ?? 'unknown time'}); `
+      + `pass force to change the decision to ${requestedStatus}`,
+    );
+    this.name = 'ApprovalDecisionConflictError';
+  }
+}
+
 async function decideApproval(
   projectDir: string,
   id: string,
@@ -191,14 +237,29 @@ async function decideApproval(
     throw new Error(`Approval request not found: ${id}`);
   }
 
+  if (approval.status === status) {
+    return approval;
+  }
+
+  if (approval.status !== 'pending' && !options.force) {
+    throw new ApprovalDecisionConflictError(approval, status);
+  }
+
   const now = new Date().toISOString();
+  const decision: ApprovalDecisionRecord = {
+    status,
+    decidedAt: now,
+    decidedBy: options.actor ?? 'fde',
+    reason: options.reason,
+  };
   const next: ApprovalArtifact = {
     ...approval,
     status,
     updatedAt: now,
     decidedAt: now,
-    decidedBy: options.actor ?? 'fde',
+    decidedBy: decision.decidedBy,
     decisionReason: options.reason,
+    decisions: [...(approval.decisions ?? []), decision],
   };
 
   await writeApproval(projectDir, next, artifactStore);

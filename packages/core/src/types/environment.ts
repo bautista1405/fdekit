@@ -7,6 +7,16 @@ export interface EnvironmentCommandDefinition {
   cwd?: string;
   env?: Record<string, string | undefined>;
   optional?: boolean;
+  /**
+   * Run the command detached (for long-lived servers): `fdekit env start`
+   * records the process id under `artifacts/env/pids/` and returns once the
+   * environment's health checks pass; `fdekit env stop` kills recorded pids
+   * after running the configured stop commands. Without this, a foreground
+   * server command blocks `env start` until the process exits.
+   */
+  background?: boolean;
+  /** How long `env start` waits for health checks after a background command (default 30000ms). */
+  readyTimeoutMs?: number;
 }
 
 export interface EnvironmentHealthCheckDefinition {

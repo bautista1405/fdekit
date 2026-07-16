@@ -38,6 +38,7 @@ function importsBlock(ctx: RecipeContext): string {
       'maxLatency',
       'noPolicyViolation',
       'pick',
+      'requireApproval',
       'type ConnectorDefinition',
       'type ProviderConfig',
     ],
@@ -183,11 +184,27 @@ const slack = withSupportTriageToolEnvironments(slackConnector({
 }
 
 function evalSetup(): string {
-  return renderEvalSetup({
+  return `// External writes pause for human review: fdekit approvals approve <id>, then
+// fdekit run supportTriage --resume <runId>. Eval runs auto-decide these gates
+// (recording each decision) so governed agents stay testable.
+//
+// Note: the eval dataset and tool expectations below are calibrated to the
+// deterministic mock planner. Live providers plan nondeterministically and may
+// fail them; loosen the assertions or extend the dataset when switching.
+${renderEvalSetup({
     toolLimit: {
       constName: 'supportTriageToolLimit',
       expression: 'limitToolUse({ maxCalls: 8 })',
     },
+    policies: [
+      {
+        constName: 'supportTriageApprovalGate',
+        expression: `requireApproval({
+  tools: ['issue.create', 'slack.message', 'ticket.escalate'],
+  reason: 'External writes (GitHub issue, Slack message, ticket escalation) require human approval',
+})`,
+      },
+    ],
     evalConst: 'supportTriageEval',
     name: 'support-triage-dataset',
     agent: 'supportTriage',
@@ -200,7 +217,7 @@ function evalSetup(): string {
       'maxLatency(10000)',
       'maxCost(0.25)',
     ],
-  });
+  })}`;
 }
 
 function deploymentBlock(projectName: string): string {
@@ -281,7 +298,7 @@ function deploymentBlock(projectName: string): string {
         name: 'action',
         description: 'Create the issue, send Slack, and escalate through existing policy and scope checks',
         toolRefs: ['issue.create', 'slack.message', 'ticket.escalate'],
-        policyRefs: ['limit-tool-scopes', 'restrict-environments', supportTriageToolLimit],
+        policyRefs: ['require-approval', 'limit-tool-scopes', 'restrict-environments', supportTriageToolLimit],
         artifactRefs: ['audit'],
         maxSteps: 3,
       },
@@ -294,7 +311,7 @@ function deploymentBlock(projectName: string): string {
       },
     ],
     toolRefs: ['ticket.get', 'customer.get', 'issue.create', 'slack.message', 'ticket.escalate'],
-    policyRefs: ['deny-pii-leak', 'redact-secrets', 'limit-tool-scopes', 'restrict-environments', 'limit-cost', supportTriageToolLimit],
+    policyRefs: ['require-approval', 'deny-pii-leak', 'redact-secrets', 'limit-tool-scopes', 'restrict-environments', 'limit-cost', supportTriageToolLimit],
     evalRefs: [supportTriageEval],
     artifactRefs: ['trace', 'audit', 'eval', 'report', 'dashboard'],
     review: {
@@ -319,6 +336,9 @@ function deploymentBlock(projectName: string): string {
     github,
     slack,
   },
+  policies: [
+    supportTriageApprovalGate,
+  ],
   governance: defineGovernance({
     audit: {
       enabled: true,

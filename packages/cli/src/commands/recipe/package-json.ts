@@ -1,6 +1,7 @@
 import { promises as fs } from 'fs';
 import * as path from 'path';
 import { readJsonIfExists } from '@fdekit/runtime';
+import { mergeProjectScripts } from '../../scaffolds/script-merge.js';
 import type {
   CapturedRecipeManifest,
   ProjectPackageJson,
@@ -18,11 +19,20 @@ export async function mergePackageJson(projectDir: string, manifest: CapturedRec
     private: true,
   };
 
-  existing.scripts = mergeStringRecords(existing.scripts, manifest.package.scripts);
+  existing.scripts = mergeScripts(existing.scripts, manifest.package.scripts);
   existing.dependencies = mergeStringRecords(existing.dependencies, manifest.package.dependencies);
   existing.devDependencies = mergeStringRecords(existing.devDependencies, manifest.package.devDependencies);
 
   await fs.writeFile(packagePath, `${JSON.stringify(existing, null, 2)}\n`, 'utf8');
+}
+
+function mergeScripts(existing: unknown, incoming: unknown): Record<string, string> | undefined {
+  const merged = mergeProjectScripts(
+    stringRecord(existing) ?? {},
+    stringRecord(incoming) ?? {},
+  ) as Record<string, string>;
+
+  return Object.keys(merged).length > 0 ? merged : undefined;
 }
 
 export function stringRecord(value: unknown): Record<string, string> | undefined {

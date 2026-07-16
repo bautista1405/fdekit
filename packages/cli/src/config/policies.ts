@@ -27,6 +27,21 @@ export function policyExpressionFor(name: string): { imports: string[]; expressi
     case 'redact-secrets':
       return { imports: ['redactSecrets'], expression: 'redactSecrets()' };
     default:
-      return { imports: ['definePolicy'], expression: `definePolicy({ name: '${escapeSingleQuoted(name)}' })` };
+      // A named policy with no hooks would validate and silently do nothing, so
+      // scaffold a beforeToolCall skeleton that teaches the contract instead.
+      return {
+        imports: ['definePolicy'],
+        expression: `definePolicy({
+  name: '${escapeSingleQuoted(name)}',
+  description: 'TODO: describe what this policy enforces',
+  beforeToolCall(toolName, args, context) {
+    // TODO: inspect toolName/args/context and enforce your rule. Return:
+    //   { allowed: true }                                         to allow the call
+    //   { allowed: false, reason: 'why' }                         to block it
+    //   { allowed: false, approvalRequired: true, reason: 'why' } to pause for human approval
+    return { allowed: true };
+  },
+})`,
+      };
   }
 }

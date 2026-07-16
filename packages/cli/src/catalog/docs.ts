@@ -11,19 +11,19 @@ import type { CatalogScaffoldAlias, ConnectorManifest, ProviderManifest } from '
 const commandUsages = {
   init: 'fdekit init [name]',
   add: 'fdekit add <provider|connector|eval|policy> <name> [--custom]',
-  approvals: 'fdekit approvals [list|approve <id>|reject <id>] [--by <actor>] [--reason <text>]',
+  approvals: 'fdekit approvals [list [--status <s>] [--tool <t>] [--json]|show <id> [--json]|approve <id>|reject <id>] [--by <actor>] [--reason <text>] [--force]',
   audit: 'fdekit audit [--limit <n>]',
   console: 'fdekit console',
   dev: 'fdekit dev',
   diff: 'fdekit diff [--from <snapshot-or-config>] [--to <snapshot-or-config>] [--json]',
   doctor: 'fdekit doctor [--live]',
-  env: 'fdekit env <start|seed|doctor|stop|describe>',
+  env: 'fdekit env <start|seed|doctor [--json]|stop|describe>',
   trace: 'fdekit trace',
   validate: 'fdekit validate [--json] [--strict]',
-  eval: 'fdekit eval <run [target]|macro [--min-frequency <n>]>',
+  eval: 'fdekit eval <run [target] [--require-approvals]|macro [--min-frequency <n>]>',
   feedback: 'fdekit feedback export [--json]',
   report: 'fdekit report',
-  run: 'fdekit run <agent> [--ticket <id>] [--input <json-object>] [--max-steps <n>] [--strict]',
+  run: 'fdekit run <agent> [--ticket <id>] [--input <json-object>] [--max-steps <n>] [--strict] [--resume [runId]]',
   recipe: 'fdekit recipe <install|capture> <name-or-path>',
   version: 'fdekit version',
 } as const;
@@ -75,9 +75,19 @@ Options:
 
 Review approval requests or record approval decisions.
 
+Actions:
+  list        Show approval requests with args and execution target
+  show <id>   Show one request in full (args, target, decision history)
+  approve     Approve a request; the run continues with \`fdekit run <agent> --resume\`
+  reject      Reject a request; the run reports Status: rejected
+
 Options:
-  --by <actor>      Record who made an approval decision
+  --status <s>      Filter list by status: pending, approved, or rejected
+  --tool <name>     Filter list by tool name
+  --json            Print list/show output as JSON
+  --by <actor>      Record who made an approval decision (defaults to the OS username)
   --reason <text>   Record why the decision was made
+  --force           Required to overturn an already-decided request; history is preserved
   -h, --help        Show this command help
 `;
     case 'audit':
@@ -131,13 +141,14 @@ Options:
 Manage a configured runtime environment.
 
 Actions:
-  start     Start configured services
+  start     Start configured services; background commands return once health checks pass
   seed      Seed local data
   doctor    Check environment health
-  stop      Stop configured services
-  describe  Print environment details
+  stop      Stop configured services and recorded background processes
+  describe  Print environment details, commands, and health checks
 
 Options:
+  --json      Print doctor results as JSON
   -h, --help  Show this command help
 `;
     case 'trace':
@@ -168,7 +179,11 @@ Subcommands:
   macro [--min-frequency <n>] Discover recurring behavior patterns
 
 Options:
-  -h, --help  Show this command help
+  --require-approvals  Pause on approval gates instead of auto-deciding them
+  -h, --help           Show this command help
+
+Approval gates are auto-decided during evals by default (recorded as eval-runner);
+cases replaying a human rejection (expected.shouldProceed = false) auto-reject.
 `;
     case 'feedback':
       return `Usage: ${commandUsages.feedback}
@@ -197,7 +212,12 @@ Options:
   --input <json-object>   Merge a JSON object into the agent input
   --max-steps <n>         Limit the number of agent loop steps
   --strict                Run with strict policy enforcement
+  --resume [runId]        Continue a run paused on an approval; executes the exact
+                          approved call and does not replay earlier writes. Without
+                          runId, resumes the agent's latest paused run.
   -h, --help              Show this command help
+
+Exit codes: 0 completed, 1 failed or rejected, 2 paused waiting for approval.
 `;
     case 'recipe':
       return `Usage: ${commandUsages.recipe}

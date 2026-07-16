@@ -4,7 +4,7 @@ import type {
   DeploymentDefinition,
   ToolCallContext,
 } from '@fdekit/core';
-import { redactForGovernance } from '../../governance/index.js';
+import { markApprovalExecuted, redactForGovernance } from '../../governance/index.js';
 import { appendAudit } from './audit.js';
 import { enforceToolCallEdge } from './edge/index.js';
 import { enforcePolicies } from './policy-enforcement.js';
@@ -23,6 +23,7 @@ export async function callTool(
 
   await enforceToolCallEdge(state, toolName, tool, args);
 
+  state.satisfiedApprovalIds = [];
   const context = createToolContext(state, toolName, tool);
   await enforcePolicies(state, 'beforeToolCall', toolName, args, context);
 
@@ -55,6 +56,7 @@ export async function callTool(
   try {
     result = await tool.handler(args, context);
   } catch (err) {
+    state.satisfiedApprovalIds = [];
     const latencyMs = Date.now() - startedAt;
     const redactedResult = redactForGovernance(toolErrorResult(err));
     const redactedMessage = redactErrorMessage(err);
@@ -106,6 +108,11 @@ export async function callTool(
   const latencyMs = Date.now() - startedAt;
 
   await enforcePolicies(state, 'afterToolCall', toolName, result, createToolContext(state, toolName, tool));
+
+  for (const approvalId of state.satisfiedApprovalIds.splice(0)) {
+    await markApprovalExecuted(state.projectDir, approvalId, state.runId, state.artifactStore);
+  }
+
   const redactedResult = redactForGovernance(result);
 
   const call = {

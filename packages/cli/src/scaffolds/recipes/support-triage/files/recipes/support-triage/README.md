@@ -14,7 +14,7 @@ This recipe installs a production-shaped local support triage deployment:
 npm run demo
 ```
 
-The demo script starts the local customer API on `127.0.0.1:8787`, waits for `/health`, runs the governed loop, generates the console, captures `support-renewal-risk`, and shuts the API down.
+The demo script starts the local customer API on `127.0.0.1:8787`, waits for `/health`, runs the governed loop including one full human-approval walkthrough (pause, approve, resume), generates the console, captures `support-renewal-risk`, and shuts the API down.
 
 ## Step Through Locally
 
@@ -22,20 +22,38 @@ The demo script starts the local customer API on `127.0.0.1:8787`, waits for `/h
 npm run api
 ```
 
-In another terminal:
+In another terminal (each command also has an npm script; run `npm run` to list the names in your project):
 
 ```bash
-npm run fdekit:doctor
-npm run fdekit:validate
-npm run fdekit:run
-npm run fdekit:approvals
-npm run fdekit:audit
-npm run fdekit:feedback
-npm run fdekit:eval
-npm run fdekit:macro
-npm run fdekit:report
-npm run fdekit:console
+fdekit doctor
+fdekit validate
+fdekit run supportTriage --ticket tick_1001
+fdekit approvals list
+fdekit audit
+fdekit feedback export
+fdekit eval run supportTriage
+fdekit eval macro
+fdekit report
+fdekit console
 ```
+
+## Human Review Loop
+
+External writes (`issue.create`, `slack.message`, `ticket.escalate`) are approval-gated by the `require-approval` policy in `fde.config.ts`. A gated run pauses with `Status: waiting_approval` and exit code 2:
+
+```bash
+fdekit run supportTriage --ticket tick_1001   # pauses on the first gated write
+fdekit approvals list --status pending        # see what is waiting (args included)
+fdekit approvals show <id>                    # inspect the full request
+fdekit approvals approve <id> --by <you> --reason "why"
+fdekit run supportTriage --resume             # executes the approved call and continues
+```
+
+`--resume` continues the paused run: it executes exactly the approved tool call (no re-planning, so live providers cannot drift the approved args) and does not replay earlier writes. Repeat approve/resume until the run completes. Rejecting a request ends the run with `Status: rejected`.
+
+Approvals are scoped to the execution target (connector mode, repository, channel). Approvals granted in local/simulated mode do not carry over to `FDEKIT_CONNECTOR_MODE=api`; the first live run asks for fresh review.
+
+Eval runs auto-decide approval gates (recording each decision as `eval-runner`), so `npm run fdekit:eval` works with gating enabled. Pass `--require-approvals` to `fdekit eval run` to keep production pause behavior instead.
 
 ## Use Real Slack And GitHub
 
@@ -47,10 +65,10 @@ GITHUB_TOKEN=ghp_your_token \
 GITHUB_REPOSITORY=owner/repo \
 SLACK_BOT_TOKEN=xoxb-your-token \
 SLACK_CHANNEL_ID=C0123456789 \
-npm run fdekit:run
+fdekit run supportTriage --ticket tick_1001
 ```
 
-Run `npm run fdekit:doctor` first to check required env vars without printing secret values.
+Run `fdekit doctor` first to check required env vars without printing secret values. Approvals granted while connectors were in local mode do not apply here: the approval fingerprint includes the connector mode and target, so the first API-mode run pauses for fresh review before any real write.
 
 ## Use Your Customer API
 

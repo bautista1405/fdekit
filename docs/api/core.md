@@ -3,7 +3,7 @@
 <!-- Maintained via scripts/generate-api-docs.mjs. -->
 Run `npm run docs:api` to refresh this page after changing public exports.
 
-Applies to `@fdekit/core` v0.5.1.
+Applies to `@fdekit/core` v0.5.2.
 
 Declaration source: `packages/core/dist/index.d.ts`.
 
@@ -41,13 +41,14 @@ Declaration source: `packages/core/dist/index.d.ts`.
 
 ## Export Count
 
-This page documents 197 public root exports from `@fdekit/core`: 84 functions/values and 113 types/interfaces.
+This page documents 198 public root exports from `@fdekit/core`: 85 functions/values and 113 types/interfaces.
 
 ## Functions And Values
 
 | Symbol | Kind | Defined in |
 | --- | --- | --- |
 | <a id="allow"></a>`allow` | function | [packages/core/src/policies/index.ts](../../packages/core/src/policies/index.ts) |
+| <a id="approvalrequested"></a>`approvalRequested` | function | [packages/core/src/evals/index.ts](../../packages/core/src/evals/index.ts) |
 | <a id="arrayarg"></a>`arrayArg` | function | [packages/core/src/schema/index.ts](../../packages/core/src/schema/index.ts) |
 | <a id="asarray"></a>`asArray` | function | [packages/core/src/helpers/index.ts](../../packages/core/src/helpers/index.ts) |
 | <a id="asoptionalrecord"></a>`asOptionalRecord` | function | [packages/core/src/helpers/index.ts](../../packages/core/src/helpers/index.ts) |

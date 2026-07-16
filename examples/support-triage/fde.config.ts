@@ -14,6 +14,7 @@ import {
   maxLatency,
   noPolicyViolation,
   pick,
+  requireApproval,
   type ConnectorDefinition,
   type ProviderConfig,
 } from '@fdekit/core';
@@ -157,7 +158,18 @@ const slack = withSupportTriageToolEnvironments(slackConnector({
   channelEnv: 'SLACK_CHANNEL_ID',
 }));
 
+// External writes pause for human review: fdekit approvals approve <id>, then
+// fdekit run supportTriage --resume <runId>. Eval runs auto-decide these gates
+// (recording each decision) so governed agents stay testable.
+//
+// Note: the eval dataset and tool expectations below are calibrated to the
+// deterministic mock planner. Live providers plan nondeterministically and may
+// fail them; loosen the assertions or extend the dataset when switching.
 const supportTriageToolLimit = limitToolUse({ maxCalls: 8 });
+const supportTriageApprovalGate = requireApproval({
+  tools: ['issue.create', 'slack.message', 'ticket.escalate'],
+  reason: 'External writes (GitHub issue, Slack message, ticket escalation) require human approval',
+});
 const supportTriageEval = defineEval({
   name: 'support-triage-dataset',
   agent: 'supportTriage',
@@ -264,7 +276,7 @@ export default defineDeployment({
         name: 'action',
         description: 'Create the issue, send Slack, and escalate through existing policy and scope checks',
         toolRefs: ['issue.create', 'slack.message', 'ticket.escalate'],
-        policyRefs: ['limit-tool-scopes', 'restrict-environments', supportTriageToolLimit],
+        policyRefs: ['require-approval', 'limit-tool-scopes', 'restrict-environments', supportTriageToolLimit],
         artifactRefs: ['audit'],
         maxSteps: 3,
       },
@@ -277,7 +289,7 @@ export default defineDeployment({
       },
     ],
     toolRefs: ['ticket.get', 'customer.get', 'issue.create', 'slack.message', 'ticket.escalate'],
-    policyRefs: ['deny-pii-leak', 'redact-secrets', 'limit-tool-scopes', 'restrict-environments', 'limit-cost', supportTriageToolLimit],
+    policyRefs: ['require-approval', 'deny-pii-leak', 'redact-secrets', 'limit-tool-scopes', 'restrict-environments', 'limit-cost', supportTriageToolLimit],
     evalRefs: [supportTriageEval],
     artifactRefs: ['trace', 'audit', 'eval', 'report', 'dashboard'],
     review: {
@@ -302,6 +314,9 @@ export default defineDeployment({
     github,
     slack,
   },
+  policies: [
+    supportTriageApprovalGate,
+  ],
   governance: defineGovernance({
     audit: {
       enabled: true,

@@ -48,4 +48,11 @@ export interface RunEvalsOptions {
   providerRegistry?: ProviderRuntimeRegistry;
   artifactStore?: ArtifactStore;
   evalTarget?: string;
+  /**
+   * How approval-gated tool calls behave inside eval runs. `auto` (default)
+   * decides pending approvals without pausing: approve, or reject when the
+   * case's `expected.shouldProceed` is false (replayed human rejections).
+   * `require` keeps production behavior, so gated runs pause and fail evals.
+   */
+  approvals?: 'auto' | 'require';
 }

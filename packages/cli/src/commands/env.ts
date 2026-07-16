@@ -1,4 +1,5 @@
 import { spawn } from 'child_process';
+import { promises as fs } from 'fs';
 import * as path from 'path';
 import type {
   DeploymentDefinition,
@@ -13,6 +14,16 @@ import { CliUserError } from '../errors.js';
 
 type EnvAction = 'start' | 'stop' | 'seed' | 'doctor' | 'describe';
 
+const ENV_USAGE = 'fdekit env <start|seed|doctor [--json]|stop|describe>';
+const DEFAULT_READY_TIMEOUT_MS = 30_000;
+const FOREGROUND_HEALTHY_WARN_MS = 5_000;
+
+interface ShellCommandResult {
+  code: number | null;
+  signal: NodeJS.Signals | null;
+  output?: string;
+}
+
 export async function cmdEnv(ctx: CommandContext): Promise<void> {
   const action = parseAction(ctx.args[0]);
 
@@ -22,6 +33,7 @@ export async function cmdEnv(ctx: CommandContext): Promise<void> {
     return;
   }
 
+  const options = parseEnvOptions(action, ctx.args.slice(1));
   const configPath = await requireConfigFile(ctx.cwd);
   const projectDir = path.dirname(configPath);
   const deployment = await loadDeployment(configPath);
@@ -37,16 +49,16 @@ export async function cmdEnv(ctx: CommandContext): Promise<void> {
 
   switch (action) {
     case 'start':
-      await runEnvironmentCommands(environment.commands?.start ?? [], projectDir, 'start');
+      await runEnvironmentStart(environment, projectDir);
       return;
     case 'stop':
-      await runEnvironmentCommands(environment.commands?.stop ?? [], projectDir, 'stop');
+      await runEnvironmentStop(environment, projectDir);
       return;
     case 'seed':
       await runEnvironmentCommands(environment.commands?.seed ?? [], projectDir, 'seed');
       return;
     case 'doctor':
-      await runEnvironmentDoctor(environment, projectDir);
+      await runEnvironmentDoctor(environment, projectDir, options.json);
       return;
     case 'describe':
       printEnvironment(environment);
@@ -62,8 +74,167 @@ function parseAction(value: string | undefined): EnvAction | null {
   return null;
 }
 
+function parseEnvOptions(action: EnvAction, args: string[]): { json: boolean } {
+  let json = false;
+
+  for (const arg of args) {
+    if (arg === '--json' && action === 'doctor') {
+      json = true;
+    } else {
+      throw new CliUserError(`Unknown env ${action} option: ${arg}`, { usage: ENV_USAGE });
+    }
+  }
+
+  return { json };
+}
+
 function getRuntimeEnvironment(deployment: DeploymentDefinition): DeploymentEnvironmentDefinition | undefined {
   return deployment.runtimeEnvironment ?? deployment.localEnvironment;
+}
+
+async function runEnvironmentStart(
+  environment: DeploymentEnvironmentDefinition,
+  projectDir: string,
+): Promise<void> {
+  const commands = environment.commands?.start ?? [];
+  const healthChecks = environment.healthChecks ?? [];
+
+  console.log('FDEKit env start');
+
+  if (commands.length === 0) {
+    console.log('No start commands configured');
+    return;
+  }
+
+  if (healthChecks.length > 0 && await allRequiredChecksPass(healthChecks, projectDir)) {
+    console.log('Environment is already running (all health checks passing); nothing to start');
+    console.log('Run `fdekit env stop` first to restart it');
+    return;
+  }
+
+  for (const command of commands) {
+    printCommandHeader(command);
+
+    if (command.background) {
+      await startBackgroundCommand(command, projectDir);
+      continue;
+    }
+
+    await runForegroundStartCommand(command, projectDir, healthChecks);
+  }
+
+  const backgroundCommands = commands.filter((command) => command.background);
+
+  if (backgroundCommands.length > 0 && healthChecks.length > 0) {
+    const readyTimeoutMs = Math.max(
+      DEFAULT_READY_TIMEOUT_MS,
+      ...backgroundCommands.map((command) => command.readyTimeoutMs ?? 0),
+    );
+    await waitForEnvironmentReady(healthChecks, projectDir, readyTimeoutMs);
+  }
+}
+
+async function startBackgroundCommand(
+  command: EnvironmentCommandDefinition,
+  projectDir: string,
+): Promise<void> {
+  const logPath = path.join(envStateDir(projectDir), 'logs', `${sanitizeName(command.name)}.log`);
+  await fs.mkdir(path.dirname(logPath), { recursive: true });
+  const logFile = await fs.open(logPath, 'a');
+
+  try {
+    const child = spawn(command.command, {
+      cwd: command.cwd ? path.resolve(projectDir, command.cwd) : projectDir,
+      env: { ...process.env, ...(command.env ?? {}) },
+      shell: true,
+      detached: true,
+      stdio: ['ignore', logFile.fd, logFile.fd],
+    });
+
+    if (child.pid === undefined) {
+      throw new CliUserError(`Failed to start background command: ${command.name}`);
+    }
+
+    child.unref();
+    await writePidFile(projectDir, command.name, child.pid);
+    console.log(`Started in background (pid ${child.pid}); logs: ${logPath}`);
+  } finally {
+    await logFile.close();
+  }
+}
+
+async function runForegroundStartCommand(
+  command: EnvironmentCommandDefinition,
+  projectDir: string,
+  healthChecks: EnvironmentHealthCheckDefinition[],
+): Promise<void> {
+  // A plain server command never exits on its own; once the environment turns
+  // healthy while the command is still running, say so instead of appearing hung.
+  const warnTimer = healthChecks.length > 0
+    ? setTimeout(() => {
+      void allRequiredChecksPass(healthChecks, projectDir).then((healthy) => {
+        if (healthy) {
+          console.log(`\n[fdekit] "${command.name}" is still running and the environment's health checks pass.`);
+          console.log('[fdekit] This start command looks like a long-lived server; mark it `background: true` so `fdekit env start` can return once healthy.');
+          console.log('[fdekit] Waiting for the command to exit (Ctrl-C will stop the server with it)...');
+        }
+      });
+    }, FOREGROUND_HEALTHY_WARN_MS)
+    : undefined;
+
+  try {
+    const result = await runShellCommand(command, projectDir);
+    assertCommandSucceeded(command, result);
+  } finally {
+    if (warnTimer) {
+      clearTimeout(warnTimer);
+    }
+  }
+}
+
+async function runEnvironmentStop(
+  environment: DeploymentEnvironmentDefinition,
+  projectDir: string,
+): Promise<void> {
+  await runEnvironmentCommands(environment.commands?.stop ?? [], projectDir, 'stop');
+  await stopBackgroundProcesses(projectDir);
+}
+
+async function stopBackgroundProcesses(projectDir: string): Promise<void> {
+  const pidsDir = path.join(envStateDir(projectDir), 'pids');
+  let entries: string[];
+
+  try {
+    entries = await fs.readdir(pidsDir);
+  } catch {
+    return;
+  }
+
+  for (const entry of entries) {
+    if (!entry.endsWith('.pid')) {
+      continue;
+    }
+
+    const pidPath = path.join(pidsDir, entry);
+    const pid = Number.parseInt(await fs.readFile(pidPath, 'utf8'), 10);
+
+    if (Number.isInteger(pid) && pid > 0) {
+      try {
+        // Negative pid signals the detached process group started by env start.
+        process.kill(-pid, 'SIGTERM');
+        console.log(`Stopped background process group ${pid} (${entry.replace(/\.pid$/, '')})`);
+      } catch {
+        try {
+          process.kill(pid, 'SIGTERM');
+          console.log(`Stopped background process ${pid} (${entry.replace(/\.pid$/, '')})`);
+        } catch {
+          // Already gone; stopping an already-stopped environment is not an error.
+        }
+      }
+    }
+
+    await fs.rm(pidPath, { force: true });
+  }
 }
 
 async function runEnvironmentCommands(
@@ -79,28 +250,56 @@ async function runEnvironmentCommands(
   }
 
   for (const command of commands) {
-    console.log(`\n${command.name}`);
-    if (command.description) {
-      console.log(command.description);
-    }
-    console.log(`$ ${command.command}`);
-
-    const code = await runShellCommand(command, projectDir);
-    if (code !== 0) {
-      const message = `Command failed with exit code ${code}: ${command.name}`;
-
-      if (command.optional) {
-        console.log(`Optional command failed: ${message}`);
-      } else {
-        throw new CliUserError(message, {
-          next: ['Fix the configured environment command, or mark it optional if this failure should not block the workflow.'],
-        });
-      }
-    }
+    printCommandHeader(command);
+    const result = await runShellCommand(command, projectDir);
+    assertCommandSucceeded(command, result);
   }
 }
 
-function runShellCommand(command: EnvironmentCommandDefinition, projectDir: string): Promise<number> {
+function printCommandHeader(command: EnvironmentCommandDefinition): void {
+  console.log(`\n${command.name}`);
+  if (command.description) {
+    console.log(command.description);
+  }
+  console.log(`$ ${command.command}`);
+}
+
+function assertCommandSucceeded(command: EnvironmentCommandDefinition, result: ShellCommandResult): void {
+  const failure = describeCommandFailure(result);
+
+  if (!failure) {
+    return;
+  }
+
+  const message = `Command ${failure}: ${command.name}`;
+
+  if (command.optional) {
+    console.log(`Optional command failed: ${message}`);
+    return;
+  }
+
+  throw new CliUserError(message, {
+    next: ['Fix the configured environment command, or mark it optional if this failure should not block the workflow.'],
+  });
+}
+
+function describeCommandFailure(result: ShellCommandResult): string | null {
+  if (result.signal) {
+    return `was terminated by signal ${result.signal}`;
+  }
+
+  if (result.code !== 0) {
+    return `failed with exit code ${result.code ?? 'unknown'}`;
+  }
+
+  return null;
+}
+
+function runShellCommand(
+  command: EnvironmentCommandDefinition,
+  projectDir: string,
+  options: { captureOutput?: boolean } = {},
+): Promise<ShellCommandResult> {
   const cwd = command.cwd ? path.resolve(projectDir, command.cwd) : projectDir;
 
   return new Promise((resolve, reject) => {
@@ -111,29 +310,65 @@ function runShellCommand(command: EnvironmentCommandDefinition, projectDir: stri
         ...(command.env ?? {}),
       },
       shell: true,
-      stdio: 'inherit',
+      stdio: options.captureOutput ? ['ignore', 'pipe', 'pipe'] : 'inherit',
     });
+    let output = '';
+
+    if (options.captureOutput) {
+      child.stdout?.on('data', (chunk: Buffer) => {
+        output += chunk.toString();
+      });
+      child.stderr?.on('data', (chunk: Buffer) => {
+        output += chunk.toString();
+      });
+    }
 
     child.on('error', reject);
-    child.on('close', (code) => resolve(code ?? 0));
+    child.on('close', (code, signal) => resolve({
+      code,
+      signal,
+      output: options.captureOutput ? output : undefined,
+    }));
   });
 }
 
-async function runEnvironmentDoctor(environment: DeploymentEnvironmentDefinition, projectDir: string): Promise<void> {
+async function runEnvironmentDoctor(
+  environment: DeploymentEnvironmentDefinition,
+  projectDir: string,
+  json: boolean,
+): Promise<void> {
+  const checks = environment.healthChecks ?? [];
+  const results: EnvironmentCheckResult[] = [];
+
+  for (const check of checks) {
+    results.push(await runHealthCheck(check, projectDir));
+  }
+
+  const ok = !results.some((result) => !result.ok && !result.optional);
+
+  if (json) {
+    console.log(JSON.stringify({
+      environment: environment.name,
+      kind: environment.kind,
+      ok,
+      checks: results,
+    }, null, 2));
+
+    if (!ok) {
+      process.exitCode = 1;
+    }
+
+    return;
+  }
+
   console.log('FDEKit env doctor');
   console.log(`Environment: ${environment.name}`);
   console.log(`Kind: ${environment.kind}`);
   console.log('');
 
-  const checks = environment.healthChecks ?? [];
   if (checks.length === 0) {
     console.log('No environment health checks configured');
     return;
-  }
-
-  const results: EnvironmentCheckResult[] = [];
-  for (const check of checks) {
-    results.push(await runHealthCheck(check, projectDir));
   }
 
   for (const result of results) {
@@ -144,14 +379,61 @@ async function runEnvironmentDoctor(environment: DeploymentEnvironmentDefinition
     console.log(`${state.toUpperCase()} ${result.name}${latency}${target ? ` ${target}` : ''}${message}`);
   }
 
-  if (results.some((result) => !result.ok && !result.optional)) {
+  if (!ok) {
     process.exitCode = 1;
   }
+}
+
+async function allRequiredChecksPass(
+  checks: EnvironmentHealthCheckDefinition[],
+  projectDir: string,
+): Promise<boolean> {
+  const required = checks.filter((check) => !check.optional);
+
+  if (required.length === 0) {
+    return false;
+  }
+
+  for (const check of required) {
+    const result = await runHealthCheck(check, projectDir, { quiet: true });
+
+    if (!result.ok) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+async function waitForEnvironmentReady(
+  checks: EnvironmentHealthCheckDefinition[],
+  projectDir: string,
+  timeoutMs: number,
+): Promise<void> {
+  const startedAt = Date.now();
+  console.log(`\nWaiting for environment health checks (timeout ${Math.round(timeoutMs / 1000)}s)...`);
+
+  while (Date.now() - startedAt < timeoutMs) {
+    if (await allRequiredChecksPass(checks, projectDir)) {
+      console.log(`Environment is healthy after ${Math.round((Date.now() - startedAt) / 1000)}s`);
+      return;
+    }
+
+    await sleep(500);
+  }
+
+  throw new CliUserError(`Environment did not become healthy within ${Math.round(timeoutMs / 1000)}s`, {
+    next: [
+      'Check the background command logs under artifacts/env/logs/.',
+      'Run `fdekit env doctor` to see which health check is failing.',
+    ],
+  });
 }
 
 async function runHealthCheck(
   check: EnvironmentHealthCheckDefinition,
   projectDir: string,
+  options: { quiet?: boolean } = {},
 ): Promise<EnvironmentCheckResult> {
   if (check.url) {
     return runUrlHealthCheck(check);
@@ -159,21 +441,30 @@ async function runHealthCheck(
 
   if (check.command) {
     const startedAt = Date.now();
-    const code = await runShellCommand({
+    // Health-check commands run captured: their output belongs to diagnostics,
+    // not the doctor report, so it is shown only when the check fails.
+    const result = await runShellCommand({
       name: check.name,
       command: check.command,
       cwd: check.cwd,
       env: check.env,
       optional: check.optional,
-    }, projectDir);
+    }, projectDir, { captureOutput: true });
+    const failure = describeCommandFailure(result);
+
+    if (failure && !options.quiet && result.output?.trim()) {
+      console.log(`--- output of failed health check "${check.name}"`);
+      console.log(result.output.trim());
+      console.log('---');
+    }
 
     return {
       name: check.name,
-      ok: code === 0,
+      ok: !failure,
       latencyMs: Date.now() - startedAt,
       command: check.command,
       optional: check.optional,
-      message: code === 0 ? undefined : `exit code ${code}`,
+      message: failure ?? undefined,
     };
   }
 
@@ -218,6 +509,24 @@ async function runUrlHealthCheck(check: EnvironmentHealthCheckDefinition): Promi
   }
 }
 
+function envStateDir(projectDir: string): string {
+  return path.join(projectDir, 'artifacts', 'env');
+}
+
+async function writePidFile(projectDir: string, commandName: string, pid: number): Promise<void> {
+  const pidPath = path.join(envStateDir(projectDir), 'pids', `${sanitizeName(commandName)}.pid`);
+  await fs.mkdir(path.dirname(pidPath), { recursive: true });
+  await fs.writeFile(pidPath, `${pid}\n`, 'utf8');
+}
+
+function sanitizeName(name: string): string {
+  return name.replace(/[^a-zA-Z0-9._-]+/g, '-');
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 function printEnvironment(environment: DeploymentEnvironmentDefinition): void {
   console.log('FDEKit env describe');
   console.log(`Environment: ${environment.name}`);
@@ -248,6 +557,20 @@ function printEnvironment(environment: DeploymentEnvironmentDefinition): void {
   printCommandList('Start', environment.commands?.start ?? []);
   printCommandList('Seed', environment.commands?.seed ?? []);
   printCommandList('Stop', environment.commands?.stop ?? []);
+
+  const healthChecks = environment.healthChecks ?? [];
+  if (healthChecks.length > 0) {
+    console.log('\nHealth checks');
+    for (const check of healthChecks) {
+      const target = check.url ?? check.command ?? '(no url or command)';
+      const detail = [
+        check.url && check.expectedStatus ? `expect ${check.expectedStatus}` : '',
+        check.timeoutMs ? `timeout ${check.timeoutMs}ms` : '',
+        check.optional ? 'optional' : '',
+      ].filter(Boolean).join(', ');
+      console.log(`  ${check.name}: ${target}${detail ? ` (${detail})` : ''}`);
+    }
+  }
 }
 
 function printCommandList(title: string, commands: EnvironmentCommandDefinition[]): void {
@@ -257,18 +580,19 @@ function printCommandList(title: string, commands: EnvironmentCommandDefinition[
 
   console.log(`\n${title} commands`);
   for (const command of commands) {
-    console.log(`  ${command.name}: ${command.command}`);
+    const flags = command.background ? ' [background]' : '';
+    console.log(`  ${command.name}: ${command.command}${flags}`);
   }
 }
 
 function printEnvHelp(): void {
-  console.log(`Usage: fdekit env <start|seed|doctor|stop|describe>
+  console.log(`Usage: ${ENV_USAGE}
 
 Commands:
-  env start       Run configured environment start commands
+  env start       Run configured environment start commands (background: true commands return once health checks pass)
   env seed        Run configured environment seed commands
-  env doctor      Run configured environment health checks
-  env stop        Run configured environment stop commands
-  env describe    Print environment endpoints, services, and commands
+  env doctor      Run configured environment health checks (--json for machine-readable output)
+  env stop        Run configured environment stop commands, then stop recorded background processes
+  env describe    Print environment endpoints, services, commands, and health checks
 `);
 }

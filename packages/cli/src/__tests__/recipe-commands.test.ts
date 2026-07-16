@@ -108,14 +108,23 @@ describe('cli recipe commands', () => {
     expect(packageJson.scripts?.api).toBe('node customer-api/server.js');
     expect(packageJson.scripts?.demo).toBe('node scripts/demo.mjs');
     expect(packageJson.scripts?.['fdekit:run']).toBe('fdekit run supportTriage --ticket tick_1001');
-    expect(packageJson.scripts?.['fdekit:approvals']).toBe('fdekit approvals list');
-    expect(packageJson.scripts?.['fdekit:audit']).toBe('fdekit audit');
-    expect(packageJson.scripts?.['fdekit:feedback']).toBe('fdekit feedback export');
-    expect(packageJson.scripts?.['fdekit:validate']).toBe('fdekit validate');
-    expect(packageJson.scripts?.['fdekit:validate:strict']).toBe('fdekit validate --strict');
-    expect(packageJson.scripts?.['fdekit:diff']).toBe('fdekit diff');
-    expect(packageJson.scripts?.['fdekit:eval']).toBe('fdekit eval run supportTriage');
+    // Recipe scripts merge into the init scaffold instead of duplicating it:
+    // identical commands are skipped, and scaffold defaults are upgraded in place.
+    expect(packageJson.scripts?.['fdekit:approvals']).toBeUndefined();
+    expect(packageJson.scripts?.approvals).toBe('fdekit approvals list');
+    expect(packageJson.scripts?.['fdekit:audit']).toBeUndefined();
+    expect(packageJson.scripts?.audit).toBe('fdekit audit');
+    expect(packageJson.scripts?.['fdekit:feedback']).toBeUndefined();
+    expect(packageJson.scripts?.feedback).toBe('fdekit feedback export');
+    expect(packageJson.scripts?.['fdekit:validate']).toBeUndefined();
+    expect(packageJson.scripts?.validate).toBe('fdekit validate');
+    expect(packageJson.scripts?.['fdekit:validate:strict']).toBeUndefined();
+    expect(packageJson.scripts?.['fdekit:diff']).toBeUndefined();
+    expect(packageJson.scripts?.['fdekit:eval']).toBeUndefined();
+    expect(packageJson.scripts?.eval).toBe('fdekit eval run supportTriage');
     expect(packageJson.scripts?.['fdekit:console']).toBe('fdekit console');
+    const scriptCommands = Object.values(packageJson.scripts ?? {});
+    expect(new Set(scriptCommands).size).toBe(scriptCommands.length);
     expect(packageJson.dependencies?.['@fdekit/connector-customer-api']).toBe(fdekitDependencyVersion);
     expect(packageJson.dependencies?.['@fdekit/connector-github']).toBe(fdekitDependencyVersion);
     expect(packageJson.dependencies?.['@fdekit/connector-slack']).toBe(fdekitDependencyVersion);
@@ -262,12 +271,16 @@ describe('cli recipe commands', () => {
     const packageJson = await readPackageJson(projectDir);
     expect(packageJson.scripts?.demo).toBe('node scripts/demo.mjs');
     expect(packageJson.scripts?.['fdekit:codebase:run']).toContain('fdekit run codebaseAgent');
-    expect(packageJson.scripts?.['fdekit:codebase:approvals']).toBe('fdekit approvals list');
-    expect(packageJson.scripts?.['fdekit:codebase:audit']).toBe('fdekit audit');
-    expect(packageJson.scripts?.['fdekit:codebase:feedback']).toBe('fdekit feedback export');
-    expect(packageJson.scripts?.['fdekit:codebase:validate']).toBe('fdekit validate');
-    expect(packageJson.scripts?.['fdekit:codebase:validate:strict']).toBe('fdekit validate --strict');
-    expect(packageJson.scripts?.['fdekit:codebase:diff']).toBe('fdekit diff');
+    // Generic scripts dedupe against the init scaffold; recipe-specific ones stay.
+    expect(packageJson.scripts?.['fdekit:codebase:approvals']).toBeUndefined();
+    expect(packageJson.scripts?.approvals).toBe('fdekit approvals list');
+    expect(packageJson.scripts?.['fdekit:codebase:audit']).toBeUndefined();
+    expect(packageJson.scripts?.audit).toBe('fdekit audit');
+    expect(packageJson.scripts?.['fdekit:codebase:feedback']).toBeUndefined();
+    expect(packageJson.scripts?.['fdekit:codebase:validate']).toBeUndefined();
+    expect(packageJson.scripts?.validate).toBe('fdekit validate');
+    expect(packageJson.scripts?.['fdekit:codebase:validate:strict']).toBeUndefined();
+    expect(packageJson.scripts?.['fdekit:codebase:diff']).toBeUndefined();
     expect(packageJson.scripts?.['fdekit:codebase:eval']).toBe('fdekit eval run codebaseAgent');
     expect(packageJson.dependencies?.['@fdekit/connector-codebase']).toBe(fdekitDependencyVersion);
     expect(packageJson.dependencies?.['@fdekit/connector-github']).toBe(fdekitDependencyVersion);
@@ -352,10 +365,13 @@ describe('cli recipe commands', () => {
     const packageJson = await readPackageJson(projectDir);
     expect(packageJson.scripts?.demo).toBe('node scripts/demo.mjs');
     expect(packageJson.scripts?.['fdekit:sales:run']).toContain('fdekit run salesResearchAgent');
-    expect(packageJson.scripts?.['fdekit:sales:validate']).toBe('fdekit validate');
-    expect(packageJson.scripts?.['fdekit:sales:feedback']).toBe('fdekit feedback export');
-    expect(packageJson.scripts?.['fdekit:sales:validate:strict']).toBe('fdekit validate --strict');
-    expect(packageJson.scripts?.['fdekit:sales:diff']).toBe('fdekit diff');
+    // Generic scripts dedupe against the init scaffold; recipe-specific ones stay.
+    expect(packageJson.scripts?.['fdekit:sales:validate']).toBeUndefined();
+    expect(packageJson.scripts?.validate).toBe('fdekit validate');
+    expect(packageJson.scripts?.['fdekit:sales:feedback']).toBeUndefined();
+    expect(packageJson.scripts?.feedback).toBe('fdekit feedback export');
+    expect(packageJson.scripts?.['fdekit:sales:validate:strict']).toBeUndefined();
+    expect(packageJson.scripts?.['fdekit:sales:diff']).toBeUndefined();
     expect(packageJson.scripts?.['fdekit:sales:eval']).toBe('fdekit eval run salesResearchAgent');
     expect(packageJson.scripts?.['fdekit:sales:console']).toBe('fdekit console');
     expect(packageJson.dependencies?.['@fdekit/core']).toBe(fdekitDependencyVersion);
@@ -441,9 +457,13 @@ describe('cli recipe commands', () => {
     expect(packageJson.scripts?.['fdekit:loadtest:run']).toBe(
       'fdekit run loadTestAgent --input \'{"scenario":"smoke","vus":5,"duration":"10s"}\'',
     );
-    expect(packageJson.scripts?.['fdekit:loadtest:approvals']).toBe('fdekit approvals list');
-    expect(packageJson.scripts?.['fdekit:loadtest:audit']).toBe('fdekit audit');
-    expect(packageJson.scripts?.['fdekit:loadtest:feedback']).toBe('fdekit feedback export');
+    // Generic scripts dedupe against the init scaffold; recipe-specific ones stay.
+    expect(packageJson.scripts?.['fdekit:loadtest:approvals']).toBeUndefined();
+    expect(packageJson.scripts?.approvals).toBe('fdekit approvals list');
+    expect(packageJson.scripts?.['fdekit:loadtest:audit']).toBeUndefined();
+    expect(packageJson.scripts?.audit).toBe('fdekit audit');
+    expect(packageJson.scripts?.['fdekit:loadtest:feedback']).toBeUndefined();
+    expect(packageJson.scripts?.feedback).toBe('fdekit feedback export');
     expect(packageJson.scripts?.['fdekit:loadtest:eval']).toBe('fdekit eval run loadTestAgent');
     expect(packageJson.dependencies?.['@fdekit/connector-k6']).toBe(fdekitDependencyVersion);
     expect(packageJson.dependencies?.['@fdekit/core']).toBe(fdekitDependencyVersion);

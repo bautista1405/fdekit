@@ -62,5 +62,5 @@ function hasOpenGovernanceItems(metrics: ConsoleMetrics): boolean {
     ? metrics.latestRunSummary.policyViolations.length
     : 0;
 
-  return latestViolations > 0 || metrics.approvalQueue.some((approval) => approval.status !== 'approved');
+  return latestViolations > 0 || metrics.approvalQueue.some((approval) => approval.status === 'pending approval');
 }

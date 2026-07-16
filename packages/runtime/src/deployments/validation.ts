@@ -194,6 +194,8 @@ function validateEnvironmentWiring(
   const connectors = deployment.connectors ?? {};
   const declaredCustomerApiUrl = runtimeCustomerApiUrl(deployment.runtimeEnvironment);
 
+  validateEnvironmentHealthChecks(deployment, add);
+
   for (const [connectorKey, connector] of Object.entries(connectors)) {
     for (const [configKey, value] of Object.entries(asRecord(connector.config))) {
       const configValue = getString(value);
@@ -274,6 +276,28 @@ function validateEnvironmentWiring(
         `connectors.${connectorKey}.${configKey}`,
         `Connector targets non-local URL "${url}" while the deployment environment is "local"; point it at a local endpoint or set deployment.environment to the real target so environment policies fire`,
       );
+    }
+  }
+}
+
+function validateEnvironmentHealthChecks(
+  deployment: DeploymentDefinition,
+  add: (severity: DeploymentValidationSeverity, path: string, message: string) => void,
+): void {
+  const environments: Array<[string, DeploymentEnvironmentDefinition | undefined]> = [
+    ['runtimeEnvironment', deployment.runtimeEnvironment],
+    ['localEnvironment', deployment.localEnvironment],
+  ];
+
+  for (const [propertyName, environment] of environments) {
+    for (const [index, check] of (environment?.healthChecks ?? []).entries()) {
+      if (!check.url && !check.command) {
+        add(
+          'error',
+          `${propertyName}.healthChecks[${index}]`,
+          `Health check "${check.name ?? index}" must define a url or a command; it can never pass as configured`,
+        );
+      }
     }
   }
 }

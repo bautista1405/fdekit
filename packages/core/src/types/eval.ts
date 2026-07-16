@@ -22,6 +22,13 @@ export interface EvalRunContext {
   finalAnswer?: string;
   toolCalls?: Array<{ name: string; args?: unknown; result?: unknown }>;
   policyViolations?: Array<{ policy: string; reason?: string }>;
+  approvals?: Array<{
+    id: string;
+    status: string;
+    toolName: string;
+    policy: string;
+    decidedBy?: string;
+  }>;
   costUsd?: number;
   latencyMs?: number;
   metadata?: Record<string, unknown>;

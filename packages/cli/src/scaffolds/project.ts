@@ -36,25 +36,32 @@ function starterEvalDataset(): string {
   ], null, 2)}\n`;
 }
 
+/**
+ * Scripts written by `fdekit init`, keyed by name. Recipe install consults
+ * these to merge rather than duplicate: a recipe script whose command matches
+ * an existing one is skipped, and a starter default is upgraded in place.
+ */
+export const starterScripts = {
+  agent: 'fdekit run supportTriage --input \'{"message":"An enterprise customer cannot access billing and says renewal is blocked."}\'',
+  dev: 'fdekit dev',
+  doctor: 'fdekit doctor',
+  approvals: 'fdekit approvals list',
+  audit: 'fdekit audit',
+  feedback: 'fdekit feedback export',
+  validate: 'fdekit validate',
+  'validate:strict': 'fdekit validate --strict',
+  diff: 'fdekit diff',
+  eval: 'fdekit eval run',
+  macro: 'fdekit eval macro',
+  report: 'fdekit report',
+} satisfies Record<string, string>;
+
 function starterPackageJson(name: string): string {
   return `${JSON.stringify({
     name,
     version: '0.1.0',
     private: true,
-    scripts: {
-      agent: 'fdekit run supportTriage --input \'{"message":"An enterprise customer cannot access billing and says renewal is blocked."}\'',
-      dev: 'fdekit dev',
-      doctor: 'fdekit doctor',
-      approvals: 'fdekit approvals list',
-      audit: 'fdekit audit',
-      feedback: 'fdekit feedback export',
-      validate: 'fdekit validate',
-      'validate:strict': 'fdekit validate --strict',
-      diff: 'fdekit diff',
-      eval: 'fdekit eval run',
-      macro: 'fdekit eval macro',
-      report: 'fdekit report',
-    },
+    scripts: starterScripts,
     dependencies: {
       '@fdekit/core': fdekitCaretDependencyVersion,
     },
@@ -130,11 +137,11 @@ Use this file before changing agent logic; the goal is to decide whether this wo
 
 ## Rollout
 
-1; local demo with the mock provider.
-2; sandbox with customer-shaped data.
-3; customer sample with writes disabled.
-4; shadow mode against real systems.
-5; human-approved writes.
-6; production allowlist.
+1. Local demo with the mock provider.
+2. Sandbox with customer-shaped data.
+3. Customer sample with writes disabled.
+4. Shadow mode against real systems.
+5. Human-approved writes.
+6. Production allowlist.
 `;
 }

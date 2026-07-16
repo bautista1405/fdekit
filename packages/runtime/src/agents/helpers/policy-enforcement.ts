@@ -14,7 +14,7 @@ import type {
   PolicyResult,
   ToolCallContext,
 } from '@fdekit/core';
-import { findApproval, requestApproval } from '../../governance/index.js';
+import { approveApproval, findApproval, rejectApproval, requestApproval } from '../../governance/index.js';
 import type { ApprovalArtifact } from '../../governance/index.js';
 import { appendAudit } from './audit.js';
 import type { RunState, ToolPolicyPhase } from './types.js';
@@ -83,21 +83,25 @@ export async function enforcePolicies(
             approvalId: approval.id,
             message: `Approval ${approval.id} allows ${toolName}`,
           });
+
+          if (phase === 'beforeToolCall') {
+            state.satisfiedApprovalIds.push(approval.id);
+          }
+
           continue;
         }
 
-        const approvalViolation = {
-          policy: policy.name,
-          phase,
-          toolName,
-          reason: approval.status === 'rejected'
-            ? `Approval "${approval.id}" was rejected`
-            : approval.reason,
-          approvalRequired: true,
-          approvalId: approval.id,
-        };
+        // A run paused (or stopped) on a human decision is an approval outcome,
+        // not a policy violation: it is tracked in state.approvals and the run
+        // status, so noPolicyViolation() evals stay meaningful under gating.
+        if (phase === 'beforeToolCall' && approval.status === 'pending') {
+          state.pendingResume = {
+            toolName,
+            args: asRecordArgs(value),
+            approvalId: approval.id,
+          };
+        }
 
-        state.policyViolations.push(approvalViolation);
         throw new ApprovalRequiredError(approval);
       }
 
@@ -206,16 +210,54 @@ async function resolveApproval(
     phase,
     toolName,
     args: value,
+    target: state.toolTargets.get(toolName),
     reason: decision.reason,
   };
   const existing = await findApproval(state.projectDir, input, state.artifactStore);
-  const approval = existing ?? await requestApproval(state.projectDir, input, state.artifactStore);
+  let approval = existing ?? await requestApproval(state.projectDir, input, state.artifactStore);
 
-  if (!state.approvals.some((candidate) => candidate.id === approval.id)) {
+  if (approval.status === 'pending' && state.approvalOverride) {
+    approval = await autoDecideApproval(state, approval);
+  }
+
+  const index = state.approvals.findIndex((candidate) => candidate.id === approval.id);
+
+  if (index === -1) {
     state.approvals.push(approval);
+  } else {
+    state.approvals[index] = approval;
   }
 
   return approval;
+}
+
+async function autoDecideApproval(state: RunState, approval: ApprovalArtifact): Promise<ApprovalArtifact> {
+  const override = state.approvalOverride as NonNullable<RunState['approvalOverride']>;
+  const options = {
+    actor: override.actor,
+    reason: override.reason ?? `Auto-${override.decision} by ${override.actor}`,
+  };
+  const decided = override.decision === 'approved'
+    ? await approveApproval(state.projectDir, approval.id, options, state.artifactStore)
+    : await rejectApproval(state.projectDir, approval.id, options, state.artifactStore);
+
+  state.events.push({
+    type: 'approval.auto_decided',
+    approvalId: decided.id,
+    approvalStatus: decided.status,
+    toolName: decided.toolName,
+    policy: decided.policy,
+    actor: override.actor,
+    reason: options.reason,
+  });
+
+  return decided;
+}
+
+function asRecordArgs(value: unknown): Record<string, unknown> {
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : {};
 }
 
 function policiesFromGovernance(

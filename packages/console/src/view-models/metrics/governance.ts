@@ -49,6 +49,7 @@ export function collectGovernanceMetrics(context: MetricsContext): GovernanceMet
     auditLog,
     auditEventCount: auditLog.length,
     policyEvents: policyEventItems,
-    openApprovalCount: approvalQueue.filter((approval) => approval.status !== 'approved').length,
+    // Open means awaiting a human; rejected approvals are decided, not open.
+    openApprovalCount: approvalQueue.filter((approval) => approval.status === 'pending approval').length,
   };
 }

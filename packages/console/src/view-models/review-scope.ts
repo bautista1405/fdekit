@@ -53,11 +53,22 @@ function createScopedArtifacts(
   return {
     traces: activeTraces,
     traceIds: activeTraceIds,
-    approvals: (data.approvals ?? []).filter((approval) => artifactMatchesTraceScope(approval, activeTraceIds)),
+    // Decided approvals are scoped to the reviewed traces, but pending ones are
+    // always global: the review page is where a human looks for open work, so a
+    // pending request from an older run must not disappear behind the scope.
+    approvals: mergePendingApprovals(data.approvals ?? [], activeTraceIds),
     auditLog: (data.auditLog ?? []).filter((entry) => artifactMatchesTraceScope(entry, activeTraceIds)),
     allTraceCount: allTraces.length,
     traceScope,
   };
+}
+
+function mergePendingApprovals(
+  approvals: ApprovalArtifact[],
+  activeTraceIds: Set<string>,
+): ApprovalArtifact[] {
+  return approvals.filter((approval) =>
+    approval.status === 'pending' || artifactMatchesTraceScope(approval, activeTraceIds));
 }
 
 export function selectReviewTraces(data: ConsoleData): TraceArtifact[] {

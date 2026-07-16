@@ -60,8 +60,7 @@ function reviewTraceLabel(metrics: ConsoleMetrics): string {
 }
 
 function renderReviewGates(metrics: ConsoleMetrics): string {
-  const approvedCount = metrics.approvalQueue.filter((approval) => approval.status === 'approved').length;
-  const openApprovals = metrics.approvalQueue.length - approvedCount;
+  const openApprovals = metrics.approvalQueue.filter((approval) => approval.status === 'pending approval').length;
   const productionReady = metrics.productionReadiness.filter((item) => item.status === 'pass').length;
   const measuredEvidenceCount = metrics.connectorEvidence.filter(isProvenConnectorEvidence).length;
 

@@ -1,7 +1,7 @@
 import { createHttpReq, defineConnector, defineTool, type ConnectorDefinition } from '@fdekit/core';
-import { asRecord, createGitHubIssue, extractTicketRefs, fetchGitHubPr, fetchGitHubPrFiles, getNumber, getString, normalizeBaseUrl, postGitHubReview, postGitHubReviewReply, readEnvValue, requireToken } from './helpers/index.js';
-import type { CreateIssueArgs, CreateIssueResult, GitHubConnectorConfig, GitHubConnectorMode, GitHubConnectorOptions, PrDiffArgs, PrDiffResult, PrReplyArgs, PrReplyResult, ReviewPostArgs, ReviewPostResult } from './interfaces/index.js';
-export type { CreateIssueArgs, CreateIssueResult, GitHubConnectorConfig, GitHubConnectorMode, GitHubConnectorOptions, PrDiffArgs, PrDiffFile, PrDiffResult, PrReplyArgs, PrReplyResult, ReviewComment, ReviewPostArgs, ReviewPostResult, TicketRef } from './interfaces/index.js';
+import { asRecord, createGitHubIssue, extractTicketRefs, fetchGitHubPr, fetchGitHubPrFiles, fetchGitHubPrList, getNumber, getString, normalizeBaseUrl, postGitHubReview, postGitHubReviewReply, readEnvValue, requireToken } from './helpers/index.js';
+import type { CreateIssueArgs, CreateIssueResult, GitHubConnectorConfig, GitHubConnectorMode, GitHubConnectorOptions, PrDiffArgs, PrDiffResult, PrListArgs, PrListResult, PrReplyArgs, PrReplyResult, ReviewPostArgs, ReviewPostResult } from './interfaces/index.js';
+export type { CreateIssueArgs, CreateIssueResult, GitHubConnectorConfig, GitHubConnectorMode, GitHubConnectorOptions, PrDiffArgs, PrDiffFile, PrDiffResult, PrListArgs, PrListItem, PrListResult, PrReplyArgs, PrReplyResult, ReviewComment, ReviewPostArgs, ReviewPostResult, TicketRef } from './interfaces/index.js';
 
 const defaultToolEnvironments = ['local', 'development', 'staging'];
 
@@ -44,6 +44,21 @@ const prDiffArgsSchema = {
     maxFiles: {
       type: 'number',
       description: 'Maximum number of changed files to return (default 50)',
+    },
+  },
+};
+
+const prListArgsSchema = {
+  type: 'object',
+  properties: {
+    state: {
+      type: 'string',
+      enum: ['open', 'closed', 'all'],
+      description: 'Which pull requests to list (default open)',
+    },
+    maxResults: {
+      type: 'number',
+      description: 'Maximum number of pull requests to return (default 50, max 100)',
     },
   },
 };
@@ -197,6 +212,81 @@ export function githubConnector(options: GitHubConnectorOptions = {}): Connector
             labels,
             ticketId: args.ticketId,
             url: `https://github.local/${repository}/issues/${issueNumber}`,
+          };
+        },
+      }),
+      defineTool<PrListArgs, PrListResult>({
+        name: 'github.pr.list',
+        description: 'List pull requests for the configured repository, most recently updated first',
+        scopes: ['pulls:read'],
+        environments: defaultToolEnvironments,
+        category: 'review',
+        tags: ['context', 'review', 'read'],
+        argsSchema: prListArgsSchema,
+        async handler(args) {
+          const state = args.state ?? 'open';
+          // Cap defensively: GitHub rejects per_page > 100, and an unbounded
+          // inbox query is a cost and latency footgun.
+          const cap = Math.min(Math.max(args.maxResults ?? 50, 1), 100);
+
+          if (mode === 'api') {
+            const response = await fetchGitHubPrList({
+              apiBaseUrl,
+              token: requireToken(tokenEnv, options.env),
+              fetchImpl,
+              repository,
+              state,
+              perPage: cap,
+            });
+            const list = Array.isArray(response) ? response : [];
+            const pullRequests = list.slice(0, cap).map((item) => {
+              const entry = asRecord(item);
+              const number = getNumber(entry.number) ?? 0;
+
+              return {
+                number,
+                title: getString(entry.title) ?? '',
+                author: getString(asRecord(entry.user).login) ?? '',
+                baseRef: getString(asRecord(entry.base).ref) ?? '',
+                headRef: getString(asRecord(entry.head).ref) ?? '',
+                draft: entry.draft === true,
+                updatedAt: getString(entry.updated_at) ?? '',
+                url: getString(entry.html_url) ?? `https://github.com/${repository}/pull/${number}`,
+              };
+            });
+
+            return { mode, repository, state, pullRequests, truncated: list.length > cap };
+          }
+
+          const localPullRequests = [
+            {
+              number: 482,
+              title: 'Make totals quantity-aware',
+              author: 'local-dev',
+              baseRef: 'main',
+              headRef: 'feat/qty-aware-totals',
+              draft: false,
+              updatedAt: '2026-08-04T18:20:00Z',
+              url: `https://github.local/${repository}/pull/482`,
+            },
+            {
+              number: 479,
+              title: 'Add retry handling to billing sync',
+              author: 'local-dev',
+              baseRef: 'main',
+              headRef: 'feature/billing-retries-479',
+              draft: true,
+              updatedAt: '2026-08-03T09:05:00Z',
+              url: `https://github.local/${repository}/pull/479`,
+            },
+          ];
+
+          return {
+            mode,
+            repository,
+            state,
+            pullRequests: localPullRequests.slice(0, cap),
+            truncated: localPullRequests.length > cap,
           };
         },
       }),

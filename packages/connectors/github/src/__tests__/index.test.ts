@@ -133,6 +133,95 @@ describe('githubConnector', () => {
     }, {})).rejects.toThrow('Missing GitHub token');
   });
 
+  it('lists pull requests deterministically in local mode', async () => {
+    const connector = githubConnector({ repository: 'company/app' });
+    const tool = connector.tools?.find((candidate) => candidate.name === 'github.pr.list');
+
+    const result = await tool?.handler({}, {}) as {
+      pullRequests: Array<{ number: number; draft: boolean }>;
+      state: string;
+    };
+
+    expect(result).toMatchObject({ mode: 'local', repository: 'company/app', state: 'open', truncated: false });
+    expect(result.pullRequests).toHaveLength(2);
+    expect(result.pullRequests[0]).toMatchObject({ number: 482, draft: false });
+    expect(result.pullRequests[1]).toMatchObject({ number: 479, draft: true });
+  });
+
+  it('lists pull requests in API mode, newest first and capped', async () => {
+    const calls: string[] = [];
+    const connector = githubConnector({
+      mode: 'api',
+      repository: 'company/app',
+      apiBaseUrl: 'https://github.test/api/',
+      env: { GITHUB_TOKEN: 'ghp_test' },
+      fetch: async (input) => {
+        calls.push(String(input));
+
+        return Response.json([
+          {
+            number: 12,
+            title: 'Second',
+            user: { login: 'octocat' },
+            base: { ref: 'main' },
+            head: { ref: 'feat/b' },
+            draft: false,
+            updated_at: '2026-08-04T10:00:00Z',
+            html_url: 'https://github.com/company/app/pull/12',
+          },
+          {
+            number: 11,
+            title: 'First',
+            user: { login: 'hubot' },
+            base: { ref: 'main' },
+            head: { ref: 'feat/a' },
+            draft: true,
+            updated_at: '2026-08-03T10:00:00Z',
+            html_url: 'https://github.com/company/app/pull/11',
+          },
+        ]);
+      },
+    });
+    const tool = connector.tools?.find((candidate) => candidate.name === 'github.pr.list');
+
+    const result = await tool?.handler({ maxResults: 1 }, {}) as { pullRequests: Array<{ number: number }> };
+
+    expect(result).toMatchObject({ mode: 'api', truncated: true });
+    expect(result.pullRequests).toEqual([
+      expect.objectContaining({ number: 12, title: 'Second', author: 'octocat', draft: false }),
+    ]);
+    expect(calls[0]).toContain('/repos/company/app/pulls?');
+    expect(calls[0]).toContain('state=open');
+    expect(calls[0]).toContain('sort=updated');
+  });
+
+  it('caps pr.list per_page at the GitHub maximum', async () => {
+    const calls: string[] = [];
+    const connector = githubConnector({
+      mode: 'api',
+      repository: 'company/app',
+      apiBaseUrl: 'https://github.test/api/',
+      env: { GITHUB_TOKEN: 'ghp_test' },
+      fetch: async (input) => {
+        calls.push(String(input));
+        return Response.json([]);
+      },
+    });
+    const tool = connector.tools?.find((candidate) => candidate.name === 'github.pr.list');
+
+    await tool?.handler({ maxResults: 5000 }, {});
+
+    expect(calls[0]).toContain('per_page=100');
+  });
+
+  it('exposes pr.list as read-only so the inbox cannot post', async () => {
+    const connector = githubConnector({ repository: 'company/app' });
+    const tool = connector.tools?.find((candidate) => candidate.name === 'github.pr.list');
+
+    expect(tool?.scopes).toEqual(['pulls:read']);
+    expect(tool?.scopes).not.toContain('review:write');
+  });
+
   it('returns a deterministic local pull request diff with extracted ticket references', async () => {
     const connector = githubConnector({ repository: 'company/app' });
     const tool = connector.tools?.find((candidate) => candidate.name === 'github.pr.diff');

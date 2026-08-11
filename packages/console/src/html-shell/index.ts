@@ -1,4 +1,5 @@
 import { createConsoleExportBundleFromMetrics } from '../exports/index.js';
+import type { PreparedConsoleDiffs } from '../diff/prepare.js';
 import { dashboardStyles } from './styles.js';
 import type { ConsoleData, ConsoleMetrics, ConsolePage } from '../interfaces/index.js';
 import {
@@ -35,6 +36,13 @@ interface ConsoleShellOptions {
   content: string;
   navItems: ConsoleNavItem[];
   exportPayload: string;
+  /**
+   * Markup injected at the start of `<body>`, before any content. Used for the
+   * diff renderer's icon sprite and theme CSS, which must appear once per page
+   * and cannot live in `<head>` (an SVG sprite has to be in the document body
+   * to be referenceable by `<use>`).
+   */
+  bodyAssets?: string;
 }
 
 const overviewNavItem: ConsoleNavItem = {
@@ -48,7 +56,17 @@ export function renderConsole(data: ConsoleData): string {
   return renderConsolePages(data)[0]?.html ?? '';
 }
 
-export function renderConsolePages(data: ConsoleData): ConsolePage[] {
+export interface RenderConsoleOptions {
+  /**
+   * Diffs rendered by `prepareConsoleDiffs`. Rendering a diff is asynchronous
+   * while this pipeline is synchronous, so the async work happens first and its
+   * result is handed in here. Omit it and the review page degrades to findings
+   * without code context.
+   */
+  diffs?: PreparedConsoleDiffs;
+}
+
+export function renderConsolePages(data: ConsoleData, options: RenderConsoleOptions = {}): ConsolePage[] {
   const createdAt = data.createdAt ?? new Date().toISOString();
   const pageData: ConsoleData = { ...data, createdAt };
   const metrics = calculateMetrics(pageData);
@@ -79,7 +97,7 @@ export function renderConsolePages(data: ConsoleData): ConsolePage[] {
       description: section.description,
     })),
   ];
-  const context: DashboardSectionContext = { data: pageData, metrics };
+  const context: DashboardSectionContext = { data: pageData, metrics, diffs: options.diffs };
 
   return [
     {
@@ -111,6 +129,8 @@ export function renderConsolePages(data: ConsoleData): ConsolePage[] {
         content: section.render(context),
         navItems,
         exportPayload,
+        // Only the page that renders diffs pays the ~48KB sprite + theme CSS.
+        bodyAssets: section.id === 'reviews' ? options.diffs?.assets : undefined,
       }),
     })),
   ];
@@ -203,6 +223,7 @@ function renderConsoleShell(options: ConsoleShellOptions): string {
   <style>${dashboardStyles}</style>
 </head>
 <body>
+  ${options.bodyAssets ?? ''}
   <a class="skip-link" href="#main-content">Skip to content</a>
   <div class="app">
     <aside>

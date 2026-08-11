@@ -1,4 +1,12 @@
 export {
+  emptyPreparedDiffs,
+  prepareConsoleDiffs,
+} from './prepare.js';
+export type {
+  PrepareConsoleDiffsOptions,
+  PreparedConsoleDiffs,
+} from './prepare.js';
+export {
   filePathFromPatch,
   renderAnnotatedDiff,
   splitPatchFiles,

@@ -2,6 +2,7 @@ import { chartsAndPostureSection } from './charts-and-posture.js';
 import { engineerWorkbenchSection } from './engineer-workbench.js';
 import { executiveBriefSection } from './executive-brief.js';
 import { governanceReadinessSection } from './governance-readiness.js';
+import { reviewsSection } from './reviews.js';
 import type { DashboardSectionContext, DashboardSectionStrategy } from './types.js';
 
 export { renderKpi, renderNavGroup } from './components.js';
@@ -10,6 +11,7 @@ export type { DashboardSectionContext, DashboardSectionStrategy } from './types.
 
 export const dashboardSectionStrategies: DashboardSectionStrategy[] = [
   executiveBriefSection,
+  reviewsSection,
   governanceReadinessSection,
   chartsAndPostureSection,
   engineerWorkbenchSection,

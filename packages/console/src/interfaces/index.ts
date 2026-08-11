@@ -1,4 +1,4 @@
-import type { DeploymentDefinition, PolicyDefinition } from '@fdekit/core';
+import type { DeploymentDefinition, PolicyDefinition, ReviewArtifact } from '@fdekit/core';
 import type {
   ApprovalArtifact,
   AuditLogEntry,
@@ -6,6 +6,19 @@ import type {
   MacroEvalArtifact,
   TraceArtifact,
 } from '@fdekit/runtime';
+
+/**
+ * A review plus the diff it reviewed.
+ *
+ * The console is a renderer and never touches the filesystem, so the caller
+ * reads `<runId>.patch` (via `ReviewArtifact.patchArtifact`) and supplies it
+ * here. `patch` is optional: reviews written before patch capture still render,
+ * as findings without code context.
+ */
+export interface ConsoleReview {
+  artifact: ReviewArtifact;
+  patch?: string | null;
+}
 
 export interface ConsoleHistoryEntry {
   createdAt: string;
@@ -25,6 +38,8 @@ export interface ConsoleData {
   auditLog?: AuditLogEntry[];
   createdAt?: string;
   history?: ConsoleHistoryEntry[];
+  /** Reviews to render, newest first. See `prepareConsoleDiffs`. */
+  reviews?: ConsoleReview[];
 }
 
 export interface ConsoleExportBundle {
@@ -40,6 +55,13 @@ export interface ConsolePage {
 }
 
 export interface ConsoleMetrics {
+  /** Reviews rendered on this console build. */
+  reviewCount: number;
+  /** Findings kept after grading, across all reviews. */
+  reviewFindingCount: number;
+  /** Findings the grader suppressed, across all reviews. */
+  reviewSuppressedCount: number;
+  reviewHighSeverityCount: number;
   traceCount: number;
   allTraceCount: number;
   traceScope: 'latest_eval' | 'latest_run' | 'all_traces';

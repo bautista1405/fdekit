@@ -27,6 +27,7 @@ describe('renderConsole', () => {
     expect(pages.map((page) => page.fileName)).toEqual([
       'console.html',
       'brief.html',
+      'reviews.html',
       'readiness.html',
       'charts.html',
       'workbench.html',
@@ -820,12 +821,14 @@ describe('renderConsole', () => {
   it('keeps dashboard sections as ordered rendering strategies', () => {
     expect(dashboardSectionStrategies.map((strategy) => strategy.id)).toEqual([
       'executive-brief',
+      'reviews',
       'governance-readiness',
       'charts-and-governance-posture',
       'engineer-workbench',
     ]);
     expect(dashboardSectionStrategies.map((strategy) => strategy.fileName)).toEqual([
       'brief.html',
+      'reviews.html',
       'readiness.html',
       'charts.html',
       'workbench.html',

@@ -51,6 +51,18 @@ export interface ReviewArtifact {
   suppressed: SuppressedReviewFinding[];
   recommendation: 'comment' | 'request-changes';
   createdAt: string;
+  /**
+   * File name of the sibling text artifact in the `reviews` group holding the
+   * reviewed unified diff (conventionally `<runId>.patch`).
+   *
+   * Without it a review cannot be re-read offline: the console would have to
+   * refetch the diff from the forge to show what was reviewed, which breaks
+   * both the emailable-artifact property (ADR-0004) and the audit claim that
+   * the artifact records what the agent actually saw. Optional so reviews
+   * written before this field remain valid; the console degrades to a
+   * findings-only view when it is absent.
+   */
+  patchArtifact?: string;
 }
 
 export interface DroppedFinding {

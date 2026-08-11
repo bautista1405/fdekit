@@ -14,6 +14,22 @@ Use console when you need dashboard HTML or CSV/Markdown/JSON exports outside th
 
 Choose `@fdekit/runtime` to read/write artifacts and `fdekit` to generate the dashboard from the standard command.
 
+## Dependency note: React appears in your tree
+
+Installing this package (and therefore `@fdekit/cli`) pulls `react` and `react-dom`.
+
+They come from [`@pierre/diffs`](https://diffs.com), which renders the annotated code
+diffs on the review page. That package declares `react` and `react-dom` as **required**
+peer dependencies for the whole package, so npm 7+ installs them automatically.
+
+**FDEKit does not use React.** The only entrypoint we import is `@pierre/diffs/ssr`,
+which renders diffs to an HTML string server-side (hast → HTML) and imports no React at
+all. There is no supported way for an intermediate package to tell npm that a transitive
+peer dependency is unused, so the packages are installed even though no FDEKit code path
+loads them.
+
+Nothing in `@fdekit/console` or `@fdekit/cli` executes React at runtime.
+
 ## 5-minute quick example
 
 ```ts

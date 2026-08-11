@@ -40,8 +40,15 @@ export function renderHandoffRow(label: string, value: string): string {
   </div>`;
 }
 
+/**
+ * `detail` is optional in practice even though several producers type it as
+ * required: a connector configured with no options yields a readiness item with
+ * nothing to say about it. Rendering must degrade to an empty line rather than
+ * throw — the console is the evidence artifact, and a crash loses the whole
+ * report over one missing string.
+ */
 export function renderReadinessList(
-  items: Array<{ label: string; status: 'pass' | 'warn' | 'fail' | 'advisory'; detail: string }>,
+  items: Array<{ label: string; status: 'pass' | 'warn' | 'fail' | 'advisory'; detail?: string }>,
 ): string {
   if (items.length === 0) {
     return '<p class="subtle">No readiness data captured yet.</p>';
@@ -51,8 +58,8 @@ export function renderReadinessList(
     ${items.map((item) => `<div class="readiness-item">
       <div>${statusPill(item.status)}</div>
       <div class="row-main">
-        <strong>${escapeHtml(item.label)}</strong>
-        <div class="event-meta">${escapeHtml(item.detail)}</div>
+        <strong>${escapeHtml(item.label ?? '')}</strong>
+        <div class="event-meta">${escapeHtml(item.detail ?? '')}</div>
       </div>
     </div>`).join('')}
   </div>`;

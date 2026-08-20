@@ -3,12 +3,15 @@ import type {
   AgentProvider,
   AnyToolDefinition,
   DeploymentDefinition,
+  ExecutionState,
   PolicyDefinition,
 } from '@fdekit/core';
 import type { ArtifactStore } from '../../artifact-store/index.js';
 import type { ApprovalArtifact } from '../../governance/index.js';
+import type { SessionStore } from '../../sessions/index.js';
 import type { TraceEvent } from '../../traces/index.js';
 import type { AgentToolCall, PolicyViolation } from '../interfaces/index.js';
+import type { GovernedToolCall } from '../interfaces/index.js';
 import type { RuntimeEdgeMode } from './edge/index.js';
 
 export type ToolPolicyPhase = 'beforeToolCall' | 'afterToolCall';
@@ -31,6 +34,9 @@ export interface RunState {
   deployment: DeploymentDefinition;
   projectDir: string;
   artifactStore: ArtifactStore;
+  sessionStore: SessionStore;
+  sessionRevision: number;
+  sessionState?: ExecutionState;
   runId: string;
   agentName: string;
   agent: AgentConfig;
@@ -55,4 +61,8 @@ export interface RunState {
   lastStepIndex: number;
   /** True when this run was restored from a paused run artifact. */
   resumedFromPause: boolean;
+  /** Determines whether approval resume returns to provider planning or an exact caller-planned sequence. */
+  resumeMode: 'provider' | 'tool_sequence';
+  /** Exact calls after the currently executing sequence call, persisted on pause. */
+  remainingCalls: GovernedToolCall[];
 }

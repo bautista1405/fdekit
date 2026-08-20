@@ -23,7 +23,13 @@ import {
   type ProviderToolResult,
   type ToolDefinition,
 } from '@fdekit/core';
-import { AgentRunError, resumeAgentRun, runAgent, type PausedRunArtifact } from '../agents/index.js';
+import {
+  AgentRunError,
+  executeGovernedToolSequence,
+  resumeAgentRun,
+  runAgent,
+  type PausedRunArtifact,
+} from '../agents/index.js';
 import {
   ApprovalDecisionConflictError,
   approveApproval,
@@ -32,6 +38,7 @@ import {
   rejectApproval,
 } from '../governance/index.js';
 import { readJsonArtifact } from '../artifact-store/index.js';
+import { createFileSessionStore } from '../sessions/index.js';
 
 describe('runAgent', () => {
   it('runs a deterministic support escalation loop with tool calls and traces', async () => {
@@ -60,6 +67,16 @@ describe('runAgent', () => {
     expect(result.trace.events.at(-1)).toMatchObject({
       type: 'agent.run.completed',
       status: 'completed',
+    });
+
+    const sessionStore = createFileSessionStore({ projectDir });
+    const durableEvents = await sessionStore.readEvents<Record<string, unknown>>(result.id);
+    expect(durableEvents.map((event) => event.type)).toEqual(
+      result.trace.events.map((event) => event.type),
+    );
+    expect(await sessionStore.getProjection(result.id)).toMatchObject({
+      state: 'completed',
+      revision: result.trace.events.length,
     });
   });
 
@@ -1078,6 +1095,58 @@ describe('approval review loop', () => {
     const executed = approvals.find((approval) => approval.toolName === 'issue.create');
     expect(executed).toMatchObject({ status: 'approved', executedRunId: paused.id });
     expect(executed?.executedAt).toBeTruthy();
+  });
+
+  it('resumes exact governed tool sequences without provider planning or write replay', async () => {
+    const counters: Record<string, number> = {};
+    const deployment = createGatedDeployment(counters);
+    const projectDir = await mkRunProjectDir();
+    const paused = await executeGovernedToolSequence({
+      deployment,
+      projectDir,
+      agentName: 'triage',
+      input: { workflow: 'graded-review', reviewId: 'review_1' },
+      calls: [
+        {
+          toolName: 'issue.create',
+          args: { title: 'Grounded review finding', labels: ['review'] },
+        },
+        {
+          toolName: 'slack.message',
+          args: { channel: '#reviewers', text: 'Review posted' },
+        },
+      ],
+    });
+
+    expect(paused.status).toBe('waiting_approval');
+    expect(counters).toEqual({});
+    const pausedArtifact = await readJsonArtifact<PausedRunArtifact>(projectDir, 'runs', `${paused.id}.json`);
+    expect(pausedArtifact).toMatchObject({
+      resumeMode: 'tool_sequence',
+      pending: { toolName: 'issue.create' },
+      remainingCalls: [{ toolName: 'slack.message' }],
+    });
+
+    await approveApproval(projectDir, paused.approvals[0].id, { actor: 'reviewer' });
+    const secondPause = await resumeAgentRun({ deployment, projectDir, runId: paused.id });
+
+    expect(secondPause.status).toBe('waiting_approval');
+    expect(counters).toEqual({ 'issue.create': 1 });
+    const secondApproval = secondPause.approvals.find((approval) => approval.status === 'pending');
+    expect(secondApproval?.toolName).toBe('slack.message');
+
+    await approveApproval(projectDir, secondApproval!.id, { actor: 'reviewer' });
+    const completed = await resumeAgentRun({ deployment, projectDir, runId: paused.id });
+
+    expect(completed.status).toBe('completed');
+    expect(counters).toEqual({ 'issue.create': 1, 'slack.message': 1 });
+    expect(JSON.parse(completed.finalAnswer)).toMatchObject({
+      mode: 'tool_sequence',
+      calls: [
+        { name: 'issue.create' },
+        { name: 'slack.message' },
+      ],
+    });
   });
 
   it('scopes approvals to the connector target so mode flips require fresh review', async () => {

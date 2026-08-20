@@ -1,5 +1,6 @@
 import type { AnyToolDefinition } from '@fdekit/core';
 import { appendAudit } from '../audit.js';
+import { recordRunEvent } from '../session-events.js';
 import type { RunState } from '../types.js';
 import { validateToolArgsSchema } from './schema.js';
 
@@ -10,7 +11,7 @@ interface ToolEdgeIssue {
 }
 
 export async function enforceToolCatalogEdge(state: RunState): Promise<void> {
-  state.events.push({
+  await recordRunEvent(state, {
     type: 'runtime.edge.profile',
     strict: state.edgeMode.strict,
     requireToolArgsSchema: state.edgeMode.requireToolArgsSchema,
@@ -28,7 +29,7 @@ export async function enforceToolCatalogEdge(state: RunState): Promise<void> {
   ));
 
   if (issues.length === 0) {
-    state.events.push({
+    await recordRunEvent(state, {
       type: 'runtime.edge.catalog.validated',
       toolCount: state.tools.size,
     });
@@ -185,7 +186,7 @@ async function blockEdge(
   }
 
   const reason = edgeReason(input.issues);
-  state.events.push({
+  await recordRunEvent(state, {
     type: input.action,
     policy: input.policy,
     reason,

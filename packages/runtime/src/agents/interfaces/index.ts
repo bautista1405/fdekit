@@ -1,6 +1,7 @@
 import type { DeploymentDefinition, ProviderRuntimeRegistry } from '@fdekit/core';
 import type { ArtifactStore } from '../../artifact-store/index.js';
 import type { ApprovalArtifact } from '../../governance/index.js';
+import type { SessionStore } from '../../sessions/index.js';
 import type { TraceArtifact } from '../../traces/index.js';
 
 export interface AgentRunOptions {
@@ -11,6 +12,8 @@ export interface AgentRunOptions {
   maxSteps?: number;
   providerRegistry?: ProviderRuntimeRegistry;
   artifactStore?: ArtifactStore;
+  /** Durable append-only run log; defaults to the local file session store. */
+  sessionStore?: SessionStore;
   strict?: boolean;
   requireToolArgsSchema?: boolean;
   /**
@@ -34,14 +37,42 @@ export interface AgentResumeOptions {
   agentName?: string;
   providerRegistry?: ProviderRuntimeRegistry;
   artifactStore?: ArtifactStore;
+  /** Durable append-only run log; defaults to the local file session store. */
+  sessionStore?: SessionStore;
   strict?: boolean;
   requireToolArgsSchema?: boolean;
+}
+
+export interface GovernedToolCall {
+  toolName: string;
+  args: Record<string, unknown>;
+}
+
+/**
+ * Execute caller-planned tool calls through the same catalog, policy,
+ * approval, audit, trace, and durable-session edges used by agent runs.
+ * The runtime never asks a provider to re-plan these calls.
+ */
+export interface GovernedToolSequenceOptions {
+  deployment: DeploymentDefinition;
+  projectDir: string;
+  agentName: string;
+  calls: GovernedToolCall[];
+  /** Context exposed to policies and recorded (redacted) with the run. */
+  input?: Record<string, unknown>;
+  artifactStore?: ArtifactStore;
+  /** Durable append-only run log; defaults to the local file session store. */
+  sessionStore?: SessionStore;
+  strict?: boolean;
+  requireToolArgsSchema?: boolean;
+  approvalOverride?: AgentRunOptions['approvalOverride'];
 }
 
 /**
  * Snapshot of a run paused on a pending approval, persisted under
  * `artifacts/runs/<runId>.json`. Resume executes `pending` exactly as recorded
- * (no re-planning) and continues the provider loop from `nextStepIndex`.
+ * (no re-planning). Provider runs then continue from `nextStepIndex`; exact
+ * tool sequences continue with `remainingCalls` and never invoke a provider.
  */
 export interface PausedRunArtifact {
   version: 1;
@@ -63,8 +94,14 @@ export interface PausedRunArtifact {
     args: Record<string, unknown>;
     approvalId: string;
   };
+  /** Absent on legacy artifacts, which resume through the provider loop. */
+  resumeMode?: 'provider' | 'tool_sequence';
+  /** Exact calls left after `pending`; only used by governed tool sequences. */
+  remainingCalls?: GovernedToolCall[];
   pausedAt: string;
   consumedAt?: string;
+  /** Last durable event revision at pause time; absent on legacy v1 artifacts. */
+  sessionRevision?: number;
 }
 
 export interface AgentToolCall {

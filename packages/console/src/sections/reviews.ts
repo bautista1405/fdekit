@@ -79,7 +79,7 @@ function renderFile(file: RenderedDiffFile): string {
             ${file.findings.map(renderFinding).join('\n')}
             ${file.error
               ? `<p class="empty-note">This file's diff could not be rendered: ${escapeHtml(file.error)}</p>`
-              : `<div class="review-diff">${file.html}</div>`}
+              : `<div class="review-diff fdekit-diff">${file.html}</div>`}
           </div>`;
 }
 

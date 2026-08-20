@@ -66,6 +66,80 @@ describe('provider planner protocol helpers', () => {
     });
   });
 
+  it('serializes only the allowlisted model context when a step plan is present', () => {
+    const context: ProviderPlanContext = {
+      ...planContext(),
+      input: { hostSecret: 'must-not-leak' },
+      instructions: 'Host-only instructions',
+      toolResults: [{ name: 'host.tool', args: {}, result: { secret: 'hidden' }, latencyMs: 1 }],
+      contextPlan: {
+        schemaVersion: 1,
+        target: {
+          id: 'review-target',
+          provider: 'provider-a',
+          model: 'review-model',
+          capabilities: {
+            inputModalities: ['text'],
+            outputModalities: ['text'],
+            contextWindowTokens: 128_000,
+            maxOutputTokens: 4_000,
+            toolCalls: true,
+            structuredOutput: true,
+            streaming: true,
+            reasoning: false,
+            promptCaching: false,
+          },
+        },
+        endpoint: {
+          id: 'private-endpoint',
+          provider: 'provider-a',
+          credentialRef: 'secret://provider-a',
+        },
+        budget: { maxInputTokens: 8_000 },
+        objectives: {
+          relevance: 1,
+          freshness: 1,
+          authority: 1,
+          completeness: 1,
+          latency: 0,
+          cost: 0,
+        },
+        inputTokenLimit: 8_000,
+        estimatedInputTokens: 100,
+        feasibility: { status: 'feasible', reasons: [] },
+        model: {
+          schemaVersion: 1,
+          instructions: [{ id: 'instruction-1', kind: 'instruction', content: 'Allowlisted instruction' }],
+          evidence: [{ id: 'evidence-1', kind: 'evidence', content: 'Allowlisted evidence' }],
+          memory: [],
+          skills: [],
+          tools: [{ name: 'code.read', description: 'Read code', inputSchema: { type: 'object' } }],
+          recentActions: [],
+        },
+        manifest: { schemaVersion: 1, selected: [], excluded: [] },
+      },
+    };
+
+    const instructions = buildProviderPlannerInstructions(context);
+    const payload = buildProviderPlannerInputPayload(context);
+    const serialized = JSON.stringify(payload);
+
+    expect(instructions).toContain('Allowlisted instruction');
+    expect(instructions).not.toContain('Host-only instructions');
+    expect(payload).not.toHaveProperty('deployment');
+    expect(payload).not.toHaveProperty('agent');
+    expect(payload).not.toHaveProperty('input');
+    expect(payload.toolResults).toEqual([]);
+    expect(payload.availableTools).toEqual([
+      { name: 'code.read', description: 'Read code', argsSchema: { type: 'object' } },
+    ]);
+    expect(serialized).toContain('Allowlisted evidence');
+    expect(serialized).not.toContain('must-not-leak');
+    expect(serialized).not.toContain('private-endpoint');
+    expect(serialized).not.toContain('secret://provider-a');
+    expect(serialized).not.toContain('host.tool');
+  });
+
   it('fails provider planner parsing explicitly', () => {
     expect(() => parseProviderPlannerStep('not json', 'TestProvider')).toThrow(
       'TestProvider response was not JSON',

@@ -1,4 +1,5 @@
 import type { AgentConfig } from './agent.js';
+import type { StepContextPlan } from './context-planning.js';
 import type { DeploymentDefinition } from './deployment.js';
 import type { EnvironmentVariableRequirement, MaybePromise, ProviderName } from './shared.js';
 
@@ -28,6 +29,8 @@ export interface ProviderPlanContext {
   toolResults: ProviderToolResult[];
   stepIndex: number;
   maxSteps: number;
+  /** When present, provider serialization must use only this allowlisted model context. */
+  contextPlan?: StepContextPlan;
 }
 
 export type ProviderStep = ProviderToolCallStep | ProviderFinalStep;

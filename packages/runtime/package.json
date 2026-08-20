@@ -31,6 +31,10 @@
       "import": "./dist/config/index.js",
       "types": "./dist/config/index.d.ts"
     },
+    "./context": {
+      "import": "./dist/context/index.js",
+      "types": "./dist/context/index.d.ts"
+    },
     "./deployments": {
       "import": "./dist/deployments/index.js",
       "types": "./dist/deployments/index.d.ts"
@@ -39,6 +43,14 @@
       "import": "./dist/evals/index.js",
       "types": "./dist/evals/index.d.ts"
     },
+    "./grader": {
+      "import": "./dist/grader/index.js",
+      "types": "./dist/grader/index.d.ts"
+    },
+    "./intelligence": {
+      "import": "./dist/intelligence/index.js",
+      "types": "./dist/intelligence/index.d.ts"
+    },
     "./governance": {
       "import": "./dist/governance/index.js",
       "types": "./dist/governance/index.d.ts"
@@ -46,6 +58,14 @@
     "./macro-evals": {
       "import": "./dist/macro-evals/index.js",
       "types": "./dist/macro-evals/index.d.ts"
+    },
+    "./sessions": {
+      "import": "./dist/sessions/index.js",
+      "types": "./dist/sessions/index.d.ts"
+    },
+    "./skills": {
+      "import": "./dist/skills/index.js",
+      "types": "./dist/skills/index.d.ts"
     },
     "./traces": {
       "import": "./dist/traces/index.js",

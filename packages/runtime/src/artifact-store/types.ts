@@ -12,7 +12,7 @@ export type {
   S3PutObjectInput,
 } from '@fdekit/core';
 
-export type ArtifactStoreKind = 'local' | 's3';
+export type ArtifactStoreKind = 'local' | 's3' | 'http';
 
 export interface ArtifactRef {
   group: string;

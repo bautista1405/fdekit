@@ -107,7 +107,8 @@ export interface SnapshotGovernance {
 
 export type SnapshotArtifactStore =
   | SnapshotLocalArtifactStore
-  | SnapshotS3ArtifactStore;
+  | SnapshotS3ArtifactStore
+  | SnapshotHttpArtifactStore;
 
 export interface SnapshotLocalArtifactStore {
   kind: 'local';
@@ -119,6 +120,18 @@ export interface SnapshotS3ArtifactStore {
   bucket: string;
   prefix?: string;
   region?: string;
+}
+
+/**
+ * Records WHERE a deployment reports, never the credential it reports with.
+ *
+ * The snapshot is itself written out as evidence — and, for an http store, sent
+ * through the very endpoint it describes. Including the worker token would
+ * publish it into the artifact trail on every run.
+ */
+export interface SnapshotHttpArtifactStore {
+  kind: 'http';
+  endpoint: string;
 }
 
 export interface SnapshotEval {

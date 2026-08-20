@@ -126,6 +126,14 @@ export function snapshotArtifacts(deployment: DeploymentDefinition): SnapshotArt
     };
   }
 
+  if (artifacts.kind === 'http') {
+    // Endpoint only: see SnapshotHttpArtifactStore.
+    return {
+      kind: 'http',
+      endpoint: artifacts.endpoint,
+    };
+  }
+
   return {
     kind: 'local',
     rootDir: artifacts.rootDir,

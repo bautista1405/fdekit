@@ -1,5 +1,6 @@
 import type { ArtifactStoreDefinition } from '@fdekit/core';
 import { createFileArtifactStore } from './local-store.js';
+import { createHttpArtifactStore } from './http-store.js';
 import { asS3ArtifactClient, createS3ArtifactStore } from './s3-store.js';
 import type { ArtifactStore, CreateArtifactStoreOptions } from './types.js';
 
@@ -29,6 +30,18 @@ export function createArtifactStoreFromDefinition(
       region: definition.region,
       client: asS3ArtifactClient(definition.client),
     });
+  }
+
+  if (definition.kind === 'http') {
+    const token = definition.token ?? process.env[definition.tokenEnv ?? 'FDEKIT_WORKER_TOKEN'];
+
+    if (!token) {
+      throw new Error(
+        `The http artifact store needs a worker token. Set ${definition.tokenEnv ?? 'FDEKIT_WORKER_TOKEN'}.`,
+      );
+    }
+
+    return createHttpArtifactStore({ endpoint: definition.endpoint, token });
   }
 
   throw new Error(`Unsupported artifact store: ${(definition as { kind?: string }).kind ?? 'unknown'}`);

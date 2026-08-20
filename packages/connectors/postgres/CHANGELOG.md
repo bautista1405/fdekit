@@ -1,5 +1,12 @@
 # @fdekit/connector-postgres
 
+## 0.5.4
+
+### Patch Changes
+
+- Updated dependencies [2d37d1f]
+  - @fdekit/core@0.5.4
+
 ## 0.5.3
 
 ### Patch Changes

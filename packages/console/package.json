@@ -1,6 +1,6 @@
 {
   "name": "@fdekit/console",
-  "version": "0.5.3",
+  "version": "0.5.4",
   "description": "Local dashboard renderer for FDEKit traces, evals, governance, and reports",
   "main": "dist/index.js",
   "module": "dist/index.js",
@@ -29,8 +29,8 @@
   ],
   "license": "MIT",
   "dependencies": {
-    "@fdekit/core": "0.5.3",
-    "@fdekit/runtime": "0.5.3",
+    "@fdekit/core": "0.5.4",
+    "@fdekit/runtime": "0.5.4",
     "@pierre/diffs": "1.3.2",
     "@pierre/theme": "1.1.0"
   },

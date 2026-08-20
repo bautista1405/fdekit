@@ -28,6 +28,11 @@ all. There is no supported way for an intermediate package to tell npm that a tr
 peer dependency is unused, so the packages are installed even though no FDEKit code path
 loads them.
 
+The SSR path also loads `@pierre/theming`, which imports its optional
+`@pierre/theme@^1.1.0` peer. Console declares that version directly so clean
+installs remain consistent across npm versions; `@pierre/diffs` keeps its own
+incompatible `@pierre/theme@2.0.0` dependency nested.
+
 Nothing in `@fdekit/console` or `@fdekit/cli` executes React at runtime.
 
 ## 5-minute quick example

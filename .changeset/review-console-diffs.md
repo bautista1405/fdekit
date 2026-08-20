@@ -29,7 +29,9 @@ console render. It now degrades instead.
 **New dependency note:** `@fdekit/console` depends on `@pierre/diffs`, which
 declares required peer dependencies on `react` and `react-dom`. npm installs them
 even though no FDEKit code path loads React - only the `ssr` entrypoint is used,
-which renders to an HTML string. See the `@fdekit/console` README.
+which renders to an HTML string. Console also declares `@pierre/theme@1.1.0`
+directly because the SSR path imports it through an optional peer whose automatic
+installation differs between npm versions. See the `@fdekit/console` README.
 
 New public API: `@fdekit/console/diff` (`renderAnnotatedDiff`,
 `prepareConsoleDiffs`), `ConsoleData.reviews`, `ConsoleReview`,

@@ -22,6 +22,7 @@
     "clean": "rm -rf dist *.tsbuildinfo"
   },
   "dependencies": {
+    "@fdekit/catalog": "0.5.3",
     "@fdekit/console": "0.5.4",
     "@fdekit/core": "0.5.4",
     "@fdekit/provider-anthropic": "0.5.4",

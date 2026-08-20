@@ -8,21 +8,16 @@ interface PackageJson {
 
 const packageJson = require('../package.json') as PackageJson;
 
+/** The CLI's own version, reported by `fdekit --version`. */
 export const fdekitCliVersion = packageJson.version ?? '0.0.0';
 
-export const fdekitDependencyVersion =
-  process.env.FDEKIT_SCAFFOLD_VERSION ?? fdekitCliVersion;
-
-export const fdekitCaretDependencyVersion = `^${fdekitDependencyVersion}`;
-
-export function fdekitDependency(packageName: string): Record<string, string> {
-  return {
-    [packageName]: fdekitDependencyVersion,
-  };
-}
-
-export function fdekitDependencies(packageNames: readonly string[]): Record<string, string> {
-  return Object.fromEntries(
-    packageNames.map((packageName) => [packageName, fdekitDependencyVersion]),
-  );
-}
+/**
+ * Scaffold dependency pinning lives in `@fdekit/catalog` alongside the manifests
+ * that use it, and is re-exported here so existing call sites keep one import.
+ */
+export {
+  fdekitCaretDependencyVersion,
+  fdekitDependencies,
+  fdekitDependency,
+  fdekitDependencyVersion,
+} from '@fdekit/catalog';

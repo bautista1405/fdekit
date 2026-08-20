@@ -2,7 +2,7 @@ import {
   env,
   providerEnv,
 } from '../../registry.js';
-import { requireRecipeManifest } from '../../../catalog/recipes.js';
+import { requireRecipeManifest } from '@fdekit/catalog';
 import {
   fdekitDependencies,
   fdekitDependencyVersion,

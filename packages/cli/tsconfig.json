@@ -7,14 +7,34 @@
     "declaration": true,
     "declarationMap": true
   },
-  "include": ["src/**/*"],
-  "exclude": ["src/__tests__/**/*.ts", "src/**/*.test.ts"],
+  "include": [
+    "src/**/*"
+  ],
+  "exclude": [
+    "src/__tests__/**/*.ts",
+    "src/**/*.test.ts"
+  ],
   "references": [
-    { "path": "../console" },
-    { "path": "../providers/anthropic" },
-    { "path": "../providers/google" },
-    { "path": "../providers/ollama" },
-    { "path": "../providers/openai" },
-    { "path": "../runtime" }
+    {
+      "path": "../console"
+    },
+    {
+      "path": "../providers/anthropic"
+    },
+    {
+      "path": "../providers/google"
+    },
+    {
+      "path": "../providers/ollama"
+    },
+    {
+      "path": "../providers/openai"
+    },
+    {
+      "path": "../runtime"
+    },
+    {
+      "path": "../catalog"
+    }
   ]
 }

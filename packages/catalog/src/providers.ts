@@ -1,5 +1,5 @@
 import type { AddScaffold, CatalogEnvVar, ProviderManifest } from './types.js';
-import { fdekitDependency } from '../package-versions.js';
+import { fdekitDependency } from './package-versions.js';
 
 const ollamaEnv: CatalogEnvVar[] = [
   {

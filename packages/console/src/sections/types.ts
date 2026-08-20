@@ -1,8 +1,15 @@
+import type { PreparedConsoleDiffs } from '../diff/prepare.js';
 import type { ConsoleData, ConsoleMetrics } from '../interfaces/index.js';
 
 export interface DashboardSectionContext {
   data: ConsoleData;
   metrics: ConsoleMetrics;
+  /**
+   * Diffs rendered ahead of this synchronous pass by `prepareConsoleDiffs`.
+   * Absent when the caller did not prepare them; sections must degrade rather
+   * than assume they exist.
+   */
+  diffs?: PreparedConsoleDiffs;
 }
 
 export interface DashboardSectionStrategy {

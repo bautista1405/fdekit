@@ -110,6 +110,45 @@ export async function fetchGitHubPr(options: {
   });
 }
 
+/**
+ * Lists pull requests for the configured repository.
+ *
+ * Read-only and repository-bound: the connector resolves exactly one
+ * `repository`, so this cannot be pointed at an arbitrary repo by tool args.
+ * That keeps the console's PR inbox outside the `pulls:write` blast radius.
+ */
+export async function fetchGitHubPrList(options: {
+  apiBaseUrl: string;
+  token: string;
+  fetchImpl: typeof globalThis.fetch;
+  repository: string;
+  state: 'open' | 'closed' | 'all';
+  perPage: number;
+}): Promise<unknown> {
+  const query = new URLSearchParams({
+    state: options.state,
+    per_page: String(options.perPage),
+    sort: 'updated',
+    direction: 'desc',
+  });
+
+  return requestConnectorJson({
+    connectorName: 'githubConnector API mode',
+    fetchImpl: options.fetchImpl,
+    url: `${options.apiBaseUrl}/repos/${options.repository}/pulls?${query.toString()}`,
+    init: {
+      headers: {
+        authorization: `Bearer ${options.token}`,
+      },
+    },
+    defaultHeaders: githubGetHeaders,
+    errorMessage: (value, response) => {
+      const message = getString(asRecord(value).message) ?? `${response.status} ${response.statusText}`;
+      return `GitHub pull request list failed: ${message}`;
+    },
+  });
+}
+
 export async function fetchGitHubPrFiles(options: {
   apiBaseUrl: string;
   token: string;

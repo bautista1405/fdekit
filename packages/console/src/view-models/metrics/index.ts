@@ -49,6 +49,31 @@ export function calculateMetrics(data: ConsoleData): ConsoleMetrics {
     reportReady: context.reportReady,
     latestRunSummary: context.latestRunSummary,
     finalAnswer: getString(context.latestRunSummary.message) ?? null,
+    ...collectReviewMetrics(data),
+  };
+}
+
+function collectReviewMetrics(data: ConsoleData): Pick<
+  ConsoleMetrics,
+  'reviewCount' | 'reviewFindingCount' | 'reviewSuppressedCount' | 'reviewHighSeverityCount'
+> {
+  const reviews = data.reviews ?? [];
+  let reviewFindingCount = 0;
+  let reviewSuppressedCount = 0;
+  let reviewHighSeverityCount = 0;
+
+  for (const review of reviews) {
+    const findings = review.artifact.findings ?? [];
+    reviewFindingCount += findings.length;
+    reviewSuppressedCount += (review.artifact.suppressed ?? []).length;
+    reviewHighSeverityCount += findings.filter((finding) => finding.severity === 'high').length;
+  }
+
+  return {
+    reviewCount: reviews.length,
+    reviewFindingCount,
+    reviewSuppressedCount,
+    reviewHighSeverityCount,
   };
 }
 

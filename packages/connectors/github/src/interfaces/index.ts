@@ -53,6 +53,35 @@ export interface PrDiffArgs {
   maxFiles?: number;
 }
 
+export interface PrListArgs {
+  state?: 'open' | 'closed' | 'all';
+  maxResults?: number;
+}
+
+/**
+ * One row of the console's PR inbox. Every string here is authored by a PR
+ * author and is therefore attacker-controlled: it must be escaped at render,
+ * never interpolated into markup or a prompt without fencing.
+ */
+export interface PrListItem {
+  number: number;
+  title: string;
+  author: string;
+  baseRef: string;
+  headRef: string;
+  draft: boolean;
+  updatedAt: string;
+  url: string;
+}
+
+export interface PrListResult {
+  mode: GitHubConnectorMode;
+  repository: string;
+  state: 'open' | 'closed' | 'all';
+  pullRequests: PrListItem[];
+  truncated: boolean;
+}
+
 export interface PrDiffFile {
   filePath: string;
   status: string;

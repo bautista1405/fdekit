@@ -18,6 +18,10 @@
     ".": {
       "import": "./dist/index.js",
       "types": "./dist/index.d.ts"
+    },
+    "./diff": {
+      "import": "./dist/diff/index.js",
+      "types": "./dist/diff/index.d.ts"
     }
   },
   "files": [
@@ -26,7 +30,9 @@
   "license": "MIT",
   "dependencies": {
     "@fdekit/core": "0.5.3",
-    "@fdekit/runtime": "0.5.3"
+    "@fdekit/runtime": "0.5.3",
+    "@pierre/diffs": "1.3.2",
+    "@pierre/theme": "1.1.0"
   },
   "type": "module"
 }

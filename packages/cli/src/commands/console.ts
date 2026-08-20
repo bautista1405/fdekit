@@ -1,5 +1,7 @@
 import * as path from 'path';
-import { createConsoleExportBundle, renderConsolePages, type ConsoleHistoryEntry } from '@fdekit/console';
+import { createConsoleExportBundle, renderConsolePages, type ConsoleHistoryEntry, type ConsoleReview } from '@fdekit/console';
+import { prepareConsoleDiffs } from '@fdekit/console/diff';
+import type { ReviewArtifact } from '@fdekit/core';
 import {
   createArtifactStore,
   loadDeployment,
@@ -28,6 +30,7 @@ export async function cmdConsole(ctx: CommandContext): Promise<void> {
   const reportMarkdown = await readTextArtifact(projectDir, 'reports', 'deployment-report.md', artifactStore);
   const approvals = await readApprovals(projectDir, artifactStore);
   const auditLog = await readAuditLog(projectDir, artifactStore);
+  const reviews = await readReviews(projectDir, artifactStore);
   const createdAt = new Date().toISOString();
   const snapshotFileName = `console-${safeTimestamp(createdAt)}.html`;
   const snapshotRelativePath = `consoles/${snapshotFileName}`;
@@ -52,8 +55,12 @@ export async function cmdConsole(ctx: CommandContext): Promise<void> {
     auditLog,
     createdAt,
     history: nextHistory,
+    reviews,
   };
-  const pages = renderConsolePages(consoleData);
+  // Diffs are rendered before the synchronous page pass: tokenizing a patch is
+  // async, and the section renderers are sync string builders by design.
+  const diffs = await prepareConsoleDiffs(consoleData);
+  const pages = renderConsolePages(consoleData, { diffs });
   const exportBundle = createConsoleExportBundle({
     deployment,
     traces,
@@ -93,6 +100,35 @@ export async function cmdConsole(ctx: CommandContext): Promise<void> {
   console.log(`Approvals loaded: ${approvals.length}`);
   console.log(`Audit entries loaded: ${auditLog.length}`);
   console.log(`Eval status: ${latestEval?.status ?? 'not run'}`);
+}
+
+/**
+ * Loads review artifacts together with the diff each one reviewed.
+ *
+ * The patch lives beside the review as a text artifact (`ReviewArtifact.
+ * patchArtifact`, conventionally `<runId>.patch`) so the console can show what
+ * the agent actually read without calling back out to the forge. A review
+ * written before patch capture simply has no patch and renders findings only.
+ */
+async function readReviews(
+  projectDir: string,
+  artifactStore: ReturnType<typeof createArtifactStore>,
+): Promise<ConsoleReview[]> {
+  const artifacts = await readJsonArtifacts<ReviewArtifact>(projectDir, 'reviews', artifactStore);
+  const reviews: ConsoleReview[] = [];
+
+  for (const artifact of artifacts) {
+    if (!artifact || typeof artifact.runId !== 'string') {
+      continue;
+    }
+
+    const fileName = artifact.patchArtifact ?? `${artifact.runId}.patch`;
+    const patch = await readTextArtifact(projectDir, 'reviews', fileName, artifactStore);
+
+    reviews.push({ artifact, patch });
+  }
+
+  return reviews.sort((left, right) => (right.artifact.createdAt ?? '').localeCompare(left.artifact.createdAt ?? ''));
 }
 
 function safeTimestamp(value: string): string {

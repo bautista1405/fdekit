@@ -15,6 +15,9 @@ afterEach(async () => {
 });
 
 describe('git repository change transaction', () => {
+  // These tests execute several real Git processes. Full-workspace runs start
+  // every package suite in parallel, so leave enough room for CPU and disk
+  // contention while retaining a finite timeout.
   it('validates in shadow mode and atomically publishes all files against the expected old OID', async () => {
     const rootDir = await gitRepository();
     const operations = createGitRepositoryOperations({ rootDir });
@@ -49,7 +52,7 @@ describe('git repository change transaction', () => {
     const stale = await operations.applyChangeSet(changeSet, { publication });
     expect(stale.status).toBe('stale');
     expect(await operations.resolveRef('refs/heads/main')).toBe(committed.commitOid);
-  }, 15_000);
+  }, 30_000);
 
   it('does not create a transaction when validation fails or a protected fallback is required', async () => {
     const rootDir = await gitRepository();
@@ -81,7 +84,7 @@ describe('git repository change transaction', () => {
       ref: 'refs/heads/main',
     });
     expect(await protectedOnly.resolveRef('refs/heads/main')).toBe(baseOid);
-  }, 15_000);
+  }, 30_000);
 });
 
 function changes(baseOid: string, blobOid: string): RepositoryChangeSet {

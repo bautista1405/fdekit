@@ -49,6 +49,15 @@ Tools exposed to agents:
 | `codebase.diff` | Structured git diff between two refs: files, hunks, stats, renames |
 | `codebase.rankDiff` | Rank changed files by review risk (churn weighted by import fan-in) |
 
+## Governed repository changes
+
+`createGitRepositoryOperations()` is a programmatic transaction boundary, not
+an agent tool. It applies typed `RepositoryChangeSet` values against an
+immutable commit, validates expected blob IDs and permitted paths, runs caller
+validators, and publishes all files with one expected-old-OID ref update.
+Shadow mode performs validation without writing repository objects, worktree
+files, or refs. See [Governed Repository Transactions](../../../docs/specs/repository-transactions.md).
+
 ## Symbol navigation
 
 The navigation tools are standard: they ship with the connector, backed by a
@@ -79,11 +88,11 @@ steps are required.
 Import from the package root:
 
 ```ts
-import { codebaseConnector } from '@fdekit/connector-codebase';
+import { codebaseConnector, createGitRepositoryOperations } from '@fdekit/connector-codebase';
 import type { CodebaseConnectorOptions, CodebaseSearchMatch } from '@fdekit/connector-codebase';
 ```
 
-Root exports include `codebaseConnector`, `CodebaseConnectorConfig`, `CodebaseConnectorOptions`, `CodebaseFileEntry`, `CodebaseListFilesArgs`, `CodebaseSearchArgs`, `CodebaseSearchMatch`, `CodebaseReadFileArgs`, `CodebaseReadFileResult`, `CodebaseSymbolKind`, `CodebaseSymbolEntry`, `CodebaseSymbolsArgs`, `CodebaseSymbolsResult`, `CodebaseUsagesArgs`, `CodebaseUsagesResult`, `CodebaseDepsArgs`, `CodebaseDepsResult`, `CodebaseContextArgs`, `CodebaseContextDefinition`, and `CodebaseContextResult`. The connector family is summarized in the public API index: [Public API Reference](../../../docs/api-reference.md#connectors).
+Root exports include `codebaseConnector`, `createGitRepositoryOperations`, the transaction option/validator types, and the connector's file, search, symbol, usage, dependency, context, diff, and ranking contracts. The connector family is summarized in the public API index: [Public API Reference](../../../docs/api-reference.md#connectors).
 
 ## Stability/backward-compat notes
 

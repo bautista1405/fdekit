@@ -1,5 +1,12 @@
 # @fdekit/connector-slack
 
+## 0.5.3
+
+### Patch Changes
+
+- Updated dependencies [d486e1b]
+  - @fdekit/core@0.5.3
+
 ## 0.5.2
 
 ### Patch Changes

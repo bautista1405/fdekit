@@ -76,12 +76,116 @@ minimal interface works with the AWS SDK, MinIO, LocalStack, or a wrapped enterp
 `validateDeployment()` and `fdekit validate` report an `artifacts.client` error when the
 adapter is missing or incomplete, before any S3 artifact write is attempted.
 
+## HTTP artifact storage
+
+The HTTP adapter sends runtime evidence to an external control plane through the same
+`ArtifactStore` interface:
+
+```ts
+import { defineDeployment } from '@fdekit/core';
+
+export default defineDeployment({
+  name: 'managed-review-worker',
+  artifacts: {
+    kind: 'http',
+    endpoint: 'https://control.example.com/api/ingest',
+    tokenEnv: 'FDEKIT_WORKER_TOKEN',
+  },
+  providers: {},
+  agents: {},
+});
+```
+
+The token is resolved when the store is created and omitted from deployment snapshots.
+Requests identify HTTP artifact protocol version 1 and the producing runtime version.
+The receiving service must authenticate and authorize every operation; producer metadata
+does not grant authority.
+
+The adapter currently performs synchronous requests and surfaces failures. It does not yet
+provide a durable local spool, retries, idempotent delivery, checksums, or immutable evidence
+versions, so it must not be described as surviving worker or network failure. See the
+[HTTP Artifact Store Protocol](../../docs/specs/http-artifact-store-protocol.md) for request
+shapes, compatibility behavior, and the explicit durability boundary.
+
+Evidence that must survive worker or network failure should use the explicit
+`ArtifactDeliveryQueue`. `createFileArtifactDeliveryQueue()` commits immutable,
+checksummed versions to a local spool before
+`createHttpArtifactDeliveryTarget()` attempts delivery. Failed and out-of-order
+versions remain pending across restart; accepted or duplicate acknowledgements
+become immutable receipts. See [Durable Artifact Delivery](../../docs/specs/artifact-delivery.md).
+
+## Durable local sessions
+
+Every agent run now records events while it is alive under
+`artifacts/sessions/<runId>/events.jsonl`. The event log is append-only and is
+the source of truth; its projection can be rebuilt after a process restart.
+
+```ts
+import { createFileSessionStore } from '@fdekit/runtime/sessions';
+
+const sessions = createFileSessionStore({ projectDir: process.cwd() });
+const run = await sessions.getProjection(runId);
+const newEvents = await sessions.readEvents(runId, { afterRevision: 12 });
+```
+
+The local store supports optimistic revisions, idempotent append retries,
+validated state transitions, corruption detection, and immutable snapshots.
+Pass a `SessionStore` to `runAgent()` or `resumeAgentRun()` to supply a hosted
+implementation. This is a storage interface, not an OSS application server.
+See the [Session Store specification](../../docs/specs/session-store.md).
+
+## Governed deterministic actions
+
+Automation that already has exact tool arguments should use
+`executeGovernedToolSequence()` instead of invoking connector handlers. The
+sequence passes through normal runtime schemas, environments, policies,
+approvals, audit, trace, and durable session recording without model
+re-planning. Approval resume continues remaining calls and never replays a
+completed write. See [Governed Exact Tool Sequences](../../docs/specs/governed-tool-sequences.md).
+
+## Policy-aware context planning
+
+The focused `@fdekit/runtime/context` entrypoint authorizes source identities
+before access, selects a capable inference route, and assembles a per-step
+`ModelContext` under token, retrieval, and tool limits:
+
+```ts
+import {
+  authorizeRetrieval,
+  planStepContext,
+  selectInferenceTarget,
+} from '@fdekit/runtime/context';
+```
+
+Each plan includes a selected/excluded manifest for audit and evals. Provider
+planner helpers detect `ProviderPlanContext.contextPlan` and exclude host-only
+input, policy, endpoint, credential references, and raw tool history from the
+wire payload. See the [context planning specification](../../docs/specs/context-planning.md).
+
+## Local intelligence
+
+`@fdekit/runtime/intelligence` provides deterministic in-process primitives for
+source-aware chunking, authorization-gated exact/full-text/vector/hybrid
+retrieval, scoped working and episodic memory, provenance-aware entity
+knowledge, exact policy/tenant/source-safe caching, and usage/cost ledgers.
+Embeddings are caller-supplied; these helpers never make a hidden model call.
+See [Local Intelligence Primitives](../../docs/specs/local-intelligence.md).
+
+## Project-local skills
+
+`loadProjectSkills()` from `@fdekit/runtime/skills` validates manifests under
+`fdekit/skills`, blocks path/symlink escapes, and verifies the declared SHA-256
+entrypoint digest. It deliberately does not import or execute skill code. Use
+`evaluateProjectSkillGrant()` from `@fdekit/core` to intersect requested
+capabilities and sources with the exact effective policy. See
+[Project-Local Skill Contracts](../../docs/specs/project-skills.md).
+
 ## Public API surface
 
 Import from the package root for the full runtime surface:
 
 ```ts
-import { runAgent, runEvals, createArtifactStore } from '@fdekit/runtime';
+import { executeGovernedToolSequence, runAgent, runEvals, createArtifactStore } from '@fdekit/runtime';
 ```
 
 Focused runtime entrypoints are available through package exports:
@@ -89,14 +193,19 @@ Focused runtime entrypoints are available through package exports:
 ```ts
 import { runAgent } from '@fdekit/runtime/agents';
 import { compileDeployment } from '@fdekit/runtime/deployments';
+import { planStepContext } from '@fdekit/runtime/context';
+import { LocalRetrievalIndex } from '@fdekit/runtime/intelligence';
+import { loadProjectSkills } from '@fdekit/runtime/skills';
 import { createArtifactStore } from '@fdekit/runtime/artifacts';
+import { runGrader } from '@fdekit/runtime/grader';
+import { createFileSessionStore } from '@fdekit/runtime/sessions';
 ```
 
-The API reference documents public exports, including config loading, agent execution, validation, compilation, snapshots, diffs, evals, macro evals, governance artifacts, trace/report renderers, artifact stores, and provider runtime contracts: [Runtime API Reference](../../docs/api/runtime.md).
+The API reference documents public exports, including config loading, agent execution, durable sessions, validation, compilation, snapshots, diffs, evals, macro evals, governance artifacts, trace/report renderers, artifact stores, and provider runtime contracts: [Runtime API Reference](../../docs/api/runtime.md).
 
 ## Stability/backward-compat notes
 
-`@fdekit/runtime` is public but pre-1.0. The package root and explicit package exports are the compatibility boundary. Runtime artifacts are intentionally filesystem-first today, but artifact store contracts should be treated as public when imported from `@fdekit/runtime` or `@fdekit/runtime/artifacts`.
+`@fdekit/runtime` is public but pre-1.0. The package root and explicit package exports are the compatibility boundary. Runtime artifacts are intentionally filesystem-first today, but artifact and session store contracts should be treated as public when imported from `@fdekit/runtime`, `@fdekit/runtime/artifacts`, or `@fdekit/runtime/sessions`.
 
 Subpath imports from `src`, `dist`, `helpers`, or `interfaces` are internal. Runtime behavior that changes trace, approval, audit, eval, snapshot, or report artifact shapes should update the API reference and migration docs.
 

@@ -6,9 +6,10 @@ For "where is this function/type defined?" lookup, use the per-package reference
 
 | Package | Reference | Applies To | Stability / Audience |
 | --- | --- | --- | --- |
-| `@fdekit/core` | [Core API](./api/core.md) | v0.1.0 | Public, pre-1.0 package-root API for deployment authors, connector authors, provider authors, and contributors editing config contracts. |
-| `@fdekit/runtime` | [Runtime API](./api/runtime.md) | v0.1.0 | Public, pre-1.0 runtime API for CLI maintainers, automation authors, runtime integrators, and artifact/execution contributors. |
-| `@fdekit/cli` | [CLI API](./api/cli.md) | v0.1.0 | Public, pre-1.0 command surface. The package root has no stable TypeScript import API. |
+| `@fdekit/catalog` | [Catalog API](./api/catalog.md) | Current fixed release line | Public, pre-1.0 metadata API for CLI, documentation, and deployment-surface consumers. |
+| `@fdekit/core` | [Core API](./api/core.md) | Current fixed release line | Public, pre-1.0 package-root API for deployment authors, connector authors, provider authors, and contributors editing config contracts. |
+| `@fdekit/runtime` | [Runtime API](./api/runtime.md) | Current fixed release line | Public, pre-1.0 runtime API for CLI maintainers, automation authors, runtime integrators, and artifact/execution contributors. |
+| `@fdekit/cli` | [CLI API](./api/cli.md) | Current fixed release line | Public, pre-1.0 command surface. The package root has no stable TypeScript import API. |
 
 Refresh the package pages with:
 
@@ -20,6 +21,7 @@ FDEKit publishes public entrypoints through each package `exports` map. Import f
 
 ```ts
 import { defineDeployment, defineAgent } from '@fdekit/core';
+import { connectorManifest } from '@fdekit/catalog';
 import { runAgent, type AgentRunResult } from '@fdekit/runtime';
 import { compileDeployment } from '@fdekit/runtime/deployments';
 import { githubConnector } from '@fdekit/connector-github';
@@ -29,8 +31,9 @@ import { githubConnector } from '@fdekit/connector-github';
 
 | Package | Use It For | Import Surface |
 | --- | --- | --- |
+| `@fdekit/catalog` | Reading typed provider, connector, recipe, and scaffold metadata. | Metadata and lookup helpers; no executable adapters. |
 | `@fdekit/core` | Authoring deployments, agents, tools, connectors, policies, evals, recipes, schemas, and provider contracts. | Stable config and authoring primitives. |
-| `@fdekit/runtime` | Loading configs, running agents, producing traces/evals/audit artifacts, approvals, reports, and deployment snapshots. | Runtime functions and runtime artifact interfaces. |
+| `@fdekit/runtime` | Loading configs, running agents, recording durable sessions, producing traces/evals/audit artifacts, approvals, reports, and deployment snapshots. | Runtime functions plus runtime artifact and session interfaces. |
 | `@fdekit/console` | Rendering the static local dashboard and export bundle. | Console renderer and console data contracts. |
 | `@fdekit/provider-*` | Provider config helpers and runtime provider adapters. | Provider factory, runtime adapter, option types. |
 | `@fdekit/connector-*` | Connector factory and connector-specific config/tool types. | Connector factory, options, args, result types. |
@@ -40,10 +43,26 @@ import { githubConnector } from '@fdekit/connector-github';
 The practical rule:
 
 - Use `@fdekit/core` inside `fde.config.ts`.
+- Use `@fdekit/catalog` when tooling needs the same canonical names and scaffolds as the CLI.
 - Use connector and provider packages inside `fde.config.ts`.
 - Use `@fdekit/runtime` when building automation around runs, evals, approvals, artifacts, or deployment snapshots.
 - Use `@fdekit/console` when rendering dashboard HTML or exports outside the CLI.
 - Use environment packages when `fdekit env *` should start, seed, or check a local customer-like runtime.
+
+## Catalog
+
+Package: `@fdekit/catalog`
+
+Catalog owns metadata shared by CLI scaffolding, generated documentation, and deployment surfaces. It does not load provider SDKs, connector credentials, or customer code.
+
+| Export | Purpose |
+| --- | --- |
+| `providerManifests`, `connectorManifests`, `recipeManifests` | Complete typed manifest lists in catalog order. |
+| `providerManifest()`, `connectorManifest()`, `recipeManifest()` | Resolve canonical manifest names; provider and connector lookups also support declared aliases. |
+| `providerScaffold()`, `connectorScaffold()` | Resolve alias-aware scaffold imports, dependencies, env requirements, and expressions. |
+| `providerNames()`, `connectorNames()`, `recipeNames()` | Return canonical names for help, validation, and UI choices. |
+| `ProviderManifest`, `ConnectorManifest`, `RecipeManifest`, `AddScaffold` | Public metadata contracts. |
+| `fdekitDependencyVersion`, `fdekitDependency()`, `fdekitDependencies()` | Keep generated FDEKit dependencies aligned with the fixed release group. |
 
 ## Core
 
@@ -91,7 +110,18 @@ Core is the authoring layer. It should stay free of local filesystem artifact co
 | `OutcomeMetricDefinition` | Outcome metric contract for customer-visible deployment impact. |
 | `DataLayersDefinition` | Data-layer contract for system of record, business rules, raw intake, and feedback. |
 | `RolloutDefinition`, `RolloutStageName` | Rollout stage and stage progression contracts. |
-| `ArtifactStoreDefinition`, `LocalArtifactStoreDefinition`, `S3ArtifactStoreDefinition` | Deployment artifact storage config. Local `artifacts/` is the default; S3 requires a typed runtime client adapter. |
+| `ArtifactStoreDefinition`, `LocalArtifactStoreDefinition`, `S3ArtifactStoreDefinition`, `HttpArtifactStoreDefinition` | Deployment artifact storage config. Local `artifacts/` is the default; S3 uses an injected client and HTTP uses a worker-token reference. |
+| `EXECUTION_CONTRACT_VERSION`, `EXECUTION_STATES`, `TERMINAL_EXECUTION_STATES`, `isExecutionState()`, `isTerminalExecutionState()`, `assertExecutionContractVersion()` | Version and validate the canonical execution protocol and CLI/web state vocabulary. |
+| `ExecutionIdentity`, `ExecutionState`, `TaskRecord`, `RunRecord`, `AttemptRecord`, `StepRecord`, `TaskDescriptor`, `ExecutionStep`, `SessionReference` | Stable task/run/attempt/step identities and versioned execution records. |
+| `ContextEnvelope`, `ModelContext`, `ContextBudget`, `ContextObjectives`, `ContextItem`, `EvidenceItem`, `MemoryItem`, `ActionRecord` | Host-only context envelope and allowlisted provider-visible context contracts. |
+| `EffectivePolicy`, `PolicyCapability`, `PolicyConstraint`, `PolicyDecisionEvidence`, `ProvenanceRecord`, `SourceSnapshot`, `TraceContext` | Shared effective-policy, immutable-source, provenance, and trace-correlation contracts. |
+| `PlannedAction`, `ApprovalRequestRecord`, `ApprovalDecisionRecord`, `InputRequestRecord`, `InputAnswerRecord` | Exact external-action identity plus auditable approval and typed input pause/resume records. |
+| `ArtifactReference`, `ArtifactDescriptor`, `ArtifactProducer`, `UsageMeasurement` | Versioned artifact lineage and normalized model/tool usage and cost measurements. |
+| `InferenceTarget`, `InferenceTargetCapabilities`, `InferenceEndpointReference`, `InferenceRequirements`, `InferenceTargetSelection` | Provider/model capability identity, separate host connection references, requirements, and route-selection results. |
+| `RetrievalAuthorizationPlan`, `ContextPlannerCandidate`, `StepContextPlan`, `ContextSelectionManifest` | Pre-access source authorization and per-step budgeted model-context selection evidence. |
+| `RepositoryChangeSet`, `RepositoryFileChange`, `RepositoryOperations`, `RepositoryProviderCapabilities`, `RepositoryTransactionResult` | Immutable-base typed repository transaction and provider capability contracts. |
+| `validateRepositoryChangeSet()`, `isSafeRepositoryPath()`, `isPermittedRepositoryPath()` | Pure change-set path, identity, operation, and limit validation. |
+| `ProjectSkillManifest`, `ProjectSkillExecutionMode`, `ProjectSkillGrant`, `validateProjectSkillManifest()`, `evaluateProjectSkillGrant()` | Reviewed project-local skill metadata and exact effective-policy authority intersection. |
 | `PolicyDefinition`, `PolicyDecision`, `PolicyResult` | Policy contracts and decisions. |
 | `EvalDefinition`, `EvalCase`, `EvalAssertion`, `EvalAssertionResult`, `EvalRunContext` | Eval authoring contracts. |
 | `RecipeDefinition`, `RecipeReference`, `MigrationNote` | Recipe and migration metadata. |
@@ -215,9 +245,12 @@ Runtime owns execution and artifacts. Runtime-specific interfaces live here rath
 | Export | Purpose |
 | --- | --- |
 | `runAgent()` | Execute an agent loop against a deployment. |
+| `executeGovernedToolSequence()` | Execute exact caller-planned tool calls through runtime policy, approval, audit, trace, and durable pause/resume without provider re-planning. |
+| `resumeAgentRun()` | Resume either a provider run or governed exact sequence from its recorded approved call without replaying completed writes. |
 | `AgentRunOptions` | Input contract for `runAgent()`. |
+| `GovernedToolCall`, `GovernedToolSequenceOptions` | Exact call and sequence input contracts for deterministic orchestrators. |
 | `AgentRunResult` | Output contract for a run, including final answer, tools, policies, approvals, cost, latency, and trace. |
-| `AgentRunStatus` | `completed`, `failed`, or `waiting_approval`. |
+| `AgentRunStatus` | Terminal, limited, rejected, and approval-paused runtime outcomes. |
 | `AgentToolCall` | Runtime tool-call artifact. |
 | `PolicyViolation` | Runtime policy violation artifact. |
 | `createDevTrace()` | Create a lightweight development trace from a deployment. |
@@ -225,6 +258,51 @@ Runtime owns execution and artifacts. Runtime-specific interfaces live here rath
 Provider runtime resolution is explicit. `runAgent()` uses `ProviderConfig.runtime` when the selected provider config supplies one, or `AgentRunOptions.providerRegistry` when a caller wants to keep adapters outside `fde.config.ts`. The CLI supplies its built-in registry for configs using `providerFromEnv()`. Programmatic runtime callers should use provider package helpers or pass a registry themselves; the runtime only has a built-in mock fallback.
 
 Runtime strict mode is also explicit. `runAgent({ strict: true })` requires every available tool to declare `argsSchema`, `scopes`, and `environments`, then validates provider-planned args at the runtime edge before the tool handler executes. Standard runs are permissive about missing metadata, but declared schemas and environments are still enforced.
+
+Deterministic workflow code should use `executeGovernedToolSequence()` instead
+of calling connector handlers directly. A paused sequence stores the exact
+pending call and remaining calls; `resumeAgentRun()` continues that sequence
+without invoking a provider or replaying completed writes. See the
+[governed exact tool sequence specification](./specs/governed-tool-sequences.md).
+
+### Durable Sessions
+
+| Export | Purpose |
+| --- | --- |
+| `SessionStore` | Storage-neutral append, replay, projection, and immutable-snapshot interface. |
+| `createFileSessionStore()` | Create the local append-only JSONL implementation under `artifacts/sessions`. |
+| `SessionEventInput`, `SessionEvent`, `SessionProjection`, `SessionSnapshot` | Versioned event, projection, and checkpoint contracts. |
+| `SESSION_PROTOCOL_VERSION`, `SESSION_EVENT_TYPES` | Compatibility version and standard lifecycle/effect/delivery event vocabulary. |
+| `canTransitionExecutionState()`, `allowedExecutionStateTransitions()`, `assertExecutionStateTransition()` | Validate the canonical execution state machine. |
+| `SessionRevisionConflictError`, `SessionEventConflictError`, `SessionCorruptionError`, `SessionSnapshotConflictError` | Explicit concurrency, idempotency, integrity, and immutability failures. |
+
+Agent trace events are appended while the run is alive, and the final trace artifact projects the same sequence. `runAgent()` and `resumeAgentRun()` accept an injected `SessionStore`; without one they use the durable local implementation. The OSS interface does not provide an application server.
+
+### Context And Inference Planning
+
+| Export | Purpose |
+| --- | --- |
+| `authorizeRetrieval()` | Evaluate requested source identities before content access. |
+| `selectInferenceTarget()` | Match task requirements to decoupled target capabilities and endpoint references. |
+| `planStepContext()` | Select instructions, evidence, memory, skills, and tool schemas under effective policy and step budgets. |
+| `AuthorizeRetrievalInput`, `PlanStepContextInput` | Runtime planner input contracts. |
+
+### Local Intelligence
+
+| Export | Purpose |
+| --- | --- |
+| `LocalRetrievalIndex`, `RetrievalStore`, `IngestionDocument`, `IngestionChunk`, `RetrievalQuery`, `RetrievalResult` | Source-aware deterministic chunking and authorized exact/full-text/vector/hybrid retrieval. |
+| `LocalMemoryStore`, `MemoryStore`, `MemoryRecord`, `MemoryQuery` | Scoped and expiring working/episodic memory. |
+| `LocalKnowledgeStore`, `KnowledgeStore`, `KnowledgeEntity`, `KnowledgeRelation`, `KnowledgeNeighborhood` | Provenance-aware observed/inferred/confirmed entity knowledge. |
+| `LocalPolicyAwareCache`, `PolicyAwareCache`, `CacheIdentity`, `CacheEntry` | Exact tenant/policy/target/source-revision cache partitioning and invalidation. |
+| `estimateInferenceUsage()`, `createUsageLedger()`, `UsageLedger`, `UsageSummary`, `BudgetEvaluation` | Explicit estimated/unknown usage, aggregation, and budget evaluation. |
+
+### Project-Local Skills
+
+| Export | Purpose |
+| --- | --- |
+| `loadProjectSkills()` | Load and verify manifests and entrypoint digests without executing code. |
+| `LoadedProjectSkill`, `LoadProjectSkillsOptions`, `ProjectSkillLoadError` | Verified local skill result, loader options, and explicit load failure. |
 
 ### Deployment Compilation, Validation, and Snapshots
 
@@ -292,6 +370,13 @@ Runtime strict mode is also explicit. `runAgent({ strict: true })` requires ever
 | `createArtifactStoreFromDefinition()` | Create a store from an explicit `ArtifactStoreDefinition`. |
 | `createFileArtifactStore()` | Create the local filesystem artifact store. |
 | `createS3ArtifactStore()` | Create an S3 artifact store from a bucket, prefix, and adapter client. |
+| `createHttpArtifactStore()` | Create the experimental versioned HTTP transport for an external evidence control plane. |
+| `HTTP_ARTIFACT_PROTOCOL_VERSION`, `HTTP_ARTIFACT_DEFAULT_PRODUCER` | Transport compatibility and producer metadata. |
+| `ArtifactIngestError`, `ArtifactProtocolError` | HTTP status and explicit protocol-version failures. |
+| `ArtifactDeliveryQueue`, `ArtifactDeliveryEnvelope`, `ArtifactDeliveryTarget`, `ArtifactDeliveryAck`, `ArtifactDeliveryReceipt` | Durable immutable delivery, target, acknowledgement, and receipt contracts. |
+| `createFileArtifactDeliveryQueue()` | Create the restart-safe local delivery spool. |
+| `createHttpArtifactDeliveryTarget()` | Create the versioned HTTP delivery target with idempotency and exact acknowledgement checks. |
+| `ARTIFACT_DELIVERY_PROTOCOL_VERSION`, `artifactDeliveryId()` | Delivery compatibility version and stable ref-to-artifact identity helper. |
 | `S3ArtifactClient`, `S3PutObjectInput`, `S3GetObjectInput`, `S3GetObjectOutput`, `S3ListObjectsV2Input`, `S3ListObjectsV2Output` | Minimal S3 adapter contracts used to avoid a runtime AWS SDK dependency. |
 | `writeJsonArtifact()` | Write a JSON artifact through the configured store. |
 | `writeTextArtifact()` | Write a text artifact through the configured store. |
@@ -355,7 +440,7 @@ Connector packages export a connector factory plus connector-specific config, op
 
 | Package | Factory | Tool Names | Exported Type Families |
 | --- | --- | --- | --- |
-| `@fdekit/connector-codebase` | `codebaseConnector()` | `codebase.listFiles`, `codebase.search`, `codebase.readFile` | `CodebaseConnectorConfig`, `CodebaseConnectorOptions`, `CodebaseListFilesArgs`, `CodebaseSearchArgs`, `CodebaseReadFileArgs`, `CodebaseFileEntry`, `CodebaseSearchMatch`, `CodebaseReadFileResult` |
+| `@fdekit/connector-codebase` | `codebaseConnector()`, `createGitRepositoryOperations()` | `codebase.listFiles`, `codebase.search`, `codebase.readFile`, navigation and diff tools; repository transactions remain a programmatic boundary, not an agent tool | Connector read/navigation/diff types plus `GitRepositoryOperationsOptions`, `GitChangeValidator`, and core repository transaction contracts |
 | `@fdekit/connector-customer-api` | `customerApiConnector()` | `customerApi.healthCheck`, `customer.get`, `ticket.get`, `ticket.escalate` | `CustomerApiConnectorConfig`, `CustomerApiConnectorOptions`, `CustomerApiHealthCheckArgs`, `CustomerApiHealthCheckResult`, `CustomerApiMapper`, `CustomerApiRoutes`, `GetCustomerArgs`, `GetTicketArgs`, `EscalateTicketArgs` |
 | `@fdekit/connector-github` | `githubConnector()` | `issue.create` | `GitHubConnectorConfig`, `GitHubConnectorMode`, `GitHubConnectorOptions`, `CreateIssueArgs`, `CreateIssueResult` |
 | `@fdekit/connector-slack` | `slackConnector()` | `slack.message` | `SlackConnectorConfig`, `SlackConnectorMode`, `SlackConnectorOptions`, `SlackMessageArgs`, `SlackMessageResult` |

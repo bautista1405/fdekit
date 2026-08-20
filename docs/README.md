@@ -82,10 +82,19 @@ Use this track when customer systems do not fit the built-in connector packages.
 ### 4. Extend FDEKit
 
 - [Public API Reference](./api-reference.md): API index, package boundaries, and import rules.
-- Package references: [`@fdekit/core`](./api/core.md), [`@fdekit/runtime`](./api/runtime.md), and [`fdekit` CLI](./api/cli.md).
-- Package onboarding READMEs: start with [`@fdekit/core`](../packages/core/README.md), then follow the package graph to runtime, CLI, console, providers, connectors, and environments.
+- Package references: [`@fdekit/catalog`](./api/catalog.md), [`@fdekit/core`](./api/core.md), [`@fdekit/runtime`](./api/runtime.md), and [`fdekit` CLI](./api/cli.md).
+- Package onboarding READMEs: start with [`@fdekit/core`](../packages/core/README.md), use [`@fdekit/catalog`](../packages/catalog/README.md) for shared manifests, then follow the package graph to runtime, CLI, console, providers, connectors, and environments.
 - [Maintainer Architecture](./architecture.md): package graph, runtime flow, ArtifactStore lifecycle, extension paths.
 - [Provider Step And Tool Schema Spec](./specs/provider-steps-and-tool-schemas.md): provider step contracts, tool args schemas, and runtime edge strictness.
+- [HTTP Artifact Store Protocol](./specs/http-artifact-store-protocol.md): versioned control-plane transport, compatibility behavior, and current durability boundary.
+- [Durable Artifact Delivery](./specs/artifact-delivery.md): immutable versions, local spool, idempotent retries, checksummed receipts, and partial/out-of-order recovery.
+- [Shared Execution Contracts](./specs/execution-contracts.md): versioned task/run/attempt/step, context, policy, provenance, effect, approval/input, artifact, and usage schemas.
+- [Session Store And Local Run State](./specs/session-store.md): append-only run events, optimistic revisions, restart/replay, state transitions, and immutable snapshots.
+- [Policy-Aware Context And Inference Planning](./specs/context-planning.md): pre-retrieval authorization, target capabilities, model-visible allowlists, budgets, and selection manifests.
+- [Local Intelligence Primitives](./specs/local-intelligence.md): source-aware chunking/retrieval, scoped memory, provenance-aware knowledge, safe cache identities, and usage/cost ledgers.
+- [Governed Repository Transactions](./specs/repository-transactions.md): immutable-base multi-file changes, expected blobs, shadow validation, and atomic stale-safe publication.
+- [Project-Local Skill Contracts](./specs/project-skills.md): versioned manifests, integrity/provenance, requested authority, and effective-policy grants.
+- [Governed Exact Tool Sequences](./specs/governed-tool-sequences.md): caller-planned external actions through runtime policy, approval, audit, and exact pause/resume without model re-planning.
 
 ### 5. Demo
 

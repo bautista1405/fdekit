@@ -3,7 +3,7 @@
 <!-- Maintained via scripts/generate-api-docs.mjs. -->
 Run `npm run docs:api` to refresh this page after changing public exports.
 
-Applies to `@fdekit/core` v0.5.2.
+Applies to `@fdekit/core` v0.5.3.
 
 Declaration source: `packages/core/dist/index.d.ts`.
 
@@ -37,11 +37,22 @@ Declaration source: `packages/core/dist/index.d.ts`.
 | [`ToolDefinition`](#tooldefinition) | Tool handler contract exposed by connectors. |
 | [`ProviderConfig`](#providerconfig) | Provider config contract selected by agents. |
 | [`AgentProvider`](#agentprovider) | Provider runtime contract for planning steps. |
+| [`EXECUTION_STATES`](#execution-states) | Canonical run-state vocabulary shared by CLI and hosted clients. |
+| [`ContextEnvelope`](#contextenvelope) | Versioned host-only execution context; only its model field is provider-visible. |
+| [`ModelContext`](#modelcontext) | Explicit allowlist for provider-visible instructions, evidence, memory, skills, tools, and recent actions. |
+| [`PlannedAction`](#plannedaction) | Immutable identity for an external effect before approval or execution. |
+| [`ApprovalRequestRecord`](#approvalrequestrecord) | Auditable approval request bound to exact action and session state. |
+| [`InputRequestRecord`](#inputrequestrecord) | Typed input pause request with disclosure and resume metadata. |
+| [`ArtifactDescriptor`](#artifactdescriptor) | Versioned artifact identity, checksum, producer, lineage, and execution metadata. |
+| [`InferenceTarget`](#inferencetarget) | Provider/model capability identity without endpoint URLs or credentials. |
+| [`StepContextPlan`](#stepcontextplan) | Budgeted per-step model context plus selected/excluded evidence manifest. |
+| [`RepositoryChangeSet`](#repositorychangeset) | Immutable-base multi-file change proposal with expected blobs and permitted paths. |
+| [`ProjectSkillManifest`](#projectskillmanifest) | Versioned local skill provenance, capability, data, tool, mode, and eval declaration. |
 | [`createHttpReq`](#createhttpreq) | Shared retry, backoff, and circuit-breaker wrapper for HTTP adapters. |
 
 ## Export Count
 
-This page documents 198 public root exports from `@fdekit/core`: 85 functions/values and 113 types/interfaces.
+This page documents 290 public root exports from `@fdekit/core`: 97 functions/values and 193 types/interfaces.
 
 ## Functions And Values
 
@@ -53,6 +64,7 @@ This page documents 198 public root exports from `@fdekit/core`: 85 functions/va
 | <a id="asarray"></a>`asArray` | function | [packages/core/src/helpers/index.ts](../../packages/core/src/helpers/index.ts) |
 | <a id="asoptionalrecord"></a>`asOptionalRecord` | function | [packages/core/src/helpers/index.ts](../../packages/core/src/helpers/index.ts) |
 | <a id="asrecord"></a>`asRecord` | function | [packages/core/src/helpers/index.ts](../../packages/core/src/helpers/index.ts) |
+| <a id="assertexecutioncontractversion"></a>`assertExecutionContractVersion` | function | [packages/core/src/types/execution.ts](../../packages/core/src/types/execution.ts) |
 | <a id="asstring"></a>`asString` | function | [packages/core/src/helpers/index.ts](../../packages/core/src/helpers/index.ts) |
 | <a id="booleanarg"></a>`booleanArg` | function | [packages/core/src/schema/index.ts](../../packages/core/src/schema/index.ts) |
 | <a id="buildproviderplannerinput"></a>`buildProviderPlannerInput` | function | [packages/core/src/provider-planner/index.ts](../../packages/core/src/provider-planner/index.ts) |
@@ -85,6 +97,9 @@ This page documents 198 public root exports from `@fdekit/core`: 85 functions/va
 | <a id="environmentendpoint"></a>`environmentEndpoint` | function | [packages/core/src/definitions/index.ts](../../packages/core/src/definitions/index.ts) |
 | <a id="environmentendpointconfigvalue"></a>`environmentEndpointConfigValue` | function | [packages/core/src/definitions/index.ts](../../packages/core/src/definitions/index.ts) |
 | <a id="escaperegexp"></a>`escapeRegExp` | function | [packages/core/src/helpers/index.ts](../../packages/core/src/helpers/index.ts) |
+| <a id="evaluateprojectskillgrant"></a>`evaluateProjectSkillGrant` | function | [packages/core/src/skills/index.ts](../../packages/core/src/skills/index.ts) |
+| <a id="execution-contract-version"></a>`EXECUTION_CONTRACT_VERSION` | const | [packages/core/src/types/execution.ts](../../packages/core/src/types/execution.ts) |
+| <a id="execution-states"></a>`EXECUTION_STATES` | const | [packages/core/src/types/execution.ts](../../packages/core/src/types/execution.ts) |
 | <a id="expectedapprovaloutcome"></a>`expectedApprovalOutcome` | function | [packages/core/src/evals/index.ts](../../packages/core/src/evals/index.ts) |
 | <a id="expectedfinalanswer"></a>`expectedFinalAnswer` | function | [packages/core/src/evals/index.ts](../../packages/core/src/evals/index.ts) |
 | <a id="expectedfinding"></a>`expectedFinding` | function | [packages/core/src/evals/index.ts](../../packages/core/src/evals/index.ts) |
@@ -99,7 +114,11 @@ This page documents 198 public root exports from `@fdekit/core`: 85 functions/va
 | <a id="integerarg"></a>`integerArg` | function | [packages/core/src/schema/index.ts](../../packages/core/src/schema/index.ts) |
 | <a id="isdefined"></a>`isDefined` | function | [packages/core/src/helpers/index.ts](../../packages/core/src/helpers/index.ts) |
 | <a id="isenvironmentendpointref"></a>`isEnvironmentEndpointRef` | function | [packages/core/src/definitions/index.ts](../../packages/core/src/definitions/index.ts) |
+| <a id="isexecutionstate"></a>`isExecutionState` | function | [packages/core/src/types/execution.ts](../../packages/core/src/types/execution.ts) |
 | <a id="isnonemptystring"></a>`isNonEmptyString` | function | [packages/core/src/connector-http/index.ts](../../packages/core/src/connector-http/index.ts) |
+| <a id="ispermittedrepositorypath"></a>`isPermittedRepositoryPath` | function | [packages/core/src/repositories/index.ts](../../packages/core/src/repositories/index.ts) |
+| <a id="issaferepositorypath"></a>`isSafeRepositoryPath` | function | [packages/core/src/repositories/index.ts](../../packages/core/src/repositories/index.ts) |
+| <a id="isterminalexecutionstate"></a>`isTerminalExecutionState` | function | [packages/core/src/types/execution.ts](../../packages/core/src/types/execution.ts) |
 | <a id="judgerubric"></a>`judgeRubric` | function | [packages/core/src/evals/index.ts](../../packages/core/src/evals/index.ts) |
 | <a id="limitcost"></a>`limitCost` | function | [packages/core/src/policies/index.ts](../../packages/core/src/policies/index.ts) |
 | <a id="limittoolscopes"></a>`limitToolScopes` | function | [packages/core/src/policies/index.ts](../../packages/core/src/policies/index.ts) |
@@ -132,16 +151,29 @@ This page documents 198 public root exports from `@fdekit/core`: 85 functions/va
 | <a id="restricttables"></a>`restrictTables` | function | [packages/core/src/policies/index.ts](../../packages/core/src/policies/index.ts) |
 | <a id="shellescape"></a>`shellEscape` | function | [packages/core/src/helpers/index.ts](../../packages/core/src/helpers/index.ts) |
 | <a id="stringarg"></a>`stringArg` | function | [packages/core/src/schema/index.ts](../../packages/core/src/schema/index.ts) |
+| <a id="terminal-execution-states"></a>`TERMINAL_EXECUTION_STATES` | const | [packages/core/src/types/execution.ts](../../packages/core/src/types/execution.ts) |
+| <a id="unsupportedexecutioncontractversionerror"></a>`UnsupportedExecutionContractVersionError` | class | [packages/core/src/types/execution.ts](../../packages/core/src/types/execution.ts) |
+| <a id="validateprojectskillmanifest"></a>`validateProjectSkillManifest` | function | [packages/core/src/skills/index.ts](../../packages/core/src/skills/index.ts) |
+| <a id="validaterepositorychangeset"></a>`validateRepositoryChangeSet` | function | [packages/core/src/repositories/index.ts](../../packages/core/src/repositories/index.ts) |
 
 ## Types And Interfaces
 
 | Symbol | Kind | Defined in |
 | --- | --- | --- |
+| <a id="actionrecord"></a>`ActionRecord` | interface | [packages/core/src/types/execution.ts](../../packages/core/src/types/execution.ts) |
+| <a id="actoridentity"></a>`ActorIdentity` | interface | [packages/core/src/types/execution.ts](../../packages/core/src/types/execution.ts) |
 | <a id="agentconfig"></a>`AgentConfig` | interface | [packages/core/src/types/agent.ts](../../packages/core/src/types/agent.ts) |
 | <a id="agentprovider"></a>`AgentProvider` | interface | [packages/core/src/types/provider.ts](../../packages/core/src/types/provider.ts) |
 | <a id="anytooldefinition"></a>`AnyToolDefinition` | type | [packages/core/src/types/tool.ts](../../packages/core/src/types/tool.ts) |
+| <a id="approvaldecisionrecord"></a>`ApprovalDecisionRecord` | interface | [packages/core/src/types/execution.ts](../../packages/core/src/types/execution.ts) |
+| <a id="approvalrequestrecord"></a>`ApprovalRequestRecord` | interface | [packages/core/src/types/execution.ts](../../packages/core/src/types/execution.ts) |
+| <a id="approvalrequeststatus"></a>`ApprovalRequestStatus` | type | [packages/core/src/types/execution.ts](../../packages/core/src/types/execution.ts) |
 | <a id="arrayargoptions"></a>`ArrayArgOptions` | interface | [packages/core/src/types/tool.ts](../../packages/core/src/types/tool.ts) |
+| <a id="artifactdescriptor"></a>`ArtifactDescriptor` | interface | [packages/core/src/types/execution.ts](../../packages/core/src/types/execution.ts) |
+| <a id="artifactproducer"></a>`ArtifactProducer` | interface | [packages/core/src/types/execution.ts](../../packages/core/src/types/execution.ts) |
+| <a id="artifactreference"></a>`ArtifactReference` | interface | [packages/core/src/types/execution.ts](../../packages/core/src/types/execution.ts) |
 | <a id="artifactstoredefinition"></a>`ArtifactStoreDefinition` | type | [packages/core/src/types/deployment.ts](../../packages/core/src/types/deployment.ts) |
+| <a id="attemptrecord"></a>`AttemptRecord` | interface | [packages/core/src/types/execution.ts](../../packages/core/src/types/execution.ts) |
 | <a id="auditlogconfig"></a>`AuditLogConfig` | interface | [packages/core/src/types/governance.ts](../../packages/core/src/types/governance.ts) |
 | <a id="booleanargoptions"></a>`BooleanArgOptions` | interface | [packages/core/src/types/tool.ts](../../packages/core/src/types/tool.ts) |
 | <a id="budgetcapdefinition"></a>`BudgetCapDefinition` | interface | [packages/core/src/types/governance.ts](../../packages/core/src/types/governance.ts) |
@@ -151,12 +183,24 @@ This page documents 198 public root exports from `@fdekit/core`: 85 functions/va
 | <a id="connectorjsonrequestoptions"></a>`ConnectorJsonRequestOptions` | interface | [packages/core/src/connector-http/index.ts](../../packages/core/src/connector-http/index.ts) |
 | <a id="connectorname"></a>`ConnectorName` | type | [packages/core/src/types/shared.ts](../../packages/core/src/types/shared.ts) |
 | <a id="connectorreadinesscheck"></a>`ConnectorReadinessCheck` | interface | [packages/core/src/types/connector.ts](../../packages/core/src/types/connector.ts) |
+| <a id="contextbudget"></a>`ContextBudget` | interface | [packages/core/src/types/execution.ts](../../packages/core/src/types/execution.ts) |
+| <a id="contextenvelope"></a>`ContextEnvelope` | interface | [packages/core/src/types/execution.ts](../../packages/core/src/types/execution.ts) |
+| <a id="contextexclusionreason"></a>`ContextExclusionReason` | type | [packages/core/src/types/context-planning.ts](../../packages/core/src/types/context-planning.ts) |
+| <a id="contextitem"></a>`ContextItem` | interface | [packages/core/src/types/execution.ts](../../packages/core/src/types/execution.ts) |
+| <a id="contextitemkind"></a>`ContextItemKind` | type | [packages/core/src/types/execution.ts](../../packages/core/src/types/execution.ts) |
+| <a id="contextobjectives"></a>`ContextObjectives` | interface | [packages/core/src/types/execution.ts](../../packages/core/src/types/execution.ts) |
+| <a id="contextplanfeasibility"></a>`ContextPlanFeasibility` | interface | [packages/core/src/types/context-planning.ts](../../packages/core/src/types/context-planning.ts) |
+| <a id="contextplannercandidate"></a>`ContextPlannerCandidate` | interface | [packages/core/src/types/context-planning.ts](../../packages/core/src/types/context-planning.ts) |
+| <a id="contextselectionentry"></a>`ContextSelectionEntry` | interface | [packages/core/src/types/context-planning.ts](../../packages/core/src/types/context-planning.ts) |
+| <a id="contextselectionkind"></a>`ContextSelectionKind` | type | [packages/core/src/types/context-planning.ts](../../packages/core/src/types/context-planning.ts) |
+| <a id="contextselectionmanifest"></a>`ContextSelectionManifest` | interface | [packages/core/src/types/context-planning.ts](../../packages/core/src/types/context-planning.ts) |
 | <a id="datalayersdefinition"></a>`DataLayersDefinition` | interface | [packages/core/src/types/workflow.ts](../../packages/core/src/types/workflow.ts) |
 | <a id="dataprotectionconfig"></a>`DataProtectionConfig` | interface | [packages/core/src/types/governance.ts](../../packages/core/src/types/governance.ts) |
 | <a id="deploymentdefinition"></a>`DeploymentDefinition` | interface | [packages/core/src/types/deployment.ts](../../packages/core/src/types/deployment.ts) |
 | <a id="deploymentenvironmentdefinition"></a>`DeploymentEnvironmentDefinition` | interface | [packages/core/src/types/environment.ts](../../packages/core/src/types/environment.ts) |
 | <a id="deploymentenvironmentkind"></a>`DeploymentEnvironmentKind` | type | [packages/core/src/types/environment.ts](../../packages/core/src/types/environment.ts) |
 | <a id="droppedfinding"></a>`DroppedFinding` | interface | [packages/core/src/reviews/index.ts](../../packages/core/src/reviews/index.ts) |
+| <a id="effectivepolicy"></a>`EffectivePolicy` | interface | [packages/core/src/types/execution.ts](../../packages/core/src/types/execution.ts) |
 | <a id="environmentcheckresult"></a>`EnvironmentCheckResult` | interface | [packages/core/src/types/environment.ts](../../packages/core/src/types/environment.ts) |
 | <a id="environmentcommanddefinition"></a>`EnvironmentCommandDefinition` | interface | [packages/core/src/types/environment.ts](../../packages/core/src/types/environment.ts) |
 | <a id="environmentendpointdefinition"></a>`EnvironmentEndpointDefinition` | interface | [packages/core/src/types/environment.ts](../../packages/core/src/types/environment.ts) |
@@ -174,6 +218,12 @@ This page documents 198 public root exports from `@fdekit/core`: 85 functions/va
 | <a id="evalcase"></a>`EvalCase` | interface | [packages/core/src/types/eval.ts](../../packages/core/src/types/eval.ts) |
 | <a id="evaldefinition"></a>`EvalDefinition` | interface | [packages/core/src/types/eval.ts](../../packages/core/src/types/eval.ts) |
 | <a id="evalruncontext"></a>`EvalRunContext` | interface | [packages/core/src/types/eval.ts](../../packages/core/src/types/eval.ts) |
+| <a id="evidenceitem"></a>`EvidenceItem` | interface | [packages/core/src/types/execution.ts](../../packages/core/src/types/execution.ts) |
+| <a id="executionerrorrecord"></a>`ExecutionErrorRecord` | interface | [packages/core/src/types/execution.ts](../../packages/core/src/types/execution.ts) |
+| <a id="executionidentity"></a>`ExecutionIdentity` | interface | [packages/core/src/types/execution.ts](../../packages/core/src/types/execution.ts) |
+| <a id="executionrecord"></a>`ExecutionRecord` | type | [packages/core/src/types/execution.ts](../../packages/core/src/types/execution.ts) |
+| <a id="executionstate"></a>`ExecutionState` | type | [packages/core/src/types/execution.ts](../../packages/core/src/types/execution.ts) |
+| <a id="executionstep"></a>`ExecutionStep` | interface | [packages/core/src/types/execution.ts](../../packages/core/src/types/execution.ts) |
 | <a id="expectedfindingmatch"></a>`ExpectedFindingMatch` | interface | [packages/core/src/evals/index.ts](../../packages/core/src/evals/index.ts) |
 | <a id="findingcategory"></a>`FindingCategory` | type | [packages/core/src/reviews/index.ts](../../packages/core/src/reviews/index.ts) |
 | <a id="findingseverity"></a>`FindingSeverity` | type | [packages/core/src/reviews/index.ts](../../packages/core/src/reviews/index.ts) |
@@ -191,15 +241,30 @@ This page documents 198 public root exports from `@fdekit/core`: 85 functions/va
 | <a id="harnesssteerinput"></a>`HarnessSteerInput` | interface | [packages/core/src/types/harness.ts](../../packages/core/src/types/harness.ts) |
 | <a id="harnesstoolref"></a>`HarnessToolRef` | type | [packages/core/src/types/harness.ts](../../packages/core/src/types/harness.ts) |
 | <a id="harnesstriggerref"></a>`HarnessTriggerRef` | type | [packages/core/src/types/harness.ts](../../packages/core/src/types/harness.ts) |
+| <a id="httpartifactstoredefinition"></a>`HttpArtifactStoreDefinition` | interface | [packages/core/src/types/deployment.ts](../../packages/core/src/types/deployment.ts) |
 | <a id="httpresilienceclient"></a>`HttpResilienceClient` | interface | [packages/core/src/types/provider.ts](../../packages/core/src/types/provider.ts) |
 | <a id="httpresilienceoptions"></a>`HttpResilienceOptions` | interface | [packages/core/src/types/provider.ts](../../packages/core/src/types/provider.ts) |
+| <a id="inferenceendpointreference"></a>`InferenceEndpointReference` | interface | [packages/core/src/types/inference.ts](../../packages/core/src/types/inference.ts) |
+| <a id="inferencemodality"></a>`InferenceModality` | type | [packages/core/src/types/inference.ts](../../packages/core/src/types/inference.ts) |
+| <a id="inferencerequirements"></a>`InferenceRequirements` | interface | [packages/core/src/types/inference.ts](../../packages/core/src/types/inference.ts) |
+| <a id="inferenceroutecandidate"></a>`InferenceRouteCandidate` | interface | [packages/core/src/types/inference.ts](../../packages/core/src/types/inference.ts) |
+| <a id="inferencerouterejection"></a>`InferenceRouteRejection` | interface | [packages/core/src/types/inference.ts](../../packages/core/src/types/inference.ts) |
+| <a id="inferencetarget"></a>`InferenceTarget` | interface | [packages/core/src/types/inference.ts](../../packages/core/src/types/inference.ts) |
+| <a id="inferencetargetcapabilities"></a>`InferenceTargetCapabilities` | interface | [packages/core/src/types/inference.ts](../../packages/core/src/types/inference.ts) |
+| <a id="inferencetargetselection"></a>`InferenceTargetSelection` | interface | [packages/core/src/types/inference.ts](../../packages/core/src/types/inference.ts) |
 | <a id="inferschematype"></a>`InferSchemaType` | type | [packages/core/src/types/tool.ts](../../packages/core/src/types/tool.ts) |
+| <a id="inputanswerrecord"></a>`InputAnswerRecord` | interface | [packages/core/src/types/execution.ts](../../packages/core/src/types/execution.ts) |
+| <a id="inputrequestrecord"></a>`InputRequestRecord` | interface | [packages/core/src/types/execution.ts](../../packages/core/src/types/execution.ts) |
+| <a id="inputrequeststatus"></a>`InputRequestStatus` | type | [packages/core/src/types/execution.ts](../../packages/core/src/types/execution.ts) |
 | <a id="jsonschema"></a>`JsonSchema` | interface | [packages/core/src/types/tool.ts](../../packages/core/src/types/tool.ts) |
 | <a id="jsonschematypename"></a>`JsonSchemaTypeName` | type | [packages/core/src/types/tool.ts](../../packages/core/src/types/tool.ts) |
 | <a id="jsonschemavalue"></a>`JsonSchemaValue` | type | [packages/core/src/types/tool.ts](../../packages/core/src/types/tool.ts) |
 | <a id="localartifactstoredefinition"></a>`LocalArtifactStoreDefinition` | interface | [packages/core/src/types/deployment.ts](../../packages/core/src/types/deployment.ts) |
 | <a id="maybepromise"></a>`MaybePromise` | type | [packages/core/src/types/shared.ts](../../packages/core/src/types/shared.ts) |
+| <a id="memoryitem"></a>`MemoryItem` | interface | [packages/core/src/types/execution.ts](../../packages/core/src/types/execution.ts) |
 | <a id="migrationnote"></a>`MigrationNote` | interface | [packages/core/src/types/deployment.ts](../../packages/core/src/types/deployment.ts) |
+| <a id="modelcontext"></a>`ModelContext` | interface | [packages/core/src/types/execution.ts](../../packages/core/src/types/execution.ts) |
+| <a id="modeltooldefinition"></a>`ModelToolDefinition` | interface | [packages/core/src/types/execution.ts](../../packages/core/src/types/execution.ts) |
 | <a id="numberargoptions"></a>`NumberArgOptions` | interface | [packages/core/src/types/tool.ts](../../packages/core/src/types/tool.ts) |
 | <a id="objectargsoptions"></a>`ObjectArgsOptions` | interface | [packages/core/src/types/tool.ts](../../packages/core/src/types/tool.ts) |
 | <a id="outcomemetricdefinition"></a>`OutcomeMetricDefinition` | interface | [packages/core/src/types/workflow.ts](../../packages/core/src/types/workflow.ts) |
@@ -207,9 +272,19 @@ This page documents 198 public root exports from `@fdekit/core`: 85 functions/va
 | <a id="permissiongrantdefinition"></a>`PermissionGrantDefinition` | interface | [packages/core/src/types/governance.ts](../../packages/core/src/types/governance.ts) |
 | <a id="permissionscopedefinition"></a>`PermissionScopeDefinition` | interface | [packages/core/src/types/governance.ts](../../packages/core/src/types/governance.ts) |
 | <a id="permissionscopesconfig"></a>`PermissionScopesConfig` | interface | [packages/core/src/types/governance.ts](../../packages/core/src/types/governance.ts) |
+| <a id="plannedaction"></a>`PlannedAction` | interface | [packages/core/src/types/execution.ts](../../packages/core/src/types/execution.ts) |
+| <a id="policycapability"></a>`PolicyCapability` | type | [packages/core/src/types/execution.ts](../../packages/core/src/types/execution.ts) |
+| <a id="policyconstraint"></a>`PolicyConstraint` | interface | [packages/core/src/types/execution.ts](../../packages/core/src/types/execution.ts) |
 | <a id="policydecision"></a>`PolicyDecision` | interface | [packages/core/src/types/policy.ts](../../packages/core/src/types/policy.ts) |
+| <a id="policydecisionevidence"></a>`PolicyDecisionEvidence` | interface | [packages/core/src/types/execution.ts](../../packages/core/src/types/execution.ts) |
 | <a id="policydefinition"></a>`PolicyDefinition` | interface | [packages/core/src/types/policy.ts](../../packages/core/src/types/policy.ts) |
 | <a id="policyresult"></a>`PolicyResult` | type | [packages/core/src/types/policy.ts](../../packages/core/src/types/policy.ts) |
+| <a id="projectskillexecutionmode"></a>`ProjectSkillExecutionMode` | type | [packages/core/src/types/skill.ts](../../packages/core/src/types/skill.ts) |
+| <a id="projectskillgrant"></a>`ProjectSkillGrant` | interface | [packages/core/src/types/skill.ts](../../packages/core/src/types/skill.ts) |
+| <a id="projectskillmanifest"></a>`ProjectSkillManifest` | interface | [packages/core/src/types/skill.ts](../../packages/core/src/types/skill.ts) |
+| <a id="projectskillmanifestissue"></a>`ProjectSkillManifestIssue` | interface | [packages/core/src/types/skill.ts](../../packages/core/src/types/skill.ts) |
+| <a id="projectskillmanifestvalidation"></a>`ProjectSkillManifestValidation` | interface | [packages/core/src/types/skill.ts](../../packages/core/src/types/skill.ts) |
+| <a id="provenancerecord"></a>`ProvenanceRecord` | interface | [packages/core/src/types/execution.ts](../../packages/core/src/types/execution.ts) |
 | <a id="providerconfig"></a>`ProviderConfig` | interface | [packages/core/src/types/provider.ts](../../packages/core/src/types/provider.ts) |
 | <a id="providerfinalstep"></a>`ProviderFinalStep` | interface | [packages/core/src/types/provider.ts](../../packages/core/src/types/provider.ts) |
 | <a id="providerfromenvoptions"></a>`ProviderFromEnvOptions` | interface | [packages/core/src/providers/index.ts](../../packages/core/src/providers/index.ts) |
@@ -226,6 +301,18 @@ This page documents 198 public root exports from `@fdekit/core`: 85 functions/va
 | <a id="providertoolresult"></a>`ProviderToolResult` | interface | [packages/core/src/types/provider.ts](../../packages/core/src/types/provider.ts) |
 | <a id="recipedefinition"></a>`RecipeDefinition` | interface | [packages/core/src/types/deployment.ts](../../packages/core/src/types/deployment.ts) |
 | <a id="recipereference"></a>`RecipeReference` | interface | [packages/core/src/types/deployment.ts](../../packages/core/src/types/deployment.ts) |
+| <a id="repositorychangeset"></a>`RepositoryChangeSet` | interface | [packages/core/src/types/repository.ts](../../packages/core/src/types/repository.ts) |
+| <a id="repositorychangesetvalidation"></a>`RepositoryChangeSetValidation` | interface | [packages/core/src/types/repository.ts](../../packages/core/src/types/repository.ts) |
+| <a id="repositoryfilechange"></a>`RepositoryFileChange` | interface | [packages/core/src/types/repository.ts](../../packages/core/src/types/repository.ts) |
+| <a id="repositoryoperations"></a>`RepositoryOperations` | interface | [packages/core/src/types/repository.ts](../../packages/core/src/types/repository.ts) |
+| <a id="repositoryprovidercapabilities"></a>`RepositoryProviderCapabilities` | interface | [packages/core/src/types/repository.ts](../../packages/core/src/types/repository.ts) |
+| <a id="repositorypublicationrequest"></a>`RepositoryPublicationRequest` | interface | [packages/core/src/types/repository.ts](../../packages/core/src/types/repository.ts) |
+| <a id="repositorytransactionoptions"></a>`RepositoryTransactionOptions` | interface | [packages/core/src/types/repository.ts](../../packages/core/src/types/repository.ts) |
+| <a id="repositorytransactionresult"></a>`RepositoryTransactionResult` | interface | [packages/core/src/types/repository.ts](../../packages/core/src/types/repository.ts) |
+| <a id="repositoryvalidationevidence"></a>`RepositoryValidationEvidence` | interface | [packages/core/src/types/repository.ts](../../packages/core/src/types/repository.ts) |
+| <a id="repositoryvalidationissue"></a>`RepositoryValidationIssue` | interface | [packages/core/src/types/repository.ts](../../packages/core/src/types/repository.ts) |
+| <a id="retrievalauthorizationdenial"></a>`RetrievalAuthorizationDenial` | interface | [packages/core/src/types/context-planning.ts](../../packages/core/src/types/context-planning.ts) |
+| <a id="retrievalauthorizationplan"></a>`RetrievalAuthorizationPlan` | interface | [packages/core/src/types/context-planning.ts](../../packages/core/src/types/context-planning.ts) |
 | <a id="retrypolicy"></a>`RetryPolicy` | interface | [packages/core/src/types/provider.ts](../../packages/core/src/types/provider.ts) |
 | <a id="reviewartifact"></a>`ReviewArtifact` | interface | [packages/core/src/reviews/index.ts](../../packages/core/src/reviews/index.ts) |
 | <a id="reviewartifactsource"></a>`ReviewArtifactSource` | interface | [packages/core/src/reviews/index.ts](../../packages/core/src/reviews/index.ts) |
@@ -233,6 +320,7 @@ This page documents 198 public root exports from `@fdekit/core`: 85 functions/va
 | <a id="reviewfinding"></a>`ReviewFinding` | interface | [packages/core/src/reviews/index.ts](../../packages/core/src/reviews/index.ts) |
 | <a id="rolloutdefinition"></a>`RolloutDefinition` | interface | [packages/core/src/types/workflow.ts](../../packages/core/src/types/workflow.ts) |
 | <a id="rolloutstagename"></a>`RolloutStageName` | type | [packages/core/src/types/workflow.ts](../../packages/core/src/types/workflow.ts) |
+| <a id="runrecord"></a>`RunRecord` | interface | [packages/core/src/types/execution.ts](../../packages/core/src/types/execution.ts) |
 | <a id="s3artifactclient"></a>`S3ArtifactClient` | interface | [packages/core/src/types/deployment.ts](../../packages/core/src/types/deployment.ts) |
 | <a id="s3artifactstoredefinition"></a>`S3ArtifactStoreDefinition` | interface | [packages/core/src/types/deployment.ts](../../packages/core/src/types/deployment.ts) |
 | <a id="s3getobjectinput"></a>`S3GetObjectInput` | interface | [packages/core/src/types/deployment.ts](../../packages/core/src/types/deployment.ts) |
@@ -240,12 +328,27 @@ This page documents 198 public root exports from `@fdekit/core`: 85 functions/va
 | <a id="s3listobjectsv2input"></a>`S3ListObjectsV2Input` | interface | [packages/core/src/types/deployment.ts](../../packages/core/src/types/deployment.ts) |
 | <a id="s3listobjectsv2output"></a>`S3ListObjectsV2Output` | interface | [packages/core/src/types/deployment.ts](../../packages/core/src/types/deployment.ts) |
 | <a id="s3putobjectinput"></a>`S3PutObjectInput` | interface | [packages/core/src/types/deployment.ts](../../packages/core/src/types/deployment.ts) |
+| <a id="sessionreference"></a>`SessionReference` | interface | [packages/core/src/types/execution.ts](../../packages/core/src/types/execution.ts) |
+| <a id="skillplannercandidate"></a>`SkillPlannerCandidate` | interface | [packages/core/src/types/context-planning.ts](../../packages/core/src/types/context-planning.ts) |
+| <a id="skillreference"></a>`SkillReference` | interface | [packages/core/src/types/execution.ts](../../packages/core/src/types/execution.ts) |
+| <a id="sourcesnapshot"></a>`SourceSnapshot` | interface | [packages/core/src/types/execution.ts](../../packages/core/src/types/execution.ts) |
+| <a id="stepcontextplan"></a>`StepContextPlan` | interface | [packages/core/src/types/context-planning.ts](../../packages/core/src/types/context-planning.ts) |
+| <a id="steprecord"></a>`StepRecord` | interface | [packages/core/src/types/execution.ts](../../packages/core/src/types/execution.ts) |
 | <a id="stringargoptions"></a>`StringArgOptions` | interface | [packages/core/src/types/tool.ts](../../packages/core/src/types/tool.ts) |
 | <a id="suppressedreviewfinding"></a>`SuppressedReviewFinding` | interface | [packages/core/src/reviews/index.ts](../../packages/core/src/reviews/index.ts) |
+| <a id="taskdescriptor"></a>`TaskDescriptor` | interface | [packages/core/src/types/execution.ts](../../packages/core/src/types/execution.ts) |
+| <a id="taskrecord"></a>`TaskRecord` | interface | [packages/core/src/types/execution.ts](../../packages/core/src/types/execution.ts) |
+| <a id="tenantscope"></a>`TenantScope` | interface | [packages/core/src/types/execution.ts](../../packages/core/src/types/execution.ts) |
+| <a id="terminalexecutionstate"></a>`TerminalExecutionState` | type | [packages/core/src/types/execution.ts](../../packages/core/src/types/execution.ts) |
 | <a id="toolargsschema"></a>`ToolArgsSchema` | type | [packages/core/src/types/tool.ts](../../packages/core/src/types/tool.ts) |
 | <a id="toolcallcontext"></a>`ToolCallContext` | interface | [packages/core/src/types/tool.ts](../../packages/core/src/types/tool.ts) |
 | <a id="tooldefinition"></a>`ToolDefinition` | interface | [packages/core/src/types/tool.ts](../../packages/core/src/types/tool.ts) |
 | <a id="tooldefinitionwithschema"></a>`ToolDefinitionWithSchema` | type | [packages/core/src/types/tool.ts](../../packages/core/src/types/tool.ts) |
+| <a id="toolplannercandidate"></a>`ToolPlannerCandidate` | interface | [packages/core/src/types/context-planning.ts](../../packages/core/src/types/context-planning.ts) |
+| <a id="tracecontext"></a>`TraceContext` | interface | [packages/core/src/types/execution.ts](../../packages/core/src/types/execution.ts) |
+| <a id="usagemeasurement"></a>`UsageMeasurement` | interface | [packages/core/src/types/execution.ts](../../packages/core/src/types/execution.ts) |
+| <a id="validaterepositorychangesetoptions"></a>`ValidateRepositoryChangeSetOptions` | interface | [packages/core/src/repositories/index.ts](../../packages/core/src/repositories/index.ts) |
+| <a id="versionedexecutionrecord"></a>`VersionedExecutionRecord` | interface | [packages/core/src/types/execution.ts](../../packages/core/src/types/execution.ts) |
 | <a id="workflowdefinition"></a>`WorkflowDefinition` | interface | [packages/core/src/types/workflow.ts](../../packages/core/src/types/workflow.ts) |
 | <a id="workflowscorecarddefinition"></a>`WorkflowScorecardDefinition` | interface | [packages/core/src/types/workflow.ts](../../packages/core/src/types/workflow.ts) |
 | <a id="workflowsignalrating"></a>`WorkflowSignalRating` | type | [packages/core/src/types/workflow.ts](../../packages/core/src/types/workflow.ts) |

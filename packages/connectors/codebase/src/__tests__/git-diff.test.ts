@@ -3,11 +3,15 @@ import { mkdir, mkdtemp, rm, writeFile } from 'fs/promises';
 import { tmpdir } from 'os';
 import * as path from 'path';
 import { promisify } from 'util';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { gitDiff, parseUnifiedDiff } from '../helpers/git-diff.js';
 
 const run = promisify(execFile);
 const maxPatchBytes = 80_000;
+
+// These cases create and diff real Git repositories. Allow for CPU and disk
+// contention when every workspace suite runs in parallel.
+vi.setConfig({ testTimeout: 15_000 });
 
 async function initFixtureRepo(): Promise<string> {
   const rootDir = await mkdtemp(path.join(tmpdir(), 'fdekit-diff-'));

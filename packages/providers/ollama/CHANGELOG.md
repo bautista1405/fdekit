@@ -1,5 +1,29 @@
 # @fdekit/provider-ollama
 
+## 0.5.5
+
+### Patch Changes
+
+- eebfa56: Normalize provider-reported token usage, pass runtime output-token limits into
+  built-in provider requests, record measured or explicitly unknown usage for
+  every inference step, estimate declared target cost, and enforce hard cost
+  budgets without inventing unavailable telemetry. Normalized totals include
+  provider-specific reasoning and cache activity, with optional cache-write
+  pricing for exact budget enforcement.
+- Updated dependencies [0aef42f]
+- Updated dependencies [e9c43a7]
+- Updated dependencies [98a9a9b]
+- Updated dependencies [e36d267]
+- Updated dependencies [eebfa56]
+- Updated dependencies [eebfa56]
+- Updated dependencies [1933233]
+- Updated dependencies [eebfa56]
+- Updated dependencies [eebfa56]
+- Updated dependencies [eebfa56]
+- Updated dependencies [d599da8]
+- Updated dependencies [8826660]
+  - @fdekit/core@0.5.5
+
 ## 0.5.4
 
 ### Patch Changes

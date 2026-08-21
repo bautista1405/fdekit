@@ -359,6 +359,46 @@ export interface PlannedAction {
   metadata?: Record<string, unknown>;
 }
 
+export type WorkerLeasePurpose = 'execution' | 'reconciliation';
+export type WorkerLeaseStatus = 'active' | 'released' | 'expired';
+
+/** Durable fencing record used to reject work from a stale or replaced worker. */
+export interface WorkerLeaseRecord {
+  schemaVersion: typeof EXECUTION_CONTRACT_VERSION;
+  leaseId: string;
+  sessionId: string;
+  owner: ActorIdentity;
+  epoch: number;
+  purpose: WorkerLeasePurpose;
+  acquiredAt: string;
+  expiresAt: string;
+  status: WorkerLeaseStatus;
+  releasedAt?: string;
+}
+
+export type ExternalActionStatus =
+  | 'prepared'
+  | 'dispatched'
+  | 'observed'
+  | 'uncertain'
+  | 'committed'
+  | 'reconciled'
+  | 'failed';
+
+/** Durable lifecycle for an external effect, fenced by the worker lease that advances it. */
+export interface ExternalActionRecord {
+  schemaVersion: typeof EXECUTION_CONTRACT_VERSION;
+  sessionId: string;
+  action: PlannedAction;
+  status: ExternalActionStatus;
+  leaseId: string;
+  fenceEpoch: number;
+  preparedAt: string;
+  updatedAt: string;
+  providerEffectId?: string;
+  outcome?: string;
+}
+
 export type ApprovalRequestStatus = 'pending' | 'approved' | 'denied' | 'expired' | 'cancelled';
 
 export interface ApprovalDecisionRecord {

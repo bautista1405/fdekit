@@ -5,7 +5,7 @@ This document formalizes the contract between an FDEKit runtime provider, the ag
 The short version:
 
 - providers return one step at a time,
-- each step is either a tool call or a final answer,
+- each step is a tool call, structured input request, or final answer,
 - tool-call args must match the selected tool `argsSchema`,
 - strict validation and strict runtime runs require every tool to declare `argsSchema`, `scopes`, and `environments`.
 
@@ -20,7 +20,32 @@ interface AgentProvider {
 }
 ```
 
-`planNextStep()` receives deployment context, agent instructions, user input, previous tool results, and step counters. It must return exactly one `ProviderStep`.
+`planNextStep()` receives deployment context, agent instructions, user input,
+previous tool results, and step counters. Planned runs instead receive the
+allowlisted `modelContext` and an optional hard `outputTokenLimit`. It must
+return exactly one `ProviderStep`.
+
+Both step variants may include normalized provider-reported usage:
+
+```ts
+interface ProviderUsage {
+  // Total input, including cache reads and writes.
+  inputTokens?: number;
+  // Cache-read subset of inputTokens.
+  cachedInputTokens?: number;
+  // Cache-write subset of inputTokens.
+  cacheWriteInputTokens?: number;
+  // Total output, including reasoning tokens.
+  outputTokens?: number;
+  // Reasoning subset of outputTokens.
+  reasoningTokens?: number;
+}
+```
+
+Omit counters the provider did not report. Do not estimate them in an adapter.
+Keeping subset semantics consistent lets input and output budgets compare total
+provider work while cost estimates apply cache-specific rates without double
+counting.
 
 ## Step Types
 
@@ -35,6 +60,7 @@ interface ProviderToolCallStep {
   args: Record<string, unknown>;
   reason?: string;
   metadata?: Record<string, unknown>;
+  usage?: ProviderUsage;
 }
 ```
 
@@ -61,6 +87,31 @@ Rules:
 - `reason` should be short and useful for traces.
 - `metadata` must be JSON-serializable.
 
+### Structured Input Request Step
+
+Use this when execution cannot safely continue without typed human or host
+input. The runtime persists the request and enters `needs_input`.
+
+```ts
+interface ProviderInputRequestStep {
+  type: 'input_request';
+  prompt: string;
+  inputSchema: JsonSchema;
+  disclosure?: 'public' | 'organization' | 'restricted';
+  defaultValue?: unknown;
+  metadata?: Record<string, unknown>;
+  usage?: ProviderUsage;
+}
+```
+
+Resume requires an `inputAnswer` with an `ActorIdentity`. The runtime validates
+the value before recording `input.answered`; invalid values leave the durable
+pause untouched. Hosts can optionally bind the request to an intended audience,
+deadline, disclosure class, and one-time resume capability with `inputGate` on
+`runAgent()`. Only a SHA-256 digest of that capability is persisted; the raw
+token is returned once in `AgentRunResult.inputResumeToken`. These controls are
+opt-in, so the generated starter configuration stays lean.
+
 ### Final Step
 
 Use this when the provider is done.
@@ -70,6 +121,7 @@ interface ProviderFinalStep {
   type: 'final';
   message: string;
   metadata?: Record<string, unknown>;
+  usage?: ProviderUsage;
 }
 ```
 
@@ -193,7 +245,7 @@ Tool `category` and `tags` are not strict-mode requirements, but they are part o
 
 When implementing or customizing a provider adapter:
 
-- Return only `ProviderToolCallStep` or `ProviderFinalStep`.
+- Return only `ProviderToolCallStep`, `ProviderInputRequestStep`, or `ProviderFinalStep`.
 - Parse model output defensively.
 - Reject unknown step types.
 - Treat malformed JSON as a failed provider step, not as a tool call.
@@ -201,6 +253,8 @@ When implementing or customizing a provider adapter:
 - Include available tools and their `argsSchema` in the model context.
 - Tell the model that tool-call args must match `argsSchema`.
 - Keep retries/circuit breakers around external provider HTTP calls, not around runtime tool execution.
+- Intersect the provider's configured output cap with `outputTokenLimit`.
+- Normalize native usage counters into `ProviderUsage`; omit unavailable fields.
 
 ## Tool Author Checklist
 

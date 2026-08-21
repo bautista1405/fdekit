@@ -129,10 +129,37 @@ const newEvents = await sessions.readEvents(runId, { afterRevision: 12 });
 ```
 
 The local store supports optimistic revisions, idempotent append retries,
-validated state transitions, corruption detection, and immutable snapshots.
+validated state transitions, corruption detection, immutable snapshots, and
+single-sync event batches. Agent telemetry is batched between immediate lifecycle
+boundaries. Structured `needs_input` pauses validate typed answers before
+resume. Optional input gates bind an answer to intended principals, a deadline,
+and an ephemeral one-time capability whose raw value is never persisted.
+Cancellation, retry, expiry, tombstone, and purge are explicit APIs.
 Pass a `SessionStore` to `runAgent()` or `resumeAgentRun()` to supply a hosted
 implementation. This is a storage interface, not an OSS application server.
 See the [Session Store specification](../../docs/specs/session-store.md).
+
+`@fdekit/runtime/sessions` also provides worker lease acquisition, renewal,
+release, fencing checks, checkpoints, heartbeats, inbox/outbox helpers, and a
+durable external-action lifecycle. `appendSessionEventWithOutbox()` requires a
+store with an atomic `appendBatch()` implementation and fails closed otherwise.
+The hosted queue and scheduler remain outside this package.
+
+## Disposable execution
+
+`@fdekit/runtime/execution` provides opt-in `ExecutionBackend`,
+`WorkspaceLease`, and `CredentialBroker` contracts plus constrained local
+implementations. The local backend allows only explicitly configured
+executables and inherited environment variables, bounds time and output, and
+cleans up disposable workspaces. Environment credential leases expire and do
+not serialize secret material.
+
+The local backend is trusted-host execution, not a sandbox. It reports
+filesystem, process, and network isolation as unavailable and rejects requests
+that require them. `createDockerExecutionBackend()` supplies a hardened,
+network-disabled container path, while `defineExecutionTool()` routes backend
+commands through the ordinary governed tool edge with automatic cleanup.
+See [Execution Backends And Credential Leases](../../docs/specs/execution-backends.md).
 
 ## Governed deterministic actions
 
@@ -145,9 +172,11 @@ completed write. See [Governed Exact Tool Sequences](../../docs/specs/governed-t
 
 ## Policy-aware context planning
 
-The focused `@fdekit/runtime/context` entrypoint authorizes source identities
-before access, selects a capable inference route, and assembles a per-step
-`ModelContext` under token, retrieval, and tool limits:
+The focused `@fdekit/runtime/context` entrypoint exposes the pure planning
+primitives. `runAgent({ contextPlanning })` makes them load-bearing for every
+provider step: it authorizes source identities, selects the configured endpoint
+and model, compiles `ModelContext`, enforces selected tools and run budgets, and
+records a content-free `context.plan.selected` event.
 
 ```ts
 import {
@@ -158,9 +187,26 @@ import {
 ```
 
 Each plan includes a selected/excluded manifest for audit and evals. Provider
-planner helpers detect `ProviderPlanContext.contextPlan` and exclude host-only
+planner helpers use `ProviderPlanContext.modelContext` and exclude host-only
 input, policy, endpoint, credential references, and raw tool history from the
-wire payload. See the [context planning specification](../../docs/specs/context-planning.md).
+wire payload. Runs paused for approval persist the exact governing plan and must
+resume with the same effective policy and inference route. See the
+[context planning specification](../../docs/specs/context-planning.md).
+
+Repeated semantic items are deduplicated. Explicit host-produced compressed
+variants can be selected without hidden summarization calls, with method and
+token savings recorded in the manifest. Runtime checks cover cumulative
+latency, duration, tool-call, cost, and delegation reservation limits.
+
+Planned runs also pass the effective output-token cap to provider requests and
+append one `UsageMeasurement` per provider step. OpenAI, Anthropic, Google, and
+Ollama normalize their native token counters; adapters that report none produce
+an explicit `unknown` measurement without invented token or cost values. Cost
+is estimated only from pricing declared on the selected target. Total input
+includes cache reads and writes, while total output includes reasoning; optional
+cache-specific rates avoid double counting. A hard `maxCost` rejects unpriced
+targets before inference. These controls are opt-in and do not add fields to the
+default `fde.config.ts` scaffold.
 
 ## Local intelligence
 
@@ -177,7 +223,9 @@ See [Local Intelligence Primitives](../../docs/specs/local-intelligence.md).
 `fdekit/skills`, blocks path/symlink escapes, and verifies the declared SHA-256
 entrypoint digest. It deliberately does not import or execute skill code. Use
 `evaluateProjectSkillGrant()` from `@fdekit/core` to intersect requested
-capabilities and sources with the exact effective policy. See
+capabilities and sources with the exact effective policy.
+`runDocumentationSkillShadow()` is the isolated diff-only/shadow pilot; it has
+no apply or publication path. See
 [Project-Local Skill Contracts](../../docs/specs/project-skills.md).
 
 ## Public API surface

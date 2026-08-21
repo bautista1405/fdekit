@@ -1,5 +1,5 @@
 import type { ConnectorManifest } from '../types.js';
-import { fdekitDependency } from '../../package-versions.js';
+import { fdekitDependency } from '../package-versions.js';
 
 export const dataConnectorManifests: ConnectorManifest[] = [
   {

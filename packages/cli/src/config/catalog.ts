@@ -1,8 +1,8 @@
 export {
   connectorScaffold,
   providerScaffold,
-} from '../catalog/index.js';
+} from '@fdekit/catalog';
 export type {
   AddScaffold,
   CatalogEnvVar as EnvExample,
-} from '../catalog/index.js';
+} from '@fdekit/catalog';

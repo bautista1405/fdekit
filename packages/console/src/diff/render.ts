@@ -197,22 +197,55 @@ function extractAssets(html: string): string {
   return `${sprite}${styles}`;
 }
 
+/** Consumers put this class on the element wrapping each file's `html`. */
+export const DIFF_HOST_CLASS = 'fdekit-diff';
+
 /**
- * Rewrites `:host` to `:root` so the diff stylesheet works in the light DOM.
+ * Rewrites `:host` so the diff stylesheet works in the light DOM.
  *
  * `@pierre/diffs` styles its components for Shadow DOM, but its SSR output is
  * plain markup with no custom element, and we inline it directly into a page.
- * `:host` therefore matches nothing, and the three rules that use it are the
- * ones that define everything that matters: `--diffs-font-fallback` (the
- * monospace stack), the header font, the scrollbar gutter, and the whole theme
- * palette. Without this rewrite the diff renders in the page's body font with
- * no theme — which is exactly what it looked like before this existed.
+ * `:host` therefore matches nothing, and the rules that use it define
+ * everything that matters: `--diffs-font-fallback` (the monospace stack), the
+ * header font, the scrollbar gutter, and the whole theme palette. Without this
+ * rewrite the diff renders in the page's body font with no theme.
  *
- * `:root` is safe here: every variable these rules declare is `--diffs-`
- * prefixed, so nothing can collide with the host page.
+ * The rewrite SPLITS each rule, and that split is the important part:
+ *
+ *  - Custom properties go to `:root`. They are all `--diffs-` prefixed, so they
+ *    cannot collide, and hoisting them is what lets the theme resolve.
+ *  - Everything else goes to `.fdekit-diff`. These are declarations written for
+ *    a shadow host — `font-size`, `font-family`, `background-color`, `color`,
+ *    `display` — and promoting them to `:root` applies them to the whole
+ *    document. That silently changed the host page's root font size, which
+ *    rescaled every rem on any page containing a diff.
  */
 function unshadowCss(styleBlock: string): string {
-  return styleBlock.replace(/:host(?![-(\w])/g, ':root');
+  return styleBlock.replace(
+    /:host(?![-(\w])([^{]*)\{([^}]*)\}/g,
+    (whole, suffix: string, body: string) => {
+      const declarations = body
+        .split(';')
+        .map((entry) => entry.trim())
+        .filter(Boolean);
+      const variables = declarations.filter((entry) => entry.startsWith('--'));
+      const rest = declarations.filter((entry) => !entry.startsWith('--'));
+      const tail = suffix.trim();
+
+      const scoped = `.${DIFF_HOST_CLASS}${tail ? ` ${tail}` : ''}`;
+      const parts: string[] = [];
+
+      if (variables.length > 0) {
+        parts.push(`:root${tail ? ` ${tail}` : ''}{${variables.join(';')}}`);
+      }
+
+      if (rest.length > 0) {
+        parts.push(`${scoped}{${rest.join(';')}}`);
+      }
+
+      return parts.join('') || whole;
+    },
+  );
 }
 
 function stripAssets(html: string): string {

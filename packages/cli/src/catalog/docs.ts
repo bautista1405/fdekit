@@ -5,8 +5,8 @@ import {
   providerNames,
   recipeManifests,
   recipeNames,
-} from './index.js';
-import type { CatalogScaffoldAlias, ConnectorManifest, ProviderManifest } from './types.js';
+} from '@fdekit/catalog';
+import type { CatalogScaffoldAlias, ConnectorManifest, ProviderManifest } from '@fdekit/catalog';
 
 const commandUsages = {
   init: 'fdekit init [name]',

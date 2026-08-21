@@ -8,7 +8,7 @@ import {
   connectorScaffoldNames,
   providerScaffoldNames,
   type ConnectorManifest,
-} from '../catalog/index.js';
+} from '@fdekit/catalog';
 import type { CommandContext } from '../context.js';
 import { connectorScaffold, providerScaffold, type AddScaffold, type EnvExample } from '../config/catalog.js';
 import { ensureCoreImports, ensurePackageImports, hasObjectEntry, insertArrayItem, insertObjectEntry } from '../config/edit.js';

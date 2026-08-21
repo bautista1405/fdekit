@@ -1,5 +1,5 @@
 import type { ConnectorManifest } from '../types.js';
-import { fdekitDependency } from '../../package-versions.js';
+import { fdekitDependency } from '../package-versions.js';
 import { connectorModeEnv } from './shared.js';
 
 export const crmConnectorManifests: ConnectorManifest[] = [

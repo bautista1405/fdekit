@@ -1,6 +1,6 @@
 import { connectorManifests } from './connectors.js';
 import { providerManifests } from './providers.js';
-import { recipeManifests } from './recipes.js';
+import { recipeManifests, requireRecipeManifest } from './recipes.js';
 import type {
   AddScaffold,
   CatalogScaffoldAlias,
@@ -14,12 +14,13 @@ export type {
   CatalogEnvVar,
   CatalogImportSpec,
   CatalogMaturity,
+  CatalogScaffoldAlias,
   ConnectorManifest,
   ProviderManifest,
   RecipeManifest,
 } from './types.js';
 export { connectorManifests, providerManifests };
-export { recipeManifests };
+export { recipeManifests, requireRecipeManifest };
 
 export function providerManifest(name: string): ProviderManifest | undefined {
   return providerManifests.find((manifest) => matchesManifestName(manifest, name));
@@ -84,3 +85,10 @@ function scaffoldFor(
 
   return manifest.aliases?.find((alias) => alias.name === name)?.scaffold ?? manifest.scaffold;
 }
+
+export {
+  fdekitCaretDependencyVersion,
+  fdekitDependencies,
+  fdekitDependency,
+  fdekitDependencyVersion,
+} from './package-versions.js';

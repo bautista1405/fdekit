@@ -10,7 +10,7 @@ import {
   type RecipeContext,
   type RecipeInstallResult,
 } from '../registry.js';
-import type { RecipeManifest } from '../../catalog/types.js';
+import type { RecipeManifest } from '@fdekit/catalog';
 
 type RecipeValue<T> = T | ((ctx: RecipeContext) => T);
 

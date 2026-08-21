@@ -16,6 +16,7 @@
   "include": ["packages/**/*"],
   "references": [
     { "path": "packages/core" },
+    { "path": "packages/catalog" },
     { "path": "packages/providers/anthropic" },
     { "path": "packages/providers/google" },
     { "path": "packages/providers/mock" },

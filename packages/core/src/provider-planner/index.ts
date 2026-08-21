@@ -4,6 +4,7 @@ import type {
   ProviderPlanContext,
   ProviderStep,
   ProviderToolCallStep,
+  ModelContext,
 } from '../types/index.js';
 import { asRecord, getString, readProcessEnv } from '../helpers/index.js';
 
@@ -18,9 +19,10 @@ export interface ProviderPlannerToolMetadata {
 }
 
 export interface ProviderPlannerInputPayload {
-  deployment: string;
-  agent: string;
-  input: Record<string, unknown>;
+  deployment?: string;
+  agent?: string;
+  input?: Record<string, unknown>;
+  modelContext?: ModelContext;
   stepIndex: number;
   maxSteps: number;
   availableTools: ProviderPlannerToolMetadata[];
@@ -28,6 +30,10 @@ export interface ProviderPlannerInputPayload {
 }
 
 export function buildProviderPlannerInstructions(context: ProviderPlanContext): string {
+  const instructions = context.contextPlan
+    ? context.contextPlan.model.instructions.map((item) => item.content).join('\n\n')
+    : context.instructions;
+
   return [
     'You are the FDEKit runtime planner for a field-deployed AI agent',
     'Decide the next step for this agent loop',
@@ -40,7 +46,7 @@ export function buildProviderPlannerInstructions(context: ProviderPlanContext): 
     'If a previous tool result has "is_error": true, treat it as recoverable feedback and adjust the next step instead of repeating the same failing call',
     '',
     'Agent instructions:',
-    context.instructions,
+    instructions,
   ].join('\n');
 }
 
@@ -49,6 +55,16 @@ export function buildProviderPlannerInput(context: ProviderPlanContext): string 
 }
 
 export function buildProviderPlannerInputPayload(context: ProviderPlanContext): ProviderPlannerInputPayload {
+  if (context.contextPlan) {
+    return {
+      modelContext: context.contextPlan.model,
+      stepIndex: context.stepIndex,
+      maxSteps: context.maxSteps,
+      availableTools: collectProviderToolMetadata(context),
+      toolResults: [],
+    };
+  }
+
   return {
     deployment: context.deployment.name,
     agent: context.agentName,
@@ -61,6 +77,14 @@ export function buildProviderPlannerInputPayload(context: ProviderPlanContext): 
 }
 
 export function collectProviderToolMetadata(context: ProviderPlanContext): ProviderPlannerToolMetadata[] {
+  if (context.contextPlan) {
+    return context.contextPlan.model.tools.map((tool) => ({
+      name: tool.name,
+      description: tool.description,
+      argsSchema: tool.inputSchema,
+    }));
+  }
+
   const connectorTools = Object.values(context.deployment.connectors ?? {})
     .flatMap((connector) => connector.tools ?? []);
   const agentTools = context.agent.tools ?? [];

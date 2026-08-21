@@ -121,6 +121,23 @@ describe('renderAnnotatedDiff', () => {
     expect(result.assets).not.toContain(':host');
     expect(result.assets).toContain(':root');
     expect(result.assets).toContain('--diffs-font-fallback');
+
+    // Host declarations such as font-size, display, background, and color must
+    // stay on the diff wrapper. Putting them on :root changes every rem and
+    // inherited color/font on a page that embeds a review.
+    expect(result.assets).toMatch(/\.fdekit-diff(?:\s+[^,{]+)?\{[^}]*(?:font-family|font-size|background-color|color|display):/);
+
+    const rootRules = [...result.assets.matchAll(/:root(?:\s+[^,{]+)?\{([^}]*)\}/g)];
+    expect(rootRules.length).toBeGreaterThan(0);
+
+    for (const [, body] of rootRules) {
+      const declarations = body
+        .split(';')
+        .map((entry) => entry.trim())
+        .filter(Boolean);
+
+      expect(declarations.every((entry) => entry.startsWith('--'))).toBe(true);
+    }
   });
 
   it('anchors findings to their own file', async () => {

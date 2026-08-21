@@ -22,6 +22,7 @@ export interface InferenceTarget {
     currency: string;
     inputPerMillionTokens?: number;
     cachedInputPerMillionTokens?: number;
+    cacheWriteInputPerMillionTokens?: number;
     outputPerMillionTokens?: number;
   };
   metadata?: Record<string, unknown>;

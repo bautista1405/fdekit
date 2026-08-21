@@ -1,7 +1,9 @@
 import type { AgentConfig } from './agent.js';
 import type { StepContextPlan } from './context-planning.js';
+import type { ModelContext } from './execution.js';
 import type { DeploymentDefinition } from './deployment.js';
 import type { EnvironmentVariableRequirement, MaybePromise, ProviderName } from './shared.js';
+import type { JsonSchema } from './tool.js';
 
 export interface ProviderConfig {
   name: ProviderName;
@@ -29,11 +31,32 @@ export interface ProviderPlanContext {
   toolResults: ProviderToolResult[];
   stepIndex: number;
   maxSteps: number;
-  /** When present, provider serialization must use only this allowlisted model context. */
+  /** Hard upper bound for this provider response, after target and deployment caps are intersected. */
+  outputTokenLimit?: number;
+  /** Preferred provider boundary: the compiled payload contains no host-only plan fields. */
+  modelContext?: ModelContext;
+  /**
+   * @deprecated Pass modelContext instead. Retained for compatibility with
+   * existing adapters; serializers still expose only its allowlisted model.
+   */
   contextPlan?: StepContextPlan;
 }
 
-export type ProviderStep = ProviderToolCallStep | ProviderFinalStep;
+/** Provider-reported inference usage normalized before it reaches the runtime. */
+export interface ProviderUsage {
+  /** Total input processed, including cache reads and cache writes. */
+  inputTokens?: number;
+  /** Cache-read subset of inputTokens. */
+  cachedInputTokens?: number;
+  /** Cache-write subset of inputTokens. */
+  cacheWriteInputTokens?: number;
+  /** Total billable output, including reasoning tokens when the provider separates them. */
+  outputTokens?: number;
+  /** Reasoning-token subset of outputTokens. */
+  reasoningTokens?: number;
+}
+
+export type ProviderStep = ProviderToolCallStep | ProviderFinalStep | ProviderInputRequestStep;
 
 export interface ProviderToolCallStep {
   type: 'tool_call';
@@ -41,12 +64,25 @@ export interface ProviderToolCallStep {
   args: Record<string, unknown>;
   reason?: string;
   metadata?: Record<string, unknown>;
+  usage?: ProviderUsage;
 }
 
 export interface ProviderFinalStep {
   type: 'final';
   message: string;
   metadata?: Record<string, unknown>;
+  usage?: ProviderUsage;
+}
+
+/** Ask the host for schema-validated input and durably pause the run. */
+export interface ProviderInputRequestStep {
+  type: 'input_request';
+  prompt: string;
+  inputSchema: JsonSchema;
+  disclosure?: 'public' | 'organization' | 'restricted';
+  defaultValue?: unknown;
+  metadata?: Record<string, unknown>;
+  usage?: ProviderUsage;
 }
 
 export interface AgentProvider {

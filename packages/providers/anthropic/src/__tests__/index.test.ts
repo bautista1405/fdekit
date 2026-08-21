@@ -27,6 +27,12 @@ describe('anthropicProvider', () => {
       fetch: async (input, init) => {
         calls.push({ input, init });
         return Response.json({
+          usage: {
+            input_tokens: 90,
+            cache_read_input_tokens: 10,
+            cache_creation_input_tokens: 5,
+            output_tokens: 25,
+          },
           content: [
             {
               type: 'text',
@@ -54,11 +60,18 @@ describe('anthropicProvider', () => {
       toolResults: [],
       stepIndex: 1,
       maxSteps: 8,
+      outputTokenLimit: 96,
     });
 
     expect(step).toEqual({
       type: 'final',
       message: 'The ticket can stay in standard support',
+      usage: {
+        inputTokens: 105,
+        cachedInputTokens: 10,
+        cacheWriteInputTokens: 5,
+        outputTokens: 25,
+      },
     });
     expect(calls[0].input).toBe('https://api.anthropic.test/v1/messages');
     expect(calls[0].init?.headers).toMatchObject({
@@ -68,7 +81,7 @@ describe('anthropicProvider', () => {
     });
     expect(JSON.parse(String(calls[0].init?.body))).toMatchObject({
       model: 'claude-opus-4-8',
-      max_tokens: 800,
+      max_tokens: 96,
     });
   });
 

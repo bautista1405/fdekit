@@ -7,12 +7,14 @@ import {
   getString,
   getHttpResilienceOptions,
   parseProviderPlannerStep,
+  providerOutputTokenLimit,
   requestProviderJson,
   requireProviderApiKey,
   type HttpResilienceClient,
   type ProviderConfig,
   type ProviderPlanContext,
   type ProviderStep,
+  type ProviderUsage,
 } from '@fdekit/core';
 import type { AnthropicMessagesClient, AnthropicRuntimeOptions } from '../interfaces/index.js';
 
@@ -29,7 +31,7 @@ export async function createMessage(
   if (client) {
     return client.messages.create({
       model: config.model ?? defaultAnthropicModel,
-      max_tokens: getNumber(config.options?.maxTokens) ?? 800,
+      max_tokens: providerOutputTokenLimit(context, getNumber(config.options?.maxTokens) ?? 800),
       system: buildProviderPlannerInstructions(context),
       messages: [
         {
@@ -56,7 +58,7 @@ export async function createMessage(
       },
       body: JSON.stringify({
         model: config.model ?? defaultAnthropicModel,
-        max_tokens: getNumber(config.options?.maxTokens) ?? 800,
+        max_tokens: providerOutputTokenLimit(context, getNumber(config.options?.maxTokens) ?? 800),
         system: buildProviderPlannerInstructions(context),
         messages: [
           {
@@ -82,6 +84,25 @@ export function extractAnthropicText(response: unknown): string {
   }
 
   throw new Error('Anthropic response did not include text output');
+}
+
+export function extractAnthropicUsage(response: unknown): ProviderUsage | undefined {
+  const usage = asRecord(asRecord(response).usage);
+  const uncachedInputTokens = getNumber(usage.input_tokens);
+  const cachedInputTokens = getNumber(usage.cache_read_input_tokens);
+  const cacheWriteInputTokens = getNumber(usage.cache_creation_input_tokens);
+  const inputParts = [uncachedInputTokens, cachedInputTokens, cacheWriteInputTokens]
+    .filter((value): value is number => value !== undefined);
+  const normalized: ProviderUsage = {
+    inputTokens: inputParts.length > 0
+      ? inputParts.reduce((total, value) => total + value, 0)
+      : undefined,
+    cachedInputTokens,
+    cacheWriteInputTokens,
+    outputTokens: getNumber(usage.output_tokens),
+  };
+  const entries = Object.entries(normalized).filter(([, value]) => value !== undefined);
+  return entries.length > 0 ? Object.fromEntries(entries) : undefined;
 }
 
 export function parseProviderStep(text: string): ProviderStep {

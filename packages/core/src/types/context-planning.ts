@@ -27,6 +27,14 @@ export interface RetrievalAuthorizationPlan {
 export interface ContextPlannerCandidate {
   item: ContextItem;
   estimatedTokens: number;
+  /** Stable semantic identity used to remove repeated content without exposing it in the manifest. */
+  deduplicationKey?: string;
+  /** An explicit host-produced compact representation; the planner never calls a model to create it. */
+  compressed?: {
+    content: string;
+    estimatedTokens: number;
+    method: string;
+  };
   sourceIds?: string[];
   required?: boolean;
   priority?: number;
@@ -55,6 +63,7 @@ export type ContextExclusionReason =
   | 'token_budget'
   | 'retrieval_limit'
   | 'tool_limit'
+  | 'duplicate'
   | 'lower_priority';
 
 export interface ContextSelectionEntry {
@@ -65,6 +74,8 @@ export interface ContextSelectionEntry {
   decision: 'selected' | 'excluded';
   reason: 'required' | 'ranked' | ContextExclusionReason;
   sourceIds?: string[];
+  originalEstimatedTokens?: number;
+  compression?: { method: string; savedTokens: number };
 }
 
 export interface ContextSelectionManifest {

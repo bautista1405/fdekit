@@ -419,6 +419,7 @@ export interface UsageMeasurement {
   model?: string;
   inputTokens?: number;
   cachedInputTokens?: number;
+  cacheWriteInputTokens?: number;
   outputTokens?: number;
   reasoningTokens?: number;
   toolCalls?: number;

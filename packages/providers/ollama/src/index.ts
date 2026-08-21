@@ -3,7 +3,13 @@ import {
   type AgentProvider,
   type ProviderConfig,
 } from '@fdekit/core';
-import { createChat, extractOllamaText, getHttpResilienceOptions, parseProviderStep } from './helpers/index.js';
+import {
+  createChat,
+  extractOllamaText,
+  extractOllamaUsage,
+  getHttpResilienceOptions,
+  parseProviderStep,
+} from './helpers/index.js';
 import type { OllamaProviderOptions, OllamaRuntimeOptions } from './interfaces/index.js';
 export type { OllamaProviderOptions, OllamaRuntimeOptions } from './interfaces/index.js';
 
@@ -55,7 +61,9 @@ export function createOllamaProvider(
     name: config.name,
     async planNextStep(context) {
       const response = await createChat(config, context, options, resilience);
-      return parseProviderStep(extractOllamaText(response));
+      const step = parseProviderStep(extractOllamaText(response));
+      const usage = extractOllamaUsage(response);
+      return usage ? { ...step, usage } : step;
     },
   };
 }

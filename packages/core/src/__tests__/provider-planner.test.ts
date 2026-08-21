@@ -49,7 +49,7 @@ describe('provider planner protocol helpers', () => {
     });
   });
 
-  it('parses final and tool-call provider steps from strict JSON', () => {
+  it('parses final, tool-call, and structured-input provider steps from strict JSON', () => {
     expect(parseProviderPlannerStep('{"type":"final","message":"done"}', 'TestProvider')).toEqual({
       type: 'final',
       message: 'done',
@@ -63,6 +63,28 @@ describe('provider planner protocol helpers', () => {
       toolName: 'codebase.search',
       args: { query: 'TODO' },
       reason: 'find work',
+    });
+
+    expect(parseProviderPlannerStep(JSON.stringify({
+      type: 'input_request',
+      prompt: 'Which repository should be reviewed?',
+      inputSchema: {
+        type: 'object',
+        required: ['repository'],
+        properties: { repository: { type: 'string' } },
+        additionalProperties: false,
+      },
+      disclosure: 'restricted',
+    }), 'TestProvider')).toEqual({
+      type: 'input_request',
+      prompt: 'Which repository should be reviewed?',
+      inputSchema: {
+        type: 'object',
+        required: ['repository'],
+        properties: { repository: { type: 'string' } },
+        additionalProperties: false,
+      },
+      disclosure: 'restricted',
     });
   });
 

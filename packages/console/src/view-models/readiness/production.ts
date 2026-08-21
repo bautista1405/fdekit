@@ -29,7 +29,7 @@ export function createProductionReadiness(input: {
   const dashboardSnapshotReady = input.snapshotTrend.length > 0;
   const handoffArtifactReady = input.reportReady || dashboardSnapshotReady;
   const enforcementQualifier = input.enforcementMode === 'advisory'
-    ? ', advisory mode - not enforced'
+    ? ', configured; not exercised in retained runs'
     : '';
 
   const guardrailStops: ProductionReadinessItem[] = input.policyBlockedRunCount > 0
@@ -54,7 +54,7 @@ export function createProductionReadiness(input: {
           ? 'advisory'
           : passingControls > 0 ? 'pass' : 'warn',
       detail: input.enforcementMode === 'advisory'
-        ? `${advisoryControls}/${input.governancePosture.length} controls advisory/observed, ${passingControls} enforced control(s) passing, ${input.policyViolationCount} latest violation(s)${enforcementQualifier}`
+        ? `${advisoryControls}/${input.governancePosture.length} controls configured and observed, ${input.policyViolationCount} latest violation(s)${enforcementQualifier}`
         : `${passingControls}/${input.governancePosture.length} controls passing, ${input.policyViolationCount} latest violation(s)`,
     },
     ...guardrailStops,

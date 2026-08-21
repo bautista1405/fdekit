@@ -4,7 +4,7 @@ import {
   getString,
   isDefined,
 } from '@fdekit/core';
-import type { TraceArtifact, TraceEvent } from '@fdekit/runtime';
+import { selectReviewedTrace, type TraceArtifact, type TraceEvent } from '@fdekit/runtime';
 import type {
   ConnectorEvidence,
   CreatedIssue,
@@ -19,8 +19,12 @@ import {
 } from './trace-events.js';
 import { classifyRunFailure } from './run-failures.js';
 
-export function latestTrace(traces: TraceArtifact[]): TraceArtifact | null {
-  return [...traces].sort((left, right) => left.createdAt.localeCompare(right.createdAt)).at(-1) ?? null;
+/**
+ * The run the console puts in front of a reviewer. Shares its ranking with the
+ * deployment report so the two artifacts cannot describe different runs.
+ */
+export function reviewedTrace(traces: TraceArtifact[]): TraceArtifact | null {
+  return selectReviewedTrace(traces);
 }
 
 export function collectCreatedIssues(traces: TraceArtifact[]): CreatedIssue[] {

@@ -35,7 +35,7 @@ export const engineerWorkbenchSection: DashboardSectionStrategy = {
   render: ({ data, metrics }) => `<section class="workbench" aria-label="Engineer workbench">
         <div class="detail-stack">
           ${renderDetailPanel('Review Gates', renderReviewGates(metrics), true)}
-          ${renderDetailPanel('Latest Run Story', renderRunStory(metrics.latestTrace), true)}
+          ${renderDetailPanel('Reviewed Run Story', renderRunStory(metrics.reviewedTrace), true)}
           ${renderDetailPanel('Eval Results', renderEvalDetail(data.latestEval ?? null, data.latestMacroEval ?? null), true)}
         </div>
 

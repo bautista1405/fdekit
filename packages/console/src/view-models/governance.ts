@@ -6,7 +6,12 @@ import {
   type DeploymentDefinition,
   type PolicyDefinition,
 } from '@fdekit/core';
-import type { ApprovalArtifact, TraceArtifact } from '@fdekit/runtime';
+import {
+  isApprovalEvent,
+  isEnforcedPolicyEvent,
+  type ApprovalArtifact,
+  type TraceArtifact,
+} from '@fdekit/runtime';
 import type {
   ApprovalQueueItem,
   BudgetCapItem,
@@ -143,7 +148,7 @@ export function collectGovernancePosture(
           governance?.dataProtection?.denyPII ? 'PII denial' : '',
           governance?.dataProtection?.redactSecrets ? 'secret redaction' : '',
           dataPolicyCount > 0 ? `${dataPolicyCount} policy item(s)` : '',
-        ].filter(Boolean).join(', ') + (advisory ? ', advisory mode - not enforced' : '')
+        ].filter(Boolean).join(', ') + (advisory ? ', configured; not exercised in retained runs' : '')
         : 'no PII or secret handling configured',
     },
     {
@@ -165,7 +170,31 @@ function governancePostureStatus(configured: boolean, advisory: boolean): Govern
 }
 
 function governancePostureDetail(detail: string, advisory: boolean): string {
-  return advisory ? `${detail}, advisory mode - not enforced` : detail;
+  return advisory ? `${detail}, configured; not exercised in retained runs` : detail;
+}
+
+/**
+ * Counts the governance controls that actually stopped something: approval gates
+ * that fired and policy evaluations that denied a call.
+ */
+function collectGovernanceEnforcement(traces: TraceArtifact[]): {
+  approvalGates: number;
+  policyDenials: number;
+} {
+  let approvalGates = 0;
+  let policyDenials = 0;
+
+  for (const trace of traces) {
+    for (const event of trace.events ?? []) {
+      if (isApprovalEvent(event)) {
+        approvalGates += 1;
+      } else if (isEnforcedPolicyEvent(event)) {
+        policyDenials += 1;
+      }
+    }
+  }
+
+  return { approvalGates, policyDenials };
 }
 
 export function collectEnforcementPosture(traces: TraceArtifact[]): {
@@ -187,20 +216,33 @@ export function collectEnforcementPosture(traces: TraceArtifact[]): {
   const policyCount = getNumber(governance.policyCount);
   const allowedScopes = stringArray(governance.allowedScopes);
   const budgetCaps = Array.isArray(governance.budgetCaps) ? governance.budgetCaps.length : 0;
-  const enforcementMode = strict === undefined
+  // Governance enforcement is approval gates holding writes and policies denying
+  // calls. `--strict` toggles runtime edge validation - argument schemas, scopes,
+  // environments - and says nothing about whether governance is enforcing, so
+  // reading the mode off it reported "not enforced" on runs where three external
+  // writes were blocked pending a named human approval.
+  const gates = collectGovernanceEnforcement(traces);
+  const enforcementMode = governanceProfile === undefined
     ? 'unknown'
-    : strict
+    : gates.approvalGates > 0 || gates.policyDenials > 0
       ? 'enforced'
       : 'advisory';
 
   return {
     enforcementMode,
     enforcementPosture: [
+      {
+        label: 'Approval gates',
+        status: gates.approvalGates > 0 ? 'pass' : 'advisory',
+        detail: gates.approvalGates > 0
+          ? `${gates.approvalGates} gate(s) held a write for human approval${gates.policyDenials > 0 ? `, ${gates.policyDenials} policy denial(s)` : ''}`
+          : 'configured; no gate exercised in retained runs',
+      },
       enforcementItem(
-        'Strict mode',
+        'Runtime edge validation',
         strict,
-        'Runtime edge gates enforced',
-        'advisory mode - not enforced',
+        'Strict mode: argument, scope, and environment metadata required',
+        'permissive mode: edge metadata not required',
         'No runtime.edge.profile event captured',
       ),
       enforcementItem(

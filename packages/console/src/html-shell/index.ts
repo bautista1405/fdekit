@@ -202,7 +202,7 @@ function healthDetail(metrics: ConsoleMetrics): string {
 
 function governanceDetail(metrics: ConsoleMetrics): string {
   const qualifier = metrics.enforcementMode === 'advisory'
-    ? ', advisory mode - not enforced'
+    ? ', configured; not exercised in retained runs'
     : '';
 
   return `${metrics.policyDefinitions.length} policy file item(s), ${metrics.policyViolationCount} violation(s)${qualifier}`;

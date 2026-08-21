@@ -1,5 +1,12 @@
 import type { TraceArtifact, TraceEvent } from './interfaces/index.js';
 export type { TraceArtifact, TraceEvent } from './interfaces/index.js';
+export {
+  isApprovalEvent,
+  isEnforcedPolicyEvent,
+  scoreTraceSignificance,
+  selectReviewedTrace,
+  type TraceSignificance,
+} from './select.js';
 
 export function renderTraceViewer(traces: TraceArtifact[]): string {
   const payload = JSON.stringify(traces, null, 2).replace(/</g, '\\u003c');

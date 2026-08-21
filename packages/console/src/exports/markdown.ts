@@ -350,7 +350,7 @@ function reliabilitySummary(metrics: ConsoleMetrics): string {
 
 function policyViolationSummary(metrics: ConsoleMetrics): string {
   const qualifier = metrics.enforcementMode === 'advisory'
-    ? ' (advisory mode - not enforced)'
+    ? ' (configured; not exercised in retained runs)'
     : '';
 
   return `${metrics.policyViolationCount}${qualifier}`;

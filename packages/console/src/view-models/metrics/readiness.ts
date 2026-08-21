@@ -87,7 +87,7 @@ export function collectReadinessMetrics(input: {
     }),
     integrationReadiness: createIntegrationReadiness(context.data.deployment, evidenceMetrics.connectorEvidence),
     workflowMap: createWorkflowMap({
-      latestTrace: evidenceMetrics.latestTrace,
+      reviewedTrace: evidenceMetrics.reviewedTrace,
       evalStatus: context.evalStatus,
       policyEventCount: governanceMetrics.policyEvents.length,
       approvalQueueCount: governanceMetrics.openApprovalCount,

@@ -171,4 +171,55 @@ describe('deployment reports', () => {
     expect(report).toContain('- Policy checks: 1');
     expect(report).toContain('- Policy violations: 0');
   });
+
+  /**
+   * The report used to review whichever trace was written last, so a smoke run
+   * with no tool calls displaced the governed run that cleared approvals and
+   * filed an issue - in the same artifacts directory, on the same deployment.
+   */
+  it('reviews the run with the most evidence, not the most recent one', () => {
+    const deployment = defineDeployment({
+      name: 'support-triage',
+      environment: 'local',
+      providers: { mock: { name: 'mock' } },
+      agents: {
+        supportTriage: defineAgent({
+          provider: 'mock',
+          instructions: './agents/support-triage.md',
+        }),
+      },
+    });
+
+    const governedRun: TraceArtifact = {
+      id: 'run_governed',
+      createdAt: '2026-08-21T20:37:39.140Z',
+      deployment: 'support-triage',
+      events: [
+        { type: 'agent.run.started', agent: 'supportTriage', provider: 'mock' },
+        { type: 'approval.requested', toolName: 'issue.create', policy: 'require-approval' },
+        { type: 'approval.satisfied', toolName: 'issue.create', policy: 'require-approval' },
+        { type: 'tool.call.completed', toolName: 'ticket.get', args: {}, result: {} },
+        { type: 'tool.call.completed', toolName: 'issue.create', args: {}, result: {} },
+        { type: 'agent.run.completed', status: 'completed', finalAnswer: 'Escalated tick_1001' },
+      ],
+    };
+
+    const laterSmokeRun: TraceArtifact = {
+      id: 'run_smoke',
+      createdAt: '2026-08-21T20:41:01.481Z',
+      deployment: 'support-triage',
+      events: [
+        { type: 'agent.run.started', agent: 'supportTriage', provider: 'mock' },
+        { type: 'agent.run.completed', status: 'completed', finalAnswer: 'No ticket id was provided.' },
+      ],
+    };
+
+    const report = renderReport(deployment, null, [governedRun, laterSmokeRun]);
+
+    expect(report).toContain('- Trace: run_governed');
+    expect(report).toContain('- Tool calls: ticket.get, issue.create');
+    expect(report).not.toContain('- Trace: run_smoke');
+    // Recency is still reported, just not mistaken for significance.
+    expect(report).toContain('- Latest trace: run_smoke');
+  });
 });

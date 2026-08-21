@@ -78,7 +78,7 @@ describe('renderConsole', () => {
       'Allowed scopes',
       'Export dashboard data',
       'downloadExport',
-      'Latest Run Story',
+      'Reviewed Run Story',
       'Customer Evidence',
       'Customer Report',
       'Created Issues',
@@ -224,7 +224,7 @@ describe('renderConsole', () => {
     expect(parsed.productionReadiness).toHaveLength(6);
     expect(parsed.reusablePatterns).toHaveLength(5);
     expect(parsed.governancePosture).toHaveLength(5);
-    expect(parsed.enforcementPosture).toHaveLength(6);
+    expect(parsed.enforcementPosture).toHaveLength(7);
     expect(parsed.connectorEvidence).toHaveLength(2);
     expect(parsed.policyDefinitions).toHaveLength(2);
     expect(parsed.budgetCaps).toHaveLength(1);
@@ -655,9 +655,13 @@ describe('renderConsole', () => {
       enforcementMode: 'advisory',
       policyViolationCount: 0,
     });
-    expect(parsed.enforcementPosture?.find((item) => item.label === 'Strict mode')).toMatchObject({
+    expect(parsed.enforcementPosture?.find((item) => item.label === 'Runtime edge validation')).toMatchObject({
       status: 'warn',
-      detail: 'advisory mode - not enforced',
+      detail: 'permissive mode: edge metadata not required',
+    });
+    expect(parsed.enforcementPosture?.find((item) => item.label === 'Approval gates')).toMatchObject({
+      status: 'advisory',
+      detail: 'configured; no gate exercised in retained runs',
     });
     expect(parsed.enforcementPosture?.find((item) => item.label === 'Permission scopes')).toMatchObject({
       status: 'warn',
@@ -669,37 +673,39 @@ describe('renderConsole', () => {
     });
     expect(parsed.governancePosture?.find((item) => item.label === 'Permission Scopes')).toMatchObject({
       status: 'advisory',
-      detail: 'Allowed scopes: customer:read, ticket:read, issues:write, slack:write, advisory mode - not enforced',
+      detail: 'Allowed scopes: customer:read, ticket:read, issues:write, slack:write, configured; not exercised in retained runs',
     });
     expect(parsed.governancePosture?.find((item) => item.label === 'Budget Caps')).toMatchObject({
       status: 'advisory',
-      detail: 'deployment $0.2500, advisory mode - not enforced',
+      detail: 'deployment $0.2500, configured; not exercised in retained runs',
     });
     expect(parsed.readinessSignals?.find((item) => item.label === 'Governance')?.detail)
-      .toContain('0 violation(s), advisory mode - not enforced');
+      .toContain('0 violation(s), configured; not exercised in retained runs');
     expect(parsed.productionReadiness?.find((item) => item.label === 'Governance controls')).toMatchObject({
       status: 'advisory',
-      detail: '3/5 controls advisory/observed, 0 enforced control(s) passing, 0 latest violation(s), advisory mode - not enforced',
+      detail: '3/5 controls configured and observed, 0 latest violation(s), configured; not exercised in retained runs',
     });
     expectTextIncludes(overview, [
-      '0 violation(s), advisory mode - not enforced',
+      '0 violation(s), configured; not exercised in retained runs',
     ]);
     expectTextIncludes(readiness, [
       'Enforcement Posture',
-      'Strict mode',
+      'Runtime edge validation',
+      'Approval gates',
       'advisory',
-      'advisory mode - not enforced',
+      'permissive mode: edge metadata not required',
       'schema metadata advisory - not enforced',
       'scope metadata advisory - not enforced',
       'environment metadata advisory - not enforced',
       'PII denial enabled, secret redaction enabled',
       'audit enabled, 6 policy item(s), scopes: codebase:read, issues:write, 1 budget cap(s)',
     ]);
-    expect(bundle.summaryMarkdown).toContain('- Policy violations: 0 (advisory mode - not enforced)');
-    expect(bundle.summaryMarkdown).toContain('| Governance controls | advisory | 3/5 controls advisory/observed, 0 enforced control(s) passing, 0 latest violation(s), advisory mode - not enforced |');
-    expect(bundle.summaryMarkdown).toContain('| Permission Scopes | advisory | Allowed scopes: customer:read, ticket:read, issues:write, slack:write, advisory mode - not enforced |');
+    expect(bundle.summaryMarkdown).toContain('- Policy violations: 0 (configured; not exercised in retained runs)');
+    expect(bundle.summaryMarkdown).toContain('| Governance controls | advisory | 3/5 controls configured and observed, 0 latest violation(s), configured; not exercised in retained runs |');
+    expect(bundle.summaryMarkdown).toContain('| Permission Scopes | advisory | Allowed scopes: customer:read, ticket:read, issues:write, slack:write, configured; not exercised in retained runs |');
     expect(bundle.summaryMarkdown).toContain('## Enforcement Posture');
-    expect(bundle.dashboardCsv).toContain('enforcement_posture,Strict mode');
+    expect(bundle.dashboardCsv).toContain('enforcement_posture,Runtime edge validation');
+    expect(bundle.dashboardCsv).toContain('enforcement_posture,Approval gates');
   });
 
   it('renders the deployment harness phases, refs, and run-limit evidence', () => {

@@ -4,13 +4,13 @@ import {
   collectCreatedIssues,
   collectRunHistory,
   collectSlackMessages,
-  latestTrace,
+  reviewedTrace,
 } from '../traces.js';
 import type { MetricsContext } from './context.js';
 
 export type EvidenceMetrics = Pick<
   ConsoleMetrics,
-  'createdIssues' | 'slackMessages' | 'connectorEvidence' | 'runHistory' | 'allRunHistory' | 'latestTrace'
+  'createdIssues' | 'slackMessages' | 'connectorEvidence' | 'runHistory' | 'allRunHistory' | 'reviewedTrace'
 >;
 
 export function collectEvidenceMetrics(context: MetricsContext): EvidenceMetrics {
@@ -21,6 +21,6 @@ export function collectEvidenceMetrics(context: MetricsContext): EvidenceMetrics
     runHistory: collectRunHistory(context.traces),
     // Operational trend across every stored run, not just the reviewed-evidence scope.
     allRunHistory: collectRunHistory(context.data.traces),
-    latestTrace: latestTrace(context.traces),
+    reviewedTrace: reviewedTrace(context.traces),
   };
 }

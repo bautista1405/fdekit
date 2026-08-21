@@ -14,7 +14,7 @@ export function createReadinessSignals(input: {
   enforcementMode: 'enforced' | 'advisory' | 'unknown';
 }): ReadinessSignal[] {
   const enforcementQualifier = input.enforcementMode === 'advisory'
-    ? ', advisory mode - not enforced'
+    ? ', configured; not exercised in retained runs'
     : '';
 
   return [

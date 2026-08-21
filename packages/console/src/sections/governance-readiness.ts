@@ -26,7 +26,7 @@ export const governanceReadinessSection: DashboardSectionStrategy = {
           <div class="section-head">
             <div>
               <h2>Workflow Map</h2>
-              <div class="section-note">Trigger to customer-system handoff.</div>
+              <div class="section-note">Trigger to customer-system handoff, for the reviewed run only.</div>
             </div>
           </div>
           ${renderWorkflowMap(metrics.workflowMap)}
@@ -36,7 +36,7 @@ export const governanceReadinessSection: DashboardSectionStrategy = {
           <div class="section-head">
             <div>
               <h2>Integration Readiness</h2>
-              <div class="section-note">Configured systems versus proven calls.</div>
+              <div class="section-note">Configured systems versus proven calls, across every run retained.</div>
             </div>
           </div>
           ${renderIntegrationReadiness(metrics.integrationReadiness)}

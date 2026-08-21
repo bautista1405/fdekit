@@ -114,7 +114,7 @@ function renderHandoff(metrics: ConsoleMetrics): string {
 
 function handoffQuality(metrics: ConsoleMetrics): string {
   const qualifier = metrics.enforcementMode === 'advisory'
-    ? '; advisory mode - not enforced'
+    ? '; configured; not exercised in retained runs'
     : '';
 
   return `${metrics.evalStatus}; ${metrics.policyViolationCount} policy violation(s)${qualifier}`;

@@ -7,7 +7,7 @@ import {
   type HarnessDefinition,
 } from '@fdekit/core';
 import { collectEvals, type EvalArtifact } from './evals/index.js';
-import type { TraceArtifact, TraceEvent } from './traces/index.js';
+import { selectReviewedTrace, type TraceArtifact, type TraceEvent } from './traces/index.js';
 import { joinNames } from './utils.js';
 
 export function renderReport(
@@ -19,12 +19,15 @@ export function renderReport(
   const connectorNames = Object.keys(deployment.connectors ?? {});
   const agentNames = Object.keys(deployment.agents ?? {});
   const sortedTraces = sortTracesByCreatedAt(traces);
-  const latestTrace = sortedTraces.at(-1) ?? null;
-  const runSummary = latestTrace ? collectRunSummary(latestTrace) : null;
-  const toolCalls = latestTrace ? collectCompletedToolNames(latestTrace) : [];
-  const codeEvidence = latestTrace ? collectCodeEvidence(latestTrace) : [];
-  const createdIssues = latestTrace ? collectCreatedIssues(latestTrace) : [];
-  const policySummary = latestTrace ? collectPolicySummary(latestTrace) : { checks: 0, violations: 0 };
+  // The run worth reviewing, not merely the last one recorded - a smoke run that
+  // happens to go last should not be what a stakeholder reads as the deployment.
+  const reviewedTrace = selectReviewedTrace(sortedTraces);
+  const mostRecentTrace = sortedTraces.at(-1) ?? null;
+  const runSummary = reviewedTrace ? collectRunSummary(reviewedTrace) : null;
+  const toolCalls = reviewedTrace ? collectCompletedToolNames(reviewedTrace) : [];
+  const codeEvidence = reviewedTrace ? collectCodeEvidence(reviewedTrace) : [];
+  const createdIssues = reviewedTrace ? collectCreatedIssues(reviewedTrace) : [];
+  const policySummary = reviewedTrace ? collectPolicySummary(reviewedTrace) : { checks: 0, violations: 0 };
 
   return `# ${deployment.name} Deployment Report
 
@@ -39,7 +42,7 @@ Created: ${new Date().toISOString()}
 
 ## Run Reviewed
 
-- Trace: ${latestTrace?.id ?? 'none'}
+- Trace: ${reviewedTrace?.id ?? 'none'}
 - Status: ${runSummary?.status ?? 'not run'}
 - Agent: ${runSummary?.agent ?? joinNames(agentNames)}
 - Final answer: ${runSummary?.finalAnswer ?? 'No final answer captured yet'}
@@ -65,7 +68,7 @@ Created: ${new Date().toISOString()}
 ## Observability
 
 - Traces captured: ${traces.length}
-- Latest trace: ${latestTrace?.id ?? 'none'}
+- Latest trace: ${mostRecentTrace?.id ?? 'none'}
 `;
 }
 

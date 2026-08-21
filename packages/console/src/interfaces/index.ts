@@ -105,7 +105,7 @@ export interface ConsoleMetrics {
   evalSuites: EvalSuiteSummary[];
   snapshotTrend: SnapshotTrendItem[];
   reportReady: boolean;
-  latestTrace: TraceArtifact | null;
+  reviewedTrace: TraceArtifact | null;
   latestRunSummary: Record<string, unknown> | null;
   finalAnswer: string | null;
   fieldMethod: FieldMethodSummary;
@@ -263,7 +263,12 @@ export interface GovernancePostureItem {
 
 export interface EnforcementPostureItem {
   label: string;
-  status: 'pass' | 'warn' | 'fail';
+  /**
+   * `advisory` covers a control that is configured and evaluated but had nothing
+   * to stop in the runs retained - distinct from `warn`, which means the control
+   * is missing or off.
+   */
+  status: 'pass' | 'warn' | 'fail' | 'advisory';
   detail: string;
 }
 

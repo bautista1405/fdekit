@@ -8,10 +8,17 @@
 import { spawn } from 'node:child_process';
 import { readFile } from 'node:fs/promises';
 import * as path from 'node:path';
-import { formatDroppedFindings, parseFindings } from '@fdekit/core';
-import { createFsSourceReader, runGrader, writeReviewArtifact } from '@fdekit/runtime';
-import { githubConnector } from '@fdekit/connector-github';
-import { slackConnector } from '@fdekit/connector-slack';
+import { asRecord, formatDroppedFindings, getString, parseFindings } from '@fdekit/core';
+import {
+  createArtifactStore,
+  createFsSourceReader,
+  executeGovernedToolSequence,
+  loadDeployment,
+  requireConfigFile,
+  runGrader,
+  writeJsonArtifact,
+  writeReviewArtifact,
+} from '@fdekit/runtime';
 
 const args = parseArgs(process.argv.slice(2));
 const prNumber = Number(args.pr ?? 1);
@@ -21,6 +28,11 @@ if (!['shadow', 'advisory', 'request-changes'].includes(mode)) {
   console.error(`Unknown --mode "${mode}"; use shadow, advisory, or request-changes.`);
   process.exit(1);
 }
+
+const configPath = await requireConfigFile(process.cwd());
+const projectDir = path.dirname(configPath);
+const deployment = await loadDeployment(configPath);
+const artifactStore = createArtifactStore({ deployment, projectDir });
 
 const grader = {
   name: 'review-grader',
@@ -52,7 +64,7 @@ if (parsed.dropped.length > 0) {
 }
 
 printHeader('Verify locations and grade each finding');
-const readSource = createFsSourceReader(path.resolve(process.env.CODEBASE_ROOT ?? './sample-repo'));
+const readSource = createFsSourceReader(path.resolve(projectDir, process.env.CODEBASE_ROOT ?? './sample-repo'));
 const graded = await runGrader(grader, parsed.valid, {
   readSource,
   judge: judgeViaAgent,
@@ -70,7 +82,7 @@ const recommendation = mode === 'request-changes' && graded.kept.some((finding) 
   ? 'request-changes'
   : 'comment';
 const runId = tracePath ? path.basename(tracePath, '.json') : `review_${Date.now()}`;
-const artifactPath = await writeReviewArtifact(process.cwd(), {
+const artifactPath = await writeReviewArtifact(projectDir, {
   runId,
   source: { kind: 'github-pr', number: prNumber },
   findings: graded.kept,
@@ -87,33 +99,77 @@ if (mode === 'shadow' || graded.kept.length === 0) {
 }
 
 printHeader(`Post graded review (${mode})`);
-// Direct connector calls honor the tool contracts (approve is impossible) and
-// FDEKIT_CONNECTOR_MODE (local stays simulated); runtime policy enforcement
-// applies to agent runs, not this scripted posting step.
-const connectorMode = process.env.FDEKIT_CONNECTOR_MODE === 'api' ? 'api' : 'local';
-const github = githubConnector({ mode: connectorMode });
-const reviewPost = github.tools?.find((tool) => tool.name === 'github.review.post');
-const posted = await reviewPost.handler({
-  number: prNumber,
-  summary: `Graded review: ${graded.kept.length} finding(s) kept, ${graded.suppressed.length} suppressed. Recommendation: ${recommendation}.`,
-  recommendation,
-  comments: graded.kept.map((finding) => ({
-    path: finding.file,
-    line: finding.line,
-    body: `[${finding.severity}/${finding.category}] ${finding.rationale}${finding.suggestion ? ` Suggestion: ${finding.suggestion}` : ''}`,
-  })),
-}, {});
-console.log(`Review posted: ${posted.url}`);
+const delivery = await executeGovernedToolSequence({
+  deployment,
+  projectDir,
+  artifactStore,
+  agentName: 'codebaseAgent',
+  input: {
+    task: 'Deliver a graded pull-request review',
+    reviewRunId: runId,
+    reviewArtifact: artifactPath,
+    reviewMode: mode,
+  },
+  calls: [
+    {
+      toolName: 'github.review.post',
+      args: {
+        number: prNumber,
+        summary: `Graded review: ${graded.kept.length} finding(s) kept, ${graded.suppressed.length} suppressed. Recommendation: ${recommendation}.`,
+        recommendation,
+        comments: graded.kept.map((finding) => ({
+          path: finding.file,
+          line: finding.line,
+          body: `[${finding.severity}/${finding.category}] ${finding.rationale}${finding.suggestion ? ` Suggestion: ${finding.suggestion}` : ''}`,
+        })),
+      },
+    },
+    {
+      toolName: 'slack.notify',
+      args: {
+        title: `Pull request #${prNumber}`,
+        recommendation,
+        // The Slack connector requires a stable URL before the GitHub call
+        // executes. GitHub uses the same configured repository URL shape.
+        prUrl: githubPullRequestUrl(deployment, prNumber),
+        findingsSummary: graded.kept.map((finding) => `${finding.file}:${finding.line} ${finding.rationale}`),
+      },
+    },
+  ],
+});
+const deliveryTracePath = await writeJsonArtifact(
+  projectDir,
+  'traces',
+  `${delivery.trace.id}.json`,
+  delivery.trace,
+  artifactStore,
+);
+console.log(`Delivery trace: ${deliveryTracePath}`);
 
-const slack = slackConnector({ mode: connectorMode });
-const notify = slack.tools?.find((tool) => tool.name === 'slack.notify');
-const notified = await notify.handler({
-  title: `Pull request #${prNumber}`,
-  recommendation,
-  prUrl: posted.url,
-  findingsSummary: graded.kept.map((finding) => `${finding.file}:${finding.line} ${finding.rationale}`),
-}, {});
-console.log(`Reviewers notified in ${notified.channel}`);
+if (delivery.status === 'waiting_approval') {
+  const pending = delivery.approvals.find((approval) => approval.status === 'pending');
+
+  if (pending) {
+    console.log(`Approval required: ${pending.id} for ${pending.toolName}`);
+    console.log(`Next: fdekit approvals approve ${pending.id} --by <name> --reason "<reason>", then continue with: fdekit run ${delivery.agent} --resume ${delivery.id}`);
+  }
+
+  process.exit(2);
+}
+
+const posted = asRecord(delivery.toolCalls.find((call) => call.name === 'github.review.post')?.result);
+const notified = asRecord(delivery.toolCalls.find((call) => call.name === 'slack.notify')?.result);
+console.log(`Review posted: ${getString(posted.url) ?? 'completed (see delivery trace)'}`);
+console.log(`Reviewers notified in ${getString(notified.channel) ?? 'configured Slack channel'}`);
+
+function githubPullRequestUrl(deployment, number) {
+  const github = Object.values(deployment.connectors ?? {}).find((connector) => (
+    connector.name === 'github'
+  ));
+  const repository = getString(asRecord(github?.config).repository) ?? process.env.GITHUB_REPOSITORY ?? 'owner/repo';
+
+  return `https://github.com/${repository}/pull/${number}`;
+}
 
 async function judgeViaAgent(prompt) {
   const result = await runFdekit(['run', 'reviewJudge', '--input', JSON.stringify({
@@ -146,6 +202,7 @@ async function runFdekit(commandArgs, options = {}) {
   return new Promise((resolve, reject) => {
     const child = spawn('fdekit', commandArgs, {
       shell: process.platform === 'win32',
+      cwd: projectDir,
       env: {
         ...process.env,
         PATH: `${path.join(process.cwd(), 'node_modules', '.bin')}${path.delimiter}${process.env.PATH ?? ''}`,

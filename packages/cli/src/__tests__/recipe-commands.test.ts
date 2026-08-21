@@ -204,6 +204,18 @@ describe('cli recipe commands', () => {
     expectTextExcludes(mockPlanner, [
       "priority: 'normal'",
     ]);
+    const reviewRunner = await readFile(path.join(projectDir, 'recipes', 'codebase-agent', 'review.mjs'), 'utf8');
+    expectTextIncludes(reviewRunner, [
+      'executeGovernedToolSequence',
+      "toolName: 'github.review.post'",
+      "toolName: 'slack.notify'",
+      'fdekit approvals approve',
+    ]);
+    expectTextExcludes(reviewRunner, [
+      'githubConnector',
+      'slackConnector',
+      '.handler(',
+    ]);
 
     const config = await readConfig(projectDir);
     expectTextIncludes(config, [
@@ -221,6 +233,9 @@ describe('cli recipe commands', () => {
       'rootDir: settings.codebaseRoot',
       'const providerFactories = {',
       'const issueTrackers = {',
+      'const githubReview = {',
+      'codebaseWriteApprovalGate',
+      "tools: ['issue.create', 'github.review.post', 'github.pr.reply', 'slack.notify']",
       'defineGovernance',
       "workflow: defineWorkflow({",
       "harness: defineHarness({",
@@ -291,6 +306,14 @@ describe('cli recipe commands', () => {
     expect(packageJson.dependencies?.['@fdekit/provider-google']).toBe(fdekitDependencyVersion);
     expect(packageJson.dependencies?.['@fdekit/provider-ollama']).toBe(fdekitDependencyVersion);
     expect(packageJson.devDependencies?.['@fdekit/cli']).toBe(fdekitDependencyVersion);
+
+    const validateOutput = await captureCommand(() => cmdValidate({
+      cwd: projectDir,
+      args: ['--strict'],
+    }));
+
+    expect(validateOutput.exitCode).toBeUndefined();
+    expect(validateOutput.stdout).toContain('No validation issues found');
   });
 
 

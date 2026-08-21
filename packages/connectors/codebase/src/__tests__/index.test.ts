@@ -3,10 +3,14 @@ import { mkdir, mkdtemp, readdir, writeFile } from 'fs/promises';
 import { tmpdir } from 'os';
 import * as path from 'path';
 import { promisify } from 'util';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { codebaseConnector } from '../index.js';
 
 const execFileAsync = promisify(execFile);
+
+// The integration cases below create repositories and run Git/ripgrep. Keep
+// their budget stable under full-workspace parallel test load.
+vi.setConfig({ testTimeout: 15_000 });
 
 describe('codebaseConnector', () => {
   it('declares allowed environments on every tool', () => {

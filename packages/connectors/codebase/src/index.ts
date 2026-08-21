@@ -15,6 +15,8 @@ import { escapeRegExp, resolveRipgrepPath, ripgrepSearch } from './helpers/ripgr
 import { findImporters, loadOrBuildSymbolIndex, probeNavigationRuntime, readSymbolIndexMeta, symbolIndexCachePath } from './helpers/symbol-index.js';
 import type { CodebaseConnectorConfig, CodebaseConnectorOptions, CodebaseContextArgs, CodebaseContextDefinition, CodebaseContextResult, CodebaseDepsArgs, CodebaseDepsResult, CodebaseDiffArgs, CodebaseDiffResult, CodebaseFileEntry, CodebaseListFilesArgs, CodebaseRankDiffResult, CodebaseReadFileArgs, CodebaseReadFileResult, CodebaseSearchArgs, CodebaseSearchMatch, CodebaseSymbolEntry, CodebaseSymbolsArgs, CodebaseSymbolsResult, CodebaseUsagesArgs, CodebaseUsagesResult } from './interfaces/index.js';
 export type { CodebaseConnectorConfig, CodebaseConnectorOptions, CodebaseContextArgs, CodebaseContextDefinition, CodebaseContextResult, CodebaseDepsArgs, CodebaseDepsResult, CodebaseDiffArgs, CodebaseDiffFile, CodebaseDiffHunk, CodebaseDiffResult, CodebaseDiffStatus, CodebaseFileEntry, CodebaseListFilesArgs, CodebaseRankDiffResult, CodebaseRankedFile, CodebaseReadFileArgs, CodebaseReadFileResult, CodebaseSearchArgs, CodebaseSearchMatch, CodebaseSymbolEntry, CodebaseSymbolKind, CodebaseSymbolsArgs, CodebaseSymbolsResult, CodebaseUsagesArgs, CodebaseUsagesResult } from './interfaces/index.js';
+export { createGitRepositoryOperations } from './helpers/change-transaction.js';
+export type { GitChangeValidationContext, GitChangeValidator, GitRepositoryOperationsOptions } from './helpers/change-transaction.js';
 
 const defaultIgnore = [
   'artifacts',

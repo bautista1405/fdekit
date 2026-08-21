@@ -4,6 +4,7 @@ import * as path from 'path';
 import type { CodebaseFileEntry, CodebaseSearchMatch } from '../interfaces/index.js';
 
 export { readEnvValue } from '@fdekit/core';
+export * from './change-transaction.js';
 
 export async function collectFiles(root: string, ignore: string[], maxFileBytes: number): Promise<CodebaseFileEntry[]> {
   const files: CodebaseFileEntry[] = [];

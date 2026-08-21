@@ -42,6 +42,7 @@ function importsBlock(ctx: RecipeContext): string {
       'noPolicyViolation',
       'notExpectedToolCall',
       'pick',
+      'requireApproval',
       'type ConnectorDefinition',
       'type ProviderConfig',
     ],
@@ -126,13 +127,15 @@ const providers = {
   [settings.provider]: providerFactories[settings.provider](),
 };
 
+const github = githubConnector({
+  mode: settings.connectorMode,
+  repository: process.env.GITHUB_REPOSITORY ?? 'company/codebase-agent',
+  tokenEnv: 'GITHUB_TOKEN',
+  repositoryEnv: 'GITHUB_REPOSITORY',
+});
+
 const issueTrackers = {
-  github: () => githubConnector({
-    mode: settings.connectorMode,
-    repository: process.env.GITHUB_REPOSITORY ?? 'company/codebase-agent',
-    tokenEnv: 'GITHUB_TOKEN',
-    repositoryEnv: 'GITHUB_REPOSITORY',
-  }),
+  github: () => github,
   jira: () => jiraConnector({
     mode: settings.connectorMode,
     baseUrl: process.env.JIRA_BASE_URL,
@@ -146,6 +149,14 @@ const issueTrackers = {
 
 const issues = issueTrackers[settings.issueTracker]();
 
+// GitHub PR review tools remain available when Jira or Linear backs the
+// common issue.create capability. Drop GitHub's colliding issue tool in that
+// case so the selected issue tracker stays authoritative.
+const githubReview = {
+  ...github,
+  tools: github.tools?.filter((tool) => tool.name !== 'issue.create'),
+};
+
 const slack = slackConnector({
   mode: settings.connectorMode,
 });
@@ -154,11 +165,22 @@ const slack = slackConnector({
 }
 
 function evalSetup(): string {
-  return `${renderEvalSetup({
+  return `// Every external write pauses for a human decision. Eval runs auto-decide
+// these gates and record the decision so the governed path remains testable.
+${renderEvalSetup({
     toolLimit: {
       constName: 'codebaseToolLimit',
       expression: 'limitToolUse({ maxCalls: 6 })',
     },
+    policies: [
+      {
+        constName: 'codebaseWriteApprovalGate',
+        expression: `requireApproval({
+  tools: ['issue.create', 'github.review.post', 'github.pr.reply', 'slack.notify'],
+  reason: 'External issue, pull-request review, and reviewer notification writes require human approval',
+})`,
+      },
+    ],
     evalConst: 'codebaseReviewEval',
     name: 'codebase-agent-dataset',
     agent: 'codebaseAgent',
@@ -317,11 +339,9 @@ function deploymentBlock(projectName: string): string {
     },
   },
   providers,
-  connectors: {
-    codebase,
-    issues,
-    slack,
-  },
+  connectors: settings.issueTracker === 'github'
+    ? { codebase, github, slack }
+    : { codebase, issues, githubReview, slack },
   governance: defineGovernance({
     audit: {
       enabled: true,
@@ -353,6 +373,7 @@ function deploymentBlock(projectName: string): string {
       instructions: './agents/codebase-agent.md',
       policies: [
         codebaseToolLimit,
+        codebaseWriteApprovalGate,
       ],
     }),
     // Judge backing the graded review runner (recipes/codebase-agent/review.mjs):

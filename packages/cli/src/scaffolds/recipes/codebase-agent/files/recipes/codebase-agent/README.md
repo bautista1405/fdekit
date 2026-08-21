@@ -47,6 +47,12 @@ node recipes/codebase-agent/review.mjs --pr 1 --mode advisory
 node recipes/codebase-agent/review.mjs --pr 1 --mode request-changes
 ```
 
+Advisory and request-changes delivery uses an exact governed sequence. Each
+external write pauses for approval; approve the displayed request and resume
+with the displayed `fdekit run codebaseAgent --resume <runId>` command. If the
+Slack notification needs a second approval, the same run pauses again without
+replaying the GitHub review.
+
 - The agent can never approve a pull request; humans approve.
 - With `FDEKIT_CONNECTOR_MODE=local` (the default) the PR is a deterministic
   local fixture and posting is simulated; switch to `api` with `GITHUB_TOKEN`

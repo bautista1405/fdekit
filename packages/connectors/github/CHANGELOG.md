@@ -1,5 +1,11 @@
 # @fdekit/connector-github
 
+## 0.6.1
+
+### Patch Changes
+
+- @fdekit/core@0.6.1
+
 ## 0.6.0
 
 ### Minor Changes

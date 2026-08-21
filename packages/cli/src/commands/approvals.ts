@@ -8,19 +8,22 @@ import {
   readApproval,
   readApprovals,
   rejectApproval,
+  revisePausedApproval,
   requireConfigFile,
   type ArtifactStore,
   type ApprovalArtifact,
   type ApprovalStatus,
 } from '@fdekit/runtime';
+import type { DeploymentDefinition } from '@fdekit/core';
 import type { CommandContext } from '../context.js';
 import { CliUserError } from '../errors.js';
 
-const APPROVALS_USAGE = 'fdekit approvals [list [--status <pending|approved|rejected>] [--tool <name>] [--json]|show <id> [--json]|approve <id>|reject <id>] [--by <actor>] [--reason <text>] [--force]';
+const APPROVALS_USAGE = 'fdekit approvals [list [--status <pending|approved|rejected|superseded>] [--tool <name>] [--json]|show <id> [--json]|edit <id> --args <json-object> [--by <actor>] [--reason <text>]|approve <id>|reject <id>] [--by <actor>] [--reason <text>] [--force]';
 
 interface ArtifactCommandContext {
   projectDir: string;
   artifactStore: ArtifactStore;
+  deployment: DeploymentDefinition;
 }
 
 export async function cmdApprovals(ctx: CommandContext): Promise<void> {
@@ -36,6 +39,11 @@ export async function cmdApprovals(ctx: CommandContext): Promise<void> {
     return;
   }
 
+  if (action === 'edit') {
+    await editApproval(ctx);
+    return;
+  }
+
   if (action === 'approve' || action === 'reject') {
     await decideApproval(ctx, action);
     return;
@@ -43,6 +51,29 @@ export async function cmdApprovals(ctx: CommandContext): Promise<void> {
 
   console.error(`Usage: ${APPROVALS_USAGE}`);
   process.exitCode = 1;
+}
+
+async function editApproval(ctx: CommandContext): Promise<void> {
+  const id = ctx.args[1];
+  if (!id || id.startsWith('--')) {
+    throw new CliUserError('Approval id is required', { usage: APPROVALS_USAGE });
+  }
+  const options = parseEditOptions(ctx.args.slice(2));
+  const actor = options.actor ?? osUsername();
+  const { projectDir, artifactStore, deployment } = await resolveArtifactContext(ctx.cwd);
+  const revised = await revisePausedApproval({
+    deployment,
+    projectDir,
+    artifactStore,
+    approvalId: id,
+    args: options.args,
+    actor,
+    reason: options.reason,
+  });
+  console.log(`Approval revised: ${revised.previous.id} -> ${revised.current.id}`);
+  console.log(`Tool: ${revised.current.toolName}`);
+  console.log(`Args: ${JSON.stringify(revised.current.args)}`);
+  console.log(`Next: fdekit approvals approve ${revised.current.id} --by <name> --reason "<reason>"`);
 }
 
 async function listApprovals(ctx: CommandContext): Promise<void> {
@@ -257,10 +288,10 @@ function parseListOptions(args: string[]): { status?: ApprovalStatus; tool?: str
         throw new CliUserError('Missing value for --status', { usage: APPROVALS_USAGE });
       }
 
-      if (next !== 'pending' && next !== 'approved' && next !== 'rejected') {
+      if (next !== 'pending' && next !== 'approved' && next !== 'rejected' && next !== 'superseded') {
         throw new CliUserError(`Invalid --status value: ${next}`, {
           usage: APPROVALS_USAGE,
-          next: ['Use one of: pending, approved, rejected.'],
+          next: ['Use one of: pending, approved, rejected, superseded.'],
         });
       }
 
@@ -328,6 +359,42 @@ function parseDecisionOptions(args: string[]): { actor?: string; reason?: string
   return options;
 }
 
+function parseEditOptions(args: string[]): { args: Record<string, unknown>; actor?: string; reason?: string } {
+  let replacementArgs: Record<string, unknown> | undefined;
+  let actor: string | undefined;
+  let reason: string | undefined;
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = args[index];
+    const next = args[index + 1];
+    if (arg === '--args') {
+      if (isMissingFlagValue(next)) throw new CliUserError('Missing value for --args', { usage: APPROVALS_USAGE });
+      let value: unknown;
+      try {
+        value = JSON.parse(next);
+      } catch {
+        throw new CliUserError('--args must be valid JSON', { usage: APPROVALS_USAGE });
+      }
+      if (!value || typeof value !== 'object' || Array.isArray(value)) {
+        throw new CliUserError('--args must be a JSON object', { usage: APPROVALS_USAGE });
+      }
+      replacementArgs = value as Record<string, unknown>;
+      index += 1;
+    } else if (arg === '--by') {
+      if (isMissingFlagValue(next)) throw new CliUserError('Missing value for --by', { usage: APPROVALS_USAGE });
+      actor = next;
+      index += 1;
+    } else if (arg === '--reason') {
+      if (isMissingFlagValue(next)) throw new CliUserError('Missing value for --reason', { usage: APPROVALS_USAGE });
+      reason = next;
+      index += 1;
+    } else {
+      throw new CliUserError(`Unknown approvals edit option: ${arg}`, { usage: APPROVALS_USAGE });
+    }
+  }
+  if (!replacementArgs) throw new CliUserError('approvals edit requires --args <json-object>', { usage: APPROVALS_USAGE });
+  return { args: replacementArgs, actor, reason };
+}
+
 function isMissingFlagValue(value: string | undefined): boolean {
   return !value || value.startsWith('--');
 }
@@ -354,5 +421,6 @@ async function resolveArtifactContext(cwd: string): Promise<ArtifactCommandConte
   return {
     projectDir,
     artifactStore: createArtifactStore({ deployment, projectDir }),
+    deployment,
   };
 }

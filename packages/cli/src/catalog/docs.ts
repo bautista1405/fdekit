@@ -11,7 +11,7 @@ import type { CatalogScaffoldAlias, ConnectorManifest, ProviderManifest } from '
 const commandUsages = {
   init: 'fdekit init [name]',
   add: 'fdekit add <provider|connector|eval|policy> <name> [--custom]',
-  approvals: 'fdekit approvals [list [--status <s>] [--tool <t>] [--json]|show <id> [--json]|approve <id>|reject <id>] [--by <actor>] [--reason <text>] [--force]',
+  approvals: 'fdekit approvals [list [--status <s>] [--tool <t>] [--json]|show <id> [--json]|edit <id> --args <json-object>|approve <id>|reject <id>] [--by <actor>] [--reason <text>] [--force]',
   audit: 'fdekit audit [--limit <n>]',
   console: 'fdekit console',
   dev: 'fdekit dev',
@@ -78,11 +78,13 @@ Review approval requests or record approval decisions.
 Actions:
   list        Show approval requests with args and execution target
   show <id>   Show one request in full (args, target, decision history)
+  edit <id>   Validate corrected args and create a replacement request
   approve     Approve a request; the run continues with \`fdekit run <agent> --resume\`
   reject      Reject a request; the run reports Status: rejected
 
 Options:
-  --status <s>      Filter list by status: pending, approved, or rejected
+  --status <s>      Filter by status: pending, approved, rejected, or superseded
+  --args <json>     Replacement JSON object for \`edit\`
   --tool <name>     Filter list by tool name
   --json            Print list/show output as JSON
   --by <actor>      Record who made an approval decision (defaults to the OS username)

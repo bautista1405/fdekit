@@ -3,7 +3,14 @@ import {
   type AgentProvider,
   type ProviderConfig,
 } from '@fdekit/core';
-import { createMessage, defaultAnthropicModel, extractAnthropicText, getHttpResilienceOptions, parseProviderStep } from './helpers/index.js';
+import {
+  createMessage,
+  defaultAnthropicModel,
+  extractAnthropicText,
+  extractAnthropicUsage,
+  getHttpResilienceOptions,
+  parseProviderStep,
+} from './helpers/index.js';
 import type { AnthropicProviderOptions, AnthropicRuntimeOptions } from './interfaces/index.js';
 export type { AnthropicMessagesClient, AnthropicProviderOptions, AnthropicRuntimeOptions } from './interfaces/index.js';
 
@@ -42,7 +49,9 @@ export function createAnthropicProvider(
     name: 'anthropic',
     async planNextStep(context) {
       const response = await createMessage(config, context, options, resilience);
-      return parseProviderStep(extractAnthropicText(response));
+      const step = parseProviderStep(extractAnthropicText(response));
+      const usage = extractAnthropicUsage(response);
+      return usage ? { ...step, usage } : step;
     },
   };
 }

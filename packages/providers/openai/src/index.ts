@@ -3,7 +3,14 @@ import {
   type AgentProvider,
   type ProviderConfig,
 } from '@fdekit/core';
-import { createResponse, defaultOpenAIModel, extractOpenAIText, getHttpResilienceOptions, parseProviderStep } from './helpers/index.js';
+import {
+  createResponse,
+  defaultOpenAIModel,
+  extractOpenAIText,
+  extractOpenAIUsage,
+  getHttpResilienceOptions,
+  parseProviderStep,
+} from './helpers/index.js';
 import type { OpenAIProviderOptions, OpenAIRuntimeOptions } from './interfaces/index.js';
 export type { OpenAIProviderOptions, OpenAIResponsesClient, OpenAIRuntimeOptions } from './interfaces/index.js';
 
@@ -41,7 +48,9 @@ export function createOpenAIProvider(
     name: 'openai',
     async planNextStep(context) {
       const response = await createResponse(config, context, options, resilience);
-      return parseProviderStep(extractOpenAIText(response));
+      const step = parseProviderStep(extractOpenAIText(response));
+      const usage = extractOpenAIUsage(response);
+      return usage ? { ...step, usage } : step;
     },
   };
 }

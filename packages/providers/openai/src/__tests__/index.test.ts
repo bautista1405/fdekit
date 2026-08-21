@@ -27,6 +27,12 @@ describe('openaiProvider', () => {
       fetch: async (input, init) => {
         calls.push({ input, init });
         return Response.json({
+          usage: {
+            input_tokens: 120,
+            input_tokens_details: { cached_tokens: 20 },
+            output_tokens: 30,
+            output_tokens_details: { reasoning_tokens: 4 },
+          },
           output_text: JSON.stringify({
             type: 'tool_call',
             toolName: 'ticket.get',
@@ -51,6 +57,7 @@ describe('openaiProvider', () => {
       toolResults: [],
       stepIndex: 0,
       maxSteps: 8,
+      outputTokenLimit: 128,
     });
 
     expect(step).toEqual({
@@ -58,6 +65,12 @@ describe('openaiProvider', () => {
       toolName: 'ticket.get',
       args: { ticketId: 'tick_1001' },
       reason: 'Need ticket context',
+      usage: {
+        inputTokens: 120,
+        cachedInputTokens: 20,
+        outputTokens: 30,
+        reasoningTokens: 4,
+      },
     });
     expect(calls[0].input).toBe('https://api.openai.test/v1/responses');
     expect(calls[0].init?.headers).toMatchObject({
@@ -66,7 +79,7 @@ describe('openaiProvider', () => {
     });
     expect(JSON.parse(String(calls[0].init?.body))).toMatchObject({
       model: 'gpt-5.5',
-      max_output_tokens: 800,
+      max_output_tokens: 128,
     });
   });
 

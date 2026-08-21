@@ -3,7 +3,14 @@ import {
   type AgentProvider,
   type ProviderConfig,
 } from '@fdekit/core';
-import { defaultGoogleModel, extractGeminiText, generateContent, getHttpResilienceOptions, parseProviderStep } from './helpers/index.js';
+import {
+  defaultGoogleModel,
+  extractGeminiText,
+  extractGeminiUsage,
+  generateContent,
+  getHttpResilienceOptions,
+  parseProviderStep,
+} from './helpers/index.js';
 import type { GoogleProviderOptions, GoogleRuntimeOptions } from './interfaces/index.js';
 export type { GoogleGenAIClient, GoogleProviderOptions, GoogleRuntimeOptions } from './interfaces/index.js';
 
@@ -47,7 +54,9 @@ export function createGoogleProvider(
     name: 'google',
     async planNextStep(context) {
       const response = await generateContent(config, context, options, resilience);
-      return parseProviderStep(extractGeminiText(response));
+      const step = parseProviderStep(extractGeminiText(response));
+      const usage = extractGeminiUsage(response);
+      return usage ? { ...step, usage } : step;
     },
   };
 }

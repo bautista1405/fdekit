@@ -8,12 +8,14 @@ import {
   getString,
   getHttpResilienceOptions,
   parseProviderPlannerStep,
+  providerOutputTokenLimit,
   requestProviderJson,
   requireProviderApiKey,
   type HttpResilienceClient,
   type ProviderConfig,
   type ProviderPlanContext,
   type ProviderStep,
+  type ProviderUsage,
 } from '@fdekit/core';
 import type { GoogleGenAIClient, GoogleRuntimeOptions } from '../interfaces/index.js';
 
@@ -43,7 +45,7 @@ export async function generateContent(
       ],
       config: compactRecord({
         systemInstruction: buildProviderPlannerInstructions(context),
-        maxOutputTokens: getNumber(config.options?.maxOutputTokens) ?? 800,
+        maxOutputTokens: providerOutputTokenLimit(context, getNumber(config.options?.maxOutputTokens) ?? 800),
         responseMimeType: getString(config.options?.responseMimeType) ?? 'application/json',
         temperature: getNumber(config.options?.temperature) ?? 1,
       }),
@@ -83,7 +85,7 @@ export async function generateContent(
           },
         ],
         generationConfig: compactRecord({
-          maxOutputTokens: getNumber(config.options?.maxOutputTokens) ?? 800,
+          maxOutputTokens: providerOutputTokenLimit(context, getNumber(config.options?.maxOutputTokens) ?? 800),
           responseMimeType: getString(config.options?.responseMimeType) ?? 'application/json',
           temperature: getNumber(config.options?.temperature) ?? 1,
         }),
@@ -108,6 +110,24 @@ export function extractGeminiText(response: unknown): string {
   }
 
   throw new Error('Google Gemini response did not include text output');
+}
+
+export function extractGeminiUsage(response: unknown): ProviderUsage | undefined {
+  const usage = asRecord(asRecord(response).usageMetadata);
+  const candidateTokens = getNumber(usage.candidatesTokenCount);
+  const reasoningTokens = getNumber(usage.thoughtsTokenCount);
+  const outputParts = [candidateTokens, reasoningTokens]
+    .filter((value): value is number => value !== undefined);
+  const normalized: ProviderUsage = {
+    inputTokens: getNumber(usage.promptTokenCount),
+    cachedInputTokens: getNumber(usage.cachedContentTokenCount),
+    outputTokens: outputParts.length > 0
+      ? outputParts.reduce((total, value) => total + value, 0)
+      : undefined,
+    reasoningTokens,
+  };
+  const entries = Object.entries(normalized).filter(([, value]) => value !== undefined);
+  return entries.length > 0 ? Object.fromEntries(entries) : undefined;
 }
 
 export function parseProviderStep(text: string): ProviderStep {

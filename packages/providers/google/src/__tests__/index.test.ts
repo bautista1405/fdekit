@@ -27,6 +27,12 @@ describe('googleProvider', () => {
       fetch: async (input, init) => {
         calls.push({ input, init });
         return Response.json({
+          usageMetadata: {
+            promptTokenCount: 75,
+            cachedContentTokenCount: 5,
+            candidatesTokenCount: 18,
+            thoughtsTokenCount: 3,
+          },
           candidates: [
             {
               content: {
@@ -61,6 +67,7 @@ describe('googleProvider', () => {
       toolResults: [],
       stepIndex: 0,
       maxSteps: 8,
+      outputTokenLimit: 80,
     });
 
     expect(step).toEqual({
@@ -68,6 +75,12 @@ describe('googleProvider', () => {
       toolName: 'ticket.get',
       args: { ticketId: 'tick_1001' },
       reason: 'Need ticket context',
+      usage: {
+        inputTokens: 75,
+        cachedInputTokens: 5,
+        outputTokens: 21,
+        reasoningTokens: 3,
+      },
     });
     expect(calls[0].input).toBe('https://generativelanguage.test/v1beta/models/gemini-3.5-flash:generateContent');
     expect(calls[0].init?.headers).toMatchObject({
@@ -76,7 +89,7 @@ describe('googleProvider', () => {
     });
     expect(JSON.parse(String(calls[0].init?.body))).toMatchObject({
       generationConfig: {
-        maxOutputTokens: 800,
+        maxOutputTokens: 80,
         responseMimeType: 'application/json',
         temperature: 1,
       },

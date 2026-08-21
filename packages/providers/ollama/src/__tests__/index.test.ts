@@ -33,6 +33,8 @@ describe('ollamaProvider', () => {
       fetch: async (input, init) => {
         calls.push({ input, init });
         return Response.json({
+          prompt_eval_count: 64,
+          eval_count: 16,
           message: {
             role: 'assistant',
             content: JSON.stringify({
@@ -60,6 +62,7 @@ describe('ollamaProvider', () => {
       toolResults: [],
       stepIndex: 0,
       maxSteps: 8,
+      outputTokenLimit: 200,
     });
 
     expect(step).toEqual({
@@ -67,6 +70,10 @@ describe('ollamaProvider', () => {
       toolName: 'codebase.search',
       args: { query: 'TODO(fdekit)' },
       reason: 'Need codebase evidence',
+      usage: {
+        inputTokens: 64,
+        outputTokens: 16,
+      },
     });
     expect(calls[0].input).toBe('http://ollama.test/api/chat');
     expect(calls[0].init?.headers).toMatchObject({
@@ -78,7 +85,7 @@ describe('ollamaProvider', () => {
       format: 'json',
       keep_alive: '5m',
       options: {
-        num_predict: 400,
+        num_predict: 200,
         temperature: 0.2,
       },
     });

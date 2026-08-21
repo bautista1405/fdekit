@@ -30,8 +30,9 @@ export interface ProviderPlannerInputPayload {
 }
 
 export function buildProviderPlannerInstructions(context: ProviderPlanContext): string {
-  const instructions = context.contextPlan
-    ? context.contextPlan.model.instructions.map((item) => item.content).join('\n\n')
+  const modelContext = context.modelContext ?? context.contextPlan?.model;
+  const instructions = modelContext
+    ? modelContext.instructions.map((item) => item.content).join('\n\n')
     : context.instructions;
 
   return [
@@ -39,6 +40,7 @@ export function buildProviderPlannerInstructions(context: ProviderPlanContext): 
     'Decide the next step for this agent loop',
     'Return only strict JSON with one of these shapes:',
     '{"type":"tool_call","toolName":"tool.name","args":{},"reason":"short reason"}',
+    '{"type":"input_request","prompt":"question for the user","inputSchema":{"type":"object"}}',
     '{"type":"final","message":"final answer for the user"}',
     'Use only available tool names; prefer a final answer when enough tool results are present',
     'For tool_call steps, args must match the selected tool argsSchema and include every required property',
@@ -55,9 +57,11 @@ export function buildProviderPlannerInput(context: ProviderPlanContext): string 
 }
 
 export function buildProviderPlannerInputPayload(context: ProviderPlanContext): ProviderPlannerInputPayload {
-  if (context.contextPlan) {
+  const modelContext = context.modelContext ?? context.contextPlan?.model;
+
+  if (modelContext) {
     return {
-      modelContext: context.contextPlan.model,
+      modelContext,
       stepIndex: context.stepIndex,
       maxSteps: context.maxSteps,
       availableTools: collectProviderToolMetadata(context),
@@ -77,8 +81,10 @@ export function buildProviderPlannerInputPayload(context: ProviderPlanContext): 
 }
 
 export function collectProviderToolMetadata(context: ProviderPlanContext): ProviderPlannerToolMetadata[] {
-  if (context.contextPlan) {
-    return context.contextPlan.model.tools.map((tool) => ({
+  const modelContext = context.modelContext ?? context.contextPlan?.model;
+
+  if (modelContext) {
+    return modelContext.tools.map((tool) => ({
       name: tool.name,
       description: tool.description,
       argsSchema: tool.inputSchema,
@@ -98,6 +104,22 @@ export function collectProviderToolMetadata(context: ProviderPlanContext): Provi
     category: tool.category,
     tags: tool.tags,
   }));
+}
+
+/** Intersect a provider configuration cap with the runtime's per-step limit. */
+export function providerOutputTokenLimit(
+  context: ProviderPlanContext,
+  configuredLimit: number,
+): number {
+  const limit = context.outputTokenLimit === undefined
+    ? configuredLimit
+    : Math.min(configuredLimit, context.outputTokenLimit);
+
+  if (!Number.isInteger(limit) || limit <= 0) {
+    throw new Error('Provider output token limit must be a positive integer');
+  }
+
+  return limit;
 }
 
 export function parseProviderPlannerStep(text: string, providerName = 'Provider'): ProviderStep {
@@ -127,6 +149,26 @@ export function parseProviderPlannerStep(text: string, providerName = 'Provider'
       args: asRecord(record.args),
       reason: getString(record.reason),
     } satisfies ProviderToolCallStep;
+  }
+
+  if (record.type === 'input_request') {
+    const prompt = getString(record.prompt);
+    const inputSchema = asRecord(record.inputSchema);
+    const disclosure = getString(record.disclosure);
+    if (!prompt) throw new Error(`${providerName} input request step is missing a prompt`);
+    if (Object.keys(inputSchema).length === 0) {
+      throw new Error(`${providerName} input request step is missing inputSchema`);
+    }
+    if (disclosure && !['public', 'organization', 'restricted'].includes(disclosure)) {
+      throw new Error(`${providerName} input request step has invalid disclosure`);
+    }
+    return {
+      type: 'input_request',
+      prompt,
+      inputSchema,
+      ...(disclosure ? { disclosure: disclosure as 'public' | 'organization' | 'restricted' } : {}),
+      ...(record.defaultValue === undefined ? {} : { defaultValue: record.defaultValue }),
+    };
   }
 
   throw new Error(`${providerName} provider returned unsupported step type: ${String(record.type)}`);

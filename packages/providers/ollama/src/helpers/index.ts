@@ -7,11 +7,13 @@ import {
   getString,
   getHttpResilienceOptions,
   parseProviderPlannerStep,
+  providerOutputTokenLimit,
   requestProviderJson,
   type HttpResilienceClient,
   type ProviderConfig,
   type ProviderPlanContext,
   type ProviderStep,
+  type ProviderUsage,
 } from '@fdekit/core';
 import type { OllamaRuntimeOptions } from '../interfaces/index.js';
 
@@ -58,7 +60,7 @@ export async function createChat(
           format: config.options?.format ?? 'json',
           keep_alive: config.options?.keepAlive ?? '5m',
           options: compactRecord({
-            num_predict: getNumber(config.options?.numPredict) ?? 800,
+            num_predict: providerOutputTokenLimit(context, getNumber(config.options?.numPredict) ?? 800),
             temperature: getNumber(config.options?.temperature) ?? 0,
           }),
         }),
@@ -92,6 +94,16 @@ export function extractOllamaText(response: unknown): string {
   }
 
   throw new Error('Ollama response did not include message content');
+}
+
+export function extractOllamaUsage(response: unknown): ProviderUsage | undefined {
+  const record = asRecord(response);
+  const normalized: ProviderUsage = {
+    inputTokens: getNumber(record.prompt_eval_count),
+    outputTokens: getNumber(record.eval_count),
+  };
+  const entries = Object.entries(normalized).filter(([, value]) => value !== undefined);
+  return entries.length > 0 ? Object.fromEntries(entries) : undefined;
 }
 
 export function parseProviderStep(text: string): ProviderStep {

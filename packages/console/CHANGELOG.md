@@ -1,5 +1,12 @@
 # @fdekit/console
 
+## 0.6.1
+
+### Patch Changes
+
+- @fdekit/core@0.6.1
+- @fdekit/runtime@0.6.1
+
 ## 0.6.0
 
 ### Minor Changes

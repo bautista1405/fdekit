@@ -3,7 +3,7 @@
 <!-- Maintained via scripts/generate-api-docs.mjs. -->
 Run `npm run docs:api` to refresh this page after changing public exports.
 
-Applies to `@fdekit/core` v0.5.3.
+Applies to `@fdekit/core` v0.5.4.
 
 Declaration source: `packages/core/dist/index.d.ts`.
 
@@ -52,7 +52,7 @@ Declaration source: `packages/core/dist/index.d.ts`.
 
 ## Export Count
 
-This page documents 290 public root exports from `@fdekit/core`: 97 functions/values and 193 types/interfaces.
+This page documents 298 public root exports from `@fdekit/core`: 98 functions/values and 200 types/interfaces.
 
 ## Functions And Values
 
@@ -138,6 +138,7 @@ This page documents 290 public root exports from `@fdekit/core`: 97 functions/va
 | <a id="pick"></a>`pick` | function | [packages/core/src/helpers/index.ts](../../packages/core/src/helpers/index.ts) |
 | <a id="providererrormessage"></a>`providerErrorMessage` | function | [packages/core/src/provider-planner/index.ts](../../packages/core/src/provider-planner/index.ts) |
 | <a id="providerfromenv"></a>`providerFromEnv` | function | [packages/core/src/providers/index.ts](../../packages/core/src/providers/index.ts) |
+| <a id="provideroutputtokenlimit"></a>`providerOutputTokenLimit` | function | [packages/core/src/provider-planner/index.ts](../../packages/core/src/provider-planner/index.ts) |
 | <a id="readenvvalue"></a>`readEnvValue` | function | [packages/core/src/connector-http/index.ts](../../packages/core/src/connector-http/index.ts) |
 | <a id="readprocessenv"></a>`readProcessEnv` | function | [packages/core/src/helpers/index.ts](../../packages/core/src/helpers/index.ts) |
 | <a id="redactsecrets"></a>`redactSecrets` | function | [packages/core/src/policies/index.ts](../../packages/core/src/policies/index.ts) |
@@ -225,6 +226,8 @@ This page documents 290 public root exports from `@fdekit/core`: 97 functions/va
 | <a id="executionstate"></a>`ExecutionState` | type | [packages/core/src/types/execution.ts](../../packages/core/src/types/execution.ts) |
 | <a id="executionstep"></a>`ExecutionStep` | interface | [packages/core/src/types/execution.ts](../../packages/core/src/types/execution.ts) |
 | <a id="expectedfindingmatch"></a>`ExpectedFindingMatch` | interface | [packages/core/src/evals/index.ts](../../packages/core/src/evals/index.ts) |
+| <a id="externalactionrecord"></a>`ExternalActionRecord` | interface | [packages/core/src/types/execution.ts](../../packages/core/src/types/execution.ts) |
+| <a id="externalactionstatus"></a>`ExternalActionStatus` | type | [packages/core/src/types/execution.ts](../../packages/core/src/types/execution.ts) |
 | <a id="findingcategory"></a>`FindingCategory` | type | [packages/core/src/reviews/index.ts](../../packages/core/src/reviews/index.ts) |
 | <a id="findingseverity"></a>`FindingSeverity` | type | [packages/core/src/reviews/index.ts](../../packages/core/src/reviews/index.ts) |
 | <a id="governancedefinition"></a>`GovernanceDefinition` | interface | [packages/core/src/types/governance.ts](../../packages/core/src/types/governance.ts) |
@@ -288,6 +291,7 @@ This page documents 290 public root exports from `@fdekit/core`: 97 functions/va
 | <a id="providerconfig"></a>`ProviderConfig` | interface | [packages/core/src/types/provider.ts](../../packages/core/src/types/provider.ts) |
 | <a id="providerfinalstep"></a>`ProviderFinalStep` | interface | [packages/core/src/types/provider.ts](../../packages/core/src/types/provider.ts) |
 | <a id="providerfromenvoptions"></a>`ProviderFromEnvOptions` | interface | [packages/core/src/providers/index.ts](../../packages/core/src/providers/index.ts) |
+| <a id="providerinputrequeststep"></a>`ProviderInputRequestStep` | interface | [packages/core/src/types/provider.ts](../../packages/core/src/types/provider.ts) |
 | <a id="providerjsonrequestoptions"></a>`ProviderJsonRequestOptions` | interface | [packages/core/src/provider-planner/index.ts](../../packages/core/src/provider-planner/index.ts) |
 | <a id="providername"></a>`ProviderName` | type | [packages/core/src/types/shared.ts](../../packages/core/src/types/shared.ts) |
 | <a id="providerplancontext"></a>`ProviderPlanContext` | interface | [packages/core/src/types/provider.ts](../../packages/core/src/types/provider.ts) |
@@ -299,6 +303,7 @@ This page documents 290 public root exports from `@fdekit/core`: 97 functions/va
 | <a id="providerstep"></a>`ProviderStep` | type | [packages/core/src/types/provider.ts](../../packages/core/src/types/provider.ts) |
 | <a id="providertoolcallstep"></a>`ProviderToolCallStep` | interface | [packages/core/src/types/provider.ts](../../packages/core/src/types/provider.ts) |
 | <a id="providertoolresult"></a>`ProviderToolResult` | interface | [packages/core/src/types/provider.ts](../../packages/core/src/types/provider.ts) |
+| <a id="providerusage"></a>`ProviderUsage` | interface | [packages/core/src/types/provider.ts](../../packages/core/src/types/provider.ts) |
 | <a id="recipedefinition"></a>`RecipeDefinition` | interface | [packages/core/src/types/deployment.ts](../../packages/core/src/types/deployment.ts) |
 | <a id="recipereference"></a>`RecipeReference` | interface | [packages/core/src/types/deployment.ts](../../packages/core/src/types/deployment.ts) |
 | <a id="repositorychangeset"></a>`RepositoryChangeSet` | interface | [packages/core/src/types/repository.ts](../../packages/core/src/types/repository.ts) |
@@ -349,6 +354,9 @@ This page documents 290 public root exports from `@fdekit/core`: 97 functions/va
 | <a id="usagemeasurement"></a>`UsageMeasurement` | interface | [packages/core/src/types/execution.ts](../../packages/core/src/types/execution.ts) |
 | <a id="validaterepositorychangesetoptions"></a>`ValidateRepositoryChangeSetOptions` | interface | [packages/core/src/repositories/index.ts](../../packages/core/src/repositories/index.ts) |
 | <a id="versionedexecutionrecord"></a>`VersionedExecutionRecord` | interface | [packages/core/src/types/execution.ts](../../packages/core/src/types/execution.ts) |
+| <a id="workerleasepurpose"></a>`WorkerLeasePurpose` | type | [packages/core/src/types/execution.ts](../../packages/core/src/types/execution.ts) |
+| <a id="workerleaserecord"></a>`WorkerLeaseRecord` | interface | [packages/core/src/types/execution.ts](../../packages/core/src/types/execution.ts) |
+| <a id="workerleasestatus"></a>`WorkerLeaseStatus` | type | [packages/core/src/types/execution.ts](../../packages/core/src/types/execution.ts) |
 | <a id="workflowdefinition"></a>`WorkflowDefinition` | interface | [packages/core/src/types/workflow.ts](../../packages/core/src/types/workflow.ts) |
 | <a id="workflowscorecarddefinition"></a>`WorkflowScorecardDefinition` | interface | [packages/core/src/types/workflow.ts](../../packages/core/src/types/workflow.ts) |
 | <a id="workflowsignalrating"></a>`WorkflowSignalRating` | type | [packages/core/src/types/workflow.ts](../../packages/core/src/types/workflow.ts) |

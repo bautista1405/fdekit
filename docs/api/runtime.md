@@ -3,7 +3,7 @@
 <!-- Maintained via scripts/generate-api-docs.mjs. -->
 Run `npm run docs:api` to refresh this page after changing public exports.
 
-Applies to `@fdekit/runtime` v0.5.3.
+Applies to `@fdekit/runtime` v0.5.4.
 
 Declaration source: `packages/runtime/dist/index.d.ts`.
 
@@ -56,16 +56,19 @@ Declaration source: `packages/runtime/dist/index.d.ts`.
 
 ## Export Count
 
-This page documents 238 public root exports from `@fdekit/runtime`: 98 functions/values and 140 types/interfaces.
+This page documents 313 public root exports from `@fdekit/runtime`: 135 functions/values and 178 types/interfaces.
 
 ## Functions And Values
 
 | Symbol | Kind | Defined in |
 | --- | --- | --- |
+| <a id="acquiresessionlease"></a>`acquireSessionLease` | function | [packages/runtime/src/sessions/coordination.ts](../../packages/runtime/src/sessions/coordination.ts) |
 | <a id="agentrunerror"></a>`AgentRunError` | class | [packages/runtime/src/agents/index.ts](../../packages/runtime/src/agents/index.ts) |
 | <a id="allowedexecutionstatetransitions"></a>`allowedExecutionStateTransitions` | function | [packages/runtime/src/sessions/state-machine.ts](../../packages/runtime/src/sessions/state-machine.ts) |
 | <a id="appendauditlog"></a>`appendAuditLog` | function | [packages/runtime/src/governance/index.ts](../../packages/runtime/src/governance/index.ts) |
 | <a id="appendjsonlartifact"></a>`appendJsonlArtifact` | function | [packages/runtime/src/artifact-store/operations.ts](../../packages/runtime/src/artifact-store/operations.ts) |
+| <a id="appendsessioncheckpoint"></a>`appendSessionCheckpoint` | function | [packages/runtime/src/sessions/coordination.ts](../../packages/runtime/src/sessions/coordination.ts) |
+| <a id="appendsessioneventwithoutbox"></a>`appendSessionEventWithOutbox` | function | [packages/runtime/src/sessions/coordination.ts](../../packages/runtime/src/sessions/coordination.ts) |
 | <a id="approvaldecisionconflicterror"></a>`ApprovalDecisionConflictError` | class | [packages/runtime/src/governance/index.ts](../../packages/runtime/src/governance/index.ts) |
 | <a id="approvalfingerprint"></a>`approvalFingerprint` | function | [packages/runtime/src/governance/index.ts](../../packages/runtime/src/governance/index.ts) |
 | <a id="approveapproval"></a>`approveApproval` | function | [packages/runtime/src/governance/index.ts](../../packages/runtime/src/governance/index.ts) |
@@ -80,33 +83,49 @@ This page documents 238 public root exports from `@fdekit/runtime`: 98 functions
 | <a id="artifactprotocolerror"></a>`ArtifactProtocolError` | class | [packages/runtime/src/artifact-store/http-store.ts](../../packages/runtime/src/artifact-store/http-store.ts) |
 | <a id="ass3artifactclient"></a>`asS3ArtifactClient` | function | [packages/runtime/src/artifact-store/s3-store.ts](../../packages/runtime/src/artifact-store/s3-store.ts) |
 | <a id="assertexecutionstatetransition"></a>`assertExecutionStateTransition` | function | [packages/runtime/src/sessions/state-machine.ts](../../packages/runtime/src/sessions/state-machine.ts) |
+| <a id="assertsessionlease"></a>`assertSessionLease` | function | [packages/runtime/src/sessions/coordination.ts](../../packages/runtime/src/sessions/coordination.ts) |
 | <a id="authorizeretrieval"></a>`authorizeRetrieval` | function | [packages/runtime/src/context/index.ts](../../packages/runtime/src/context/index.ts) |
+| <a id="cancelsession"></a>`cancelSession` | function | [packages/runtime/src/sessions/lifecycle.ts](../../packages/runtime/src/sessions/lifecycle.ts) |
 | <a id="cantransitionexecutionstate"></a>`canTransitionExecutionState` | function | [packages/runtime/src/sessions/state-machine.ts](../../packages/runtime/src/sessions/state-machine.ts) |
 | <a id="chunkdocument"></a>`chunkDocument` | function | [packages/runtime/src/intelligence/local.ts](../../packages/runtime/src/intelligence/local.ts) |
 | <a id="collectevals"></a>`collectEvals` | function | [packages/runtime/src/evals/index.ts](../../packages/runtime/src/evals/index.ts) |
 | <a id="collectreportpolicynames"></a>`collectReportPolicyNames` | function | [packages/runtime/src/reports.ts](../../packages/runtime/src/reports.ts) |
+| <a id="commitexternalaction"></a>`commitExternalAction` | function | [packages/runtime/src/sessions/coordination.ts](../../packages/runtime/src/sessions/coordination.ts) |
 | <a id="compiledeployment"></a>`compileDeployment` | function | [packages/runtime/src/deployments/compiler.ts](../../packages/runtime/src/deployments/compiler.ts) |
 | <a id="confignotfounderror"></a>`ConfigNotFoundError` | class | [packages/runtime/src/config/index.ts](../../packages/runtime/src/config/index.ts) |
 | <a id="createartifactstore"></a>`createArtifactStore` | function | [packages/runtime/src/artifact-store/factory.ts](../../packages/runtime/src/artifact-store/factory.ts) |
 | <a id="createartifactstorefromdefinition"></a>`createArtifactStoreFromDefinition` | function | [packages/runtime/src/artifact-store/factory.ts](../../packages/runtime/src/artifact-store/factory.ts) |
 | <a id="createdeploymentsnapshot"></a>`createDeploymentSnapshot` | function | [packages/runtime/src/deployments/index.ts](../../packages/runtime/src/deployments/index.ts) |
 | <a id="createdevtrace"></a>`createDevTrace` | function | [packages/runtime/src/dev.ts](../../packages/runtime/src/dev.ts) |
+| <a id="createdockerexecutionbackend"></a>`createDockerExecutionBackend` | function | [packages/runtime/src/execution/docker-backend.ts](../../packages/runtime/src/execution/docker-backend.ts) |
+| <a id="createenvironmentcredentialbroker"></a>`createEnvironmentCredentialBroker` | function | [packages/runtime/src/execution/credential-broker.ts](../../packages/runtime/src/execution/credential-broker.ts) |
 | <a id="createfileartifactdeliveryqueue"></a>`createFileArtifactDeliveryQueue` | function | [packages/runtime/src/artifact-store/delivery.ts](../../packages/runtime/src/artifact-store/delivery.ts) |
 | <a id="createfileartifactstore"></a>`createFileArtifactStore` | function | [packages/runtime/src/artifact-store/local-store.ts](../../packages/runtime/src/artifact-store/local-store.ts) |
 | <a id="createfilesessionstore"></a>`createFileSessionStore` | function | [packages/runtime/src/sessions/file-store.ts](../../packages/runtime/src/sessions/file-store.ts) |
 | <a id="createfssourcereader"></a>`createFsSourceReader` | function | [packages/runtime/src/grader/index.ts](../../packages/runtime/src/grader/index.ts) |
 | <a id="createhttpartifactdeliverytarget"></a>`createHttpArtifactDeliveryTarget` | function | [packages/runtime/src/artifact-store/delivery.ts](../../packages/runtime/src/artifact-store/delivery.ts) |
 | <a id="createhttpartifactstore"></a>`createHttpArtifactStore` | function | [packages/runtime/src/artifact-store/http-store.ts](../../packages/runtime/src/artifact-store/http-store.ts) |
+| <a id="createlocalexecutionbackend"></a>`createLocalExecutionBackend` | function | [packages/runtime/src/execution/local-backend.ts](../../packages/runtime/src/execution/local-backend.ts) |
 | <a id="createmockprovider"></a>`createMockProvider` | function | [packages/runtime/src/providers/mock.ts](../../packages/runtime/src/providers/mock.ts) |
 | <a id="creates3artifactstore"></a>`createS3ArtifactStore` | function | [packages/runtime/src/artifact-store/s3-store.ts](../../packages/runtime/src/artifact-store/s3-store.ts) |
 | <a id="createusageledger"></a>`createUsageLedger` | function | [packages/runtime/src/intelligence/local.ts](../../packages/runtime/src/intelligence/local.ts) |
+| <a id="defineexecutiontool"></a>`defineExecutionTool` | function | [packages/runtime/src/execution/tool.ts](../../packages/runtime/src/execution/tool.ts) |
 | <a id="diffdeploymentsnapshots"></a>`diffDeploymentSnapshots` | function | [packages/runtime/src/deployments/index.ts](../../packages/runtime/src/deployments/index.ts) |
+| <a id="dispatchexternalaction"></a>`dispatchExternalAction` | function | [packages/runtime/src/sessions/coordination.ts](../../packages/runtime/src/sessions/coordination.ts) |
+| <a id="enqueuesessionoutbox"></a>`enqueueSessionOutbox` | function | [packages/runtime/src/sessions/coordination.ts](../../packages/runtime/src/sessions/coordination.ts) |
 | <a id="estimateinferenceusage"></a>`estimateInferenceUsage` | function | [packages/runtime/src/intelligence/local.ts](../../packages/runtime/src/intelligence/local.ts) |
 | <a id="executegovernedtoolsequence"></a>`executeGovernedToolSequence` | function | [packages/runtime/src/agents/index.ts](../../packages/runtime/src/agents/index.ts) |
+| <a id="execution-backend-protocol-version"></a>`EXECUTION_BACKEND_PROTOCOL_VERSION` | const | [packages/runtime/src/execution/types.ts](../../packages/runtime/src/execution/types.ts) |
+| <a id="expiresession"></a>`expireSession` | function | [packages/runtime/src/sessions/lifecycle.ts](../../packages/runtime/src/sessions/lifecycle.ts) |
+| <a id="externalactionconflicterror"></a>`ExternalActionConflictError` | class | [packages/runtime/src/sessions/coordination.ts](../../packages/runtime/src/sessions/coordination.ts) |
+| <a id="externalactionreconciliationrequirederror"></a>`ExternalActionReconciliationRequiredError` | class | [packages/runtime/src/sessions/coordination.ts](../../packages/runtime/src/sessions/coordination.ts) |
+| <a id="externalactionstateerror"></a>`ExternalActionStateError` | class | [packages/runtime/src/sessions/coordination.ts](../../packages/runtime/src/sessions/coordination.ts) |
+| <a id="failexternalaction"></a>`failExternalAction` | function | [packages/runtime/src/sessions/coordination.ts](../../packages/runtime/src/sessions/coordination.ts) |
 | <a id="filterevalsbytarget"></a>`filterEvalsByTarget` | function | [packages/runtime/src/evals/index.ts](../../packages/runtime/src/evals/index.ts) |
 | <a id="findapproval"></a>`findApproval` | function | [packages/runtime/src/governance/index.ts](../../packages/runtime/src/governance/index.ts) |
 | <a id="findconfigfile"></a>`findConfigFile` | function | [packages/runtime/src/config/index.ts](../../packages/runtime/src/config/index.ts) |
 | <a id="findprojectdir"></a>`findProjectDir` | function | [packages/runtime/src/config/index.ts](../../packages/runtime/src/config/index.ts) |
+| <a id="getcurrentsessionlease"></a>`getCurrentSessionLease` | function | [packages/runtime/src/sessions/coordination.ts](../../packages/runtime/src/sessions/coordination.ts) |
 | <a id="http-artifact-default-producer"></a>`HTTP_ARTIFACT_DEFAULT_PRODUCER` | const | [packages/runtime/src/artifact-store/http-store.ts](../../packages/runtime/src/artifact-store/http-store.ts) |
 | <a id="http-artifact-protocol-version"></a>`HTTP_ARTIFACT_PROTOCOL_VERSION` | const | [packages/runtime/src/artifact-store/http-store.ts](../../packages/runtime/src/artifact-store/http-store.ts) |
 | <a id="invalidexecutionstatetransitionerror"></a>`InvalidExecutionStateTransitionError` | class | [packages/runtime/src/sessions/state-machine.ts](../../packages/runtime/src/sessions/state-machine.ts) |
@@ -119,10 +138,15 @@ This page documents 238 public root exports from `@fdekit/runtime`: 98 functions
 | <a id="localpolicyawarecache"></a>`LocalPolicyAwareCache` | class | [packages/runtime/src/intelligence/local.ts](../../packages/runtime/src/intelligence/local.ts) |
 | <a id="localretrievalindex"></a>`LocalRetrievalIndex` | class | [packages/runtime/src/intelligence/local.ts](../../packages/runtime/src/intelligence/local.ts) |
 | <a id="markapprovalexecuted"></a>`markApprovalExecuted` | function | [packages/runtime/src/governance/index.ts](../../packages/runtime/src/governance/index.ts) |
+| <a id="markexternalactionuncertain"></a>`markExternalActionUncertain` | function | [packages/runtime/src/sessions/coordination.ts](../../packages/runtime/src/sessions/coordination.ts) |
+| <a id="marksessionoutboxdelivered"></a>`markSessionOutboxDelivered` | function | [packages/runtime/src/sessions/coordination.ts](../../packages/runtime/src/sessions/coordination.ts) |
+| <a id="observeexternalaction"></a>`observeExternalAction` | function | [packages/runtime/src/sessions/coordination.ts](../../packages/runtime/src/sessions/coordination.ts) |
 | <a id="parsejsonl"></a>`parseJsonl` | function | [packages/runtime/src/artifact-store/json.ts](../../packages/runtime/src/artifact-store/json.ts) |
 | <a id="planstepcontext"></a>`planStepContext` | function | [packages/runtime/src/context/index.ts](../../packages/runtime/src/context/index.ts) |
+| <a id="prepareexternalaction"></a>`prepareExternalAction` | function | [packages/runtime/src/sessions/coordination.ts](../../packages/runtime/src/sessions/coordination.ts) |
 | <a id="projectsession"></a>`projectSession` | function | [packages/runtime/src/sessions/file-store.ts](../../packages/runtime/src/sessions/file-store.ts) |
 | <a id="projectskillloaderror"></a>`ProjectSkillLoadError` | class | [packages/runtime/src/skills/index.ts](../../packages/runtime/src/skills/index.ts) |
+| <a id="purgesession"></a>`purgeSession` | function | [packages/runtime/src/sessions/lifecycle.ts](../../packages/runtime/src/sessions/lifecycle.ts) |
 | <a id="readapproval"></a>`readApproval` | function | [packages/runtime/src/governance/index.ts](../../packages/runtime/src/governance/index.ts) |
 | <a id="readapprovals"></a>`readApprovals` | function | [packages/runtime/src/governance/index.ts](../../packages/runtime/src/governance/index.ts) |
 | <a id="readauditlog"></a>`readAuditLog` | function | [packages/runtime/src/governance/index.ts](../../packages/runtime/src/governance/index.ts) |
@@ -133,28 +157,41 @@ This page documents 238 public root exports from `@fdekit/runtime`: 98 functions
 | <a id="readjsonifexists"></a>`readJsonIfExists` | function | [packages/runtime/src/artifact-store/json.ts](../../packages/runtime/src/artifact-store/json.ts) |
 | <a id="readjsonlartifact"></a>`readJsonlArtifact` | function | [packages/runtime/src/artifact-store/operations.ts](../../packages/runtime/src/artifact-store/operations.ts) |
 | <a id="readtextartifact"></a>`readTextArtifact` | function | [packages/runtime/src/artifact-store/operations.ts](../../packages/runtime/src/artifact-store/operations.ts) |
+| <a id="reconcileexternalaction"></a>`reconcileExternalAction` | function | [packages/runtime/src/sessions/coordination.ts](../../packages/runtime/src/sessions/coordination.ts) |
+| <a id="recordsessionheartbeat"></a>`recordSessionHeartbeat` | function | [packages/runtime/src/sessions/coordination.ts](../../packages/runtime/src/sessions/coordination.ts) |
+| <a id="recordsessioninbox"></a>`recordSessionInbox` | function | [packages/runtime/src/sessions/coordination.ts](../../packages/runtime/src/sessions/coordination.ts) |
 | <a id="redactforgovernance"></a>`redactForGovernance` | function | [packages/runtime/src/governance/helpers/index.ts](../../packages/runtime/src/governance/helpers/index.ts) |
 | <a id="rejectapproval"></a>`rejectApproval` | function | [packages/runtime/src/governance/index.ts](../../packages/runtime/src/governance/index.ts) |
+| <a id="releasesessionlease"></a>`releaseSessionLease` | function | [packages/runtime/src/sessions/coordination.ts](../../packages/runtime/src/sessions/coordination.ts) |
 | <a id="rendermacroevalreport"></a>`renderMacroEvalReport` | function | [packages/runtime/src/macro-evals/index.ts](../../packages/runtime/src/macro-evals/index.ts) |
 | <a id="renderreport"></a>`renderReport` | function | [packages/runtime/src/reports.ts](../../packages/runtime/src/reports.ts) |
 | <a id="rendertraceviewer"></a>`renderTraceViewer` | function | [packages/runtime/src/traces/index.ts](../../packages/runtime/src/traces/index.ts) |
+| <a id="renewsessionlease"></a>`renewSessionLease` | function | [packages/runtime/src/sessions/coordination.ts](../../packages/runtime/src/sessions/coordination.ts) |
 | <a id="requestapproval"></a>`requestApproval` | function | [packages/runtime/src/governance/index.ts](../../packages/runtime/src/governance/index.ts) |
 | <a id="requireconfigfile"></a>`requireConfigFile` | function | [packages/runtime/src/config/index.ts](../../packages/runtime/src/config/index.ts) |
+| <a id="reservedelegationbudget"></a>`reserveDelegationBudget` | function | [packages/runtime/src/context/index.ts](../../packages/runtime/src/context/index.ts) |
 | <a id="resumeagentrun"></a>`resumeAgentRun` | function | [packages/runtime/src/agents/index.ts](../../packages/runtime/src/agents/index.ts) |
+| <a id="revisepausedapproval"></a>`revisePausedApproval` | function | [packages/runtime/src/agents/index.ts](../../packages/runtime/src/agents/index.ts) |
 | <a id="runagent"></a>`runAgent` | function | [packages/runtime/src/agents/index.ts](../../packages/runtime/src/agents/index.ts) |
+| <a id="rundocumentationskillshadow"></a>`runDocumentationSkillShadow` | function | [packages/runtime/src/skills/documentation-shadow.ts](../../packages/runtime/src/skills/documentation-shadow.ts) |
 | <a id="runeval"></a>`runEval` | function | [packages/runtime/src/evals/index.ts](../../packages/runtime/src/evals/index.ts) |
 | <a id="runevals"></a>`runEvals` | function | [packages/runtime/src/evals/index.ts](../../packages/runtime/src/evals/index.ts) |
 | <a id="rungrader"></a>`runGrader` | function | [packages/runtime/src/grader/index.ts](../../packages/runtime/src/grader/index.ts) |
 | <a id="runmacroevals"></a>`runMacroEvals` | function | [packages/runtime/src/macro-evals/index.ts](../../packages/runtime/src/macro-evals/index.ts) |
+| <a id="schedulesessionretry"></a>`scheduleSessionRetry` | function | [packages/runtime/src/sessions/lifecycle.ts](../../packages/runtime/src/sessions/lifecycle.ts) |
 | <a id="selectinferencetarget"></a>`selectInferenceTarget` | function | [packages/runtime/src/context/index.ts](../../packages/runtime/src/context/index.ts) |
 | <a id="session-event-types"></a>`SESSION_EVENT_TYPES` | const | [packages/runtime/src/sessions/types.ts](../../packages/runtime/src/sessions/types.ts) |
 | <a id="session-protocol-version"></a>`SESSION_PROTOCOL_VERSION` | const | [packages/runtime/src/sessions/types.ts](../../packages/runtime/src/sessions/types.ts) |
 | <a id="sessioncorruptionerror"></a>`SessionCorruptionError` | class | [packages/runtime/src/sessions/file-store.ts](../../packages/runtime/src/sessions/file-store.ts) |
 | <a id="sessioneventconflicterror"></a>`SessionEventConflictError` | class | [packages/runtime/src/sessions/file-store.ts](../../packages/runtime/src/sessions/file-store.ts) |
+| <a id="sessionleaseconflicterror"></a>`SessionLeaseConflictError` | class | [packages/runtime/src/sessions/coordination.ts](../../packages/runtime/src/sessions/coordination.ts) |
 | <a id="sessionlocktimeouterror"></a>`SessionLockTimeoutError` | class | [packages/runtime/src/sessions/file-store.ts](../../packages/runtime/src/sessions/file-store.ts) |
 | <a id="sessionrevisionconflicterror"></a>`SessionRevisionConflictError` | class | [packages/runtime/src/sessions/file-store.ts](../../packages/runtime/src/sessions/file-store.ts) |
 | <a id="sessionsnapshotconflicterror"></a>`SessionSnapshotConflictError` | class | [packages/runtime/src/sessions/file-store.ts](../../packages/runtime/src/sessions/file-store.ts) |
 | <a id="sessiontombstonederror"></a>`SessionTombstonedError` | class | [packages/runtime/src/sessions/file-store.ts](../../packages/runtime/src/sessions/file-store.ts) |
+| <a id="stalesessionleaseerror"></a>`StaleSessionLeaseError` | class | [packages/runtime/src/sessions/coordination.ts](../../packages/runtime/src/sessions/coordination.ts) |
+| <a id="supersedeapproval"></a>`supersedeApproval` | function | [packages/runtime/src/governance/index.ts](../../packages/runtime/src/governance/index.ts) |
+| <a id="tombstonesession"></a>`tombstoneSession` | function | [packages/runtime/src/sessions/lifecycle.ts](../../packages/runtime/src/sessions/lifecycle.ts) |
 | <a id="validatedeployment"></a>`validateDeployment` | function | [packages/runtime/src/deployments/validation.ts](../../packages/runtime/src/deployments/validation.ts) |
 | <a id="verifyfindinglocations"></a>`verifyFindingLocations` | function | [packages/runtime/src/grader/index.ts](../../packages/runtime/src/grader/index.ts) |
 | <a id="writejsonartifact"></a>`writeJsonArtifact` | function | [packages/runtime/src/artifact-store/operations.ts](../../packages/runtime/src/artifact-store/operations.ts) |
@@ -165,12 +202,17 @@ This page documents 238 public root exports from `@fdekit/runtime`: 98 functions
 
 | Symbol | Kind | Defined in |
 | --- | --- | --- |
+| <a id="acquiresessionleaseoptions"></a>`AcquireSessionLeaseOptions` | interface | [packages/runtime/src/sessions/coordination.ts](../../packages/runtime/src/sessions/coordination.ts) |
+| <a id="advanceexternalactionoptions"></a>`AdvanceExternalActionOptions` | interface | [packages/runtime/src/sessions/coordination.ts](../../packages/runtime/src/sessions/coordination.ts) |
+| <a id="advancesessionleaseoptions"></a>`AdvanceSessionLeaseOptions` | interface | [packages/runtime/src/sessions/coordination.ts](../../packages/runtime/src/sessions/coordination.ts) |
+| <a id="agentcontextplanningoptions"></a>`AgentContextPlanningOptions` | interface | [packages/runtime/src/agents/interfaces/index.ts](../../packages/runtime/src/agents/interfaces/index.ts) |
 | <a id="agentprovider"></a>`AgentProvider` | interface | [packages/core/src/types/provider.ts](../../packages/core/src/types/provider.ts) |
 | <a id="agentresumeoptions"></a>`AgentResumeOptions` | interface | [packages/runtime/src/agents/interfaces/index.ts](../../packages/runtime/src/agents/interfaces/index.ts) |
 | <a id="agentrunoptions"></a>`AgentRunOptions` | interface | [packages/runtime/src/agents/interfaces/index.ts](../../packages/runtime/src/agents/interfaces/index.ts) |
 | <a id="agentrunresult"></a>`AgentRunResult` | interface | [packages/runtime/src/agents/interfaces/index.ts](../../packages/runtime/src/agents/interfaces/index.ts) |
 | <a id="agentrunstatus"></a>`AgentRunStatus` | type | [packages/runtime/src/agents/interfaces/index.ts](../../packages/runtime/src/agents/interfaces/index.ts) |
 | <a id="agenttoolcall"></a>`AgentToolCall` | interface | [packages/runtime/src/agents/interfaces/index.ts](../../packages/runtime/src/agents/interfaces/index.ts) |
+| <a id="appendsessioneventbatchresult"></a>`AppendSessionEventBatchResult` | interface | [packages/runtime/src/sessions/types.ts](../../packages/runtime/src/sessions/types.ts) |
 | <a id="appendsessioneventoptions"></a>`AppendSessionEventOptions` | interface | [packages/runtime/src/sessions/types.ts](../../packages/runtime/src/sessions/types.ts) |
 | <a id="appendsessioneventresult"></a>`AppendSessionEventResult` | interface | [packages/runtime/src/sessions/types.ts](../../packages/runtime/src/sessions/types.ts) |
 | <a id="approvalartifact"></a>`ApprovalArtifact` | interface | [packages/runtime/src/governance/interfaces/index.ts](../../packages/runtime/src/governance/interfaces/index.ts) |
@@ -216,6 +258,10 @@ This page documents 238 public root exports from `@fdekit/runtime`: 98 functions
 | <a id="compiledproviderruntimeresolution"></a>`CompiledProviderRuntimeResolution` | type | [packages/runtime/src/deployments/interfaces/index.ts](../../packages/runtime/src/deployments/interfaces/index.ts) |
 | <a id="compiledtoolplan"></a>`CompiledToolPlan` | interface | [packages/runtime/src/deployments/interfaces/index.ts](../../packages/runtime/src/deployments/interfaces/index.ts) |
 | <a id="createartifactstoreoptions"></a>`CreateArtifactStoreOptions` | interface | [packages/runtime/src/artifact-store/types.ts](../../packages/runtime/src/artifact-store/types.ts) |
+| <a id="credentialbroker"></a>`CredentialBroker` | interface | [packages/runtime/src/execution/types.ts](../../packages/runtime/src/execution/types.ts) |
+| <a id="credentiallease"></a>`CredentialLease` | interface | [packages/runtime/src/execution/types.ts](../../packages/runtime/src/execution/types.ts) |
+| <a id="credentialleaserequest"></a>`CredentialLeaseRequest` | interface | [packages/runtime/src/execution/types.ts](../../packages/runtime/src/execution/types.ts) |
+| <a id="deliversessionoutboxoptions"></a>`DeliverSessionOutboxOptions` | interface | [packages/runtime/src/sessions/coordination.ts](../../packages/runtime/src/sessions/coordination.ts) |
 | <a id="deploymentdiff"></a>`DeploymentDiff` | interface | [packages/runtime/src/deployments/interfaces/index.ts](../../packages/runtime/src/deployments/interfaces/index.ts) |
 | <a id="deploymentdiffchange"></a>`DeploymentDiffChange` | interface | [packages/runtime/src/deployments/interfaces/index.ts](../../packages/runtime/src/deployments/interfaces/index.ts) |
 | <a id="deploymentsnapshot"></a>`DeploymentSnapshot` | interface | [packages/runtime/src/deployments/interfaces/index.ts](../../packages/runtime/src/deployments/interfaces/index.ts) |
@@ -223,10 +269,23 @@ This page documents 238 public root exports from `@fdekit/runtime`: 98 functions
 | <a id="deploymentvalidationoptions"></a>`DeploymentValidationOptions` | interface | [packages/runtime/src/deployments/interfaces/index.ts](../../packages/runtime/src/deployments/interfaces/index.ts) |
 | <a id="deploymentvalidationresult"></a>`DeploymentValidationResult` | interface | [packages/runtime/src/deployments/interfaces/index.ts](../../packages/runtime/src/deployments/interfaces/index.ts) |
 | <a id="deploymentvalidationseverity"></a>`DeploymentValidationSeverity` | type | [packages/runtime/src/deployments/interfaces/index.ts](../../packages/runtime/src/deployments/interfaces/index.ts) |
+| <a id="dockerexecutionbackendoptions"></a>`DockerExecutionBackendOptions` | interface | [packages/runtime/src/execution/types.ts](../../packages/runtime/src/execution/types.ts) |
+| <a id="documentationskilldocument"></a>`DocumentationSkillDocument` | interface | [packages/runtime/src/skills/documentation-shadow.ts](../../packages/runtime/src/skills/documentation-shadow.ts) |
+| <a id="documentationskilloutput"></a>`DocumentationSkillOutput` | interface | [packages/runtime/src/skills/documentation-shadow.ts](../../packages/runtime/src/skills/documentation-shadow.ts) |
+| <a id="documentationskillshadowresult"></a>`DocumentationSkillShadowResult` | interface | [packages/runtime/src/skills/documentation-shadow.ts](../../packages/runtime/src/skills/documentation-shadow.ts) |
+| <a id="environmentcredentialbrokeroptions"></a>`EnvironmentCredentialBrokerOptions` | interface | [packages/runtime/src/execution/types.ts](../../packages/runtime/src/execution/types.ts) |
 | <a id="estimateinferenceusageinput"></a>`EstimateInferenceUsageInput` | interface | [packages/runtime/src/intelligence/types.ts](../../packages/runtime/src/intelligence/types.ts) |
 | <a id="evalartifact"></a>`EvalArtifact` | interface | [packages/runtime/src/evals/interfaces/index.ts](../../packages/runtime/src/evals/interfaces/index.ts) |
 | <a id="evalcaseresult"></a>`EvalCaseResult` | interface | [packages/runtime/src/evals/interfaces/index.ts](../../packages/runtime/src/evals/interfaces/index.ts) |
 | <a id="evalsuiteresult"></a>`EvalSuiteResult` | interface | [packages/runtime/src/evals/interfaces/index.ts](../../packages/runtime/src/evals/interfaces/index.ts) |
+| <a id="executionbackend"></a>`ExecutionBackend` | interface | [packages/runtime/src/execution/types.ts](../../packages/runtime/src/execution/types.ts) |
+| <a id="executionbackendcapabilities"></a>`ExecutionBackendCapabilities` | interface | [packages/runtime/src/execution/types.ts](../../packages/runtime/src/execution/types.ts) |
+| <a id="executioncommand"></a>`ExecutionCommand` | interface | [packages/runtime/src/execution/types.ts](../../packages/runtime/src/execution/types.ts) |
+| <a id="executioncommandresult"></a>`ExecutionCommandResult` | interface | [packages/runtime/src/execution/types.ts](../../packages/runtime/src/execution/types.ts) |
+| <a id="executioncommandstatus"></a>`ExecutionCommandStatus` | type | [packages/runtime/src/execution/types.ts](../../packages/runtime/src/execution/types.ts) |
+| <a id="executionisolationrequirements"></a>`ExecutionIsolationRequirements` | interface | [packages/runtime/src/execution/types.ts](../../packages/runtime/src/execution/types.ts) |
+| <a id="executiontool"></a>`ExecutionTool` | type | [packages/runtime/src/execution/types.ts](../../packages/runtime/src/execution/types.ts) |
+| <a id="executiontooloptions"></a>`ExecutionToolOptions` | interface | [packages/runtime/src/execution/types.ts](../../packages/runtime/src/execution/types.ts) |
 | <a id="fileartifactdeliveryqueueoptions"></a>`FileArtifactDeliveryQueueOptions` | interface | [packages/runtime/src/artifact-store/delivery.ts](../../packages/runtime/src/artifact-store/delivery.ts) |
 | <a id="fileartifactstoreoptions"></a>`FileArtifactStoreOptions` | interface | [packages/runtime/src/artifact-store/types.ts](../../packages/runtime/src/artifact-store/types.ts) |
 | <a id="filesessionstoreoptions"></a>`FileSessionStoreOptions` | interface | [packages/runtime/src/sessions/types.ts](../../packages/runtime/src/sessions/types.ts) |
@@ -246,6 +305,7 @@ This page documents 238 public root exports from `@fdekit/runtime`: 98 functions
 | <a id="loadedeval"></a>`LoadedEval` | interface | [packages/runtime/src/evals/interfaces/index.ts](../../packages/runtime/src/evals/interfaces/index.ts) |
 | <a id="loadedprojectskill"></a>`LoadedProjectSkill` | interface | [packages/runtime/src/skills/index.ts](../../packages/runtime/src/skills/index.ts) |
 | <a id="loadprojectskillsoptions"></a>`LoadProjectSkillsOptions` | interface | [packages/runtime/src/skills/index.ts](../../packages/runtime/src/skills/index.ts) |
+| <a id="localexecutionbackendoptions"></a>`LocalExecutionBackendOptions` | interface | [packages/runtime/src/execution/types.ts](../../packages/runtime/src/execution/types.ts) |
 | <a id="macroevalartifact"></a>`MacroEvalArtifact` | interface | [packages/runtime/src/macro-evals/interfaces/index.ts](../../packages/runtime/src/macro-evals/interfaces/index.ts) |
 | <a id="macroevalfinding"></a>`MacroEvalFinding` | interface | [packages/runtime/src/macro-evals/interfaces/index.ts](../../packages/runtime/src/macro-evals/interfaces/index.ts) |
 | <a id="macroevalpattern"></a>`MacroEvalPattern` | interface | [packages/runtime/src/macro-evals/interfaces/index.ts](../../packages/runtime/src/macro-evals/interfaces/index.ts) |
@@ -258,10 +318,12 @@ This page documents 238 public root exports from `@fdekit/runtime`: 98 functions
 | <a id="memorystore"></a>`MemoryStore` | interface | [packages/runtime/src/intelligence/types.ts](../../packages/runtime/src/intelligence/types.ts) |
 | <a id="mockplanner"></a>`MockPlanner` | type | [packages/runtime/src/providers/mock.ts](../../packages/runtime/src/providers/mock.ts) |
 | <a id="mockprovideroptions"></a>`MockProviderOptions` | interface | [packages/runtime/src/providers/mock.ts](../../packages/runtime/src/providers/mock.ts) |
+| <a id="observeexternalactionoptions"></a>`ObserveExternalActionOptions` | interface | [packages/runtime/src/sessions/coordination.ts](../../packages/runtime/src/sessions/coordination.ts) |
 | <a id="pausedrunartifact"></a>`PausedRunArtifact` | interface | [packages/runtime/src/agents/interfaces/index.ts](../../packages/runtime/src/agents/interfaces/index.ts) |
 | <a id="planstepcontextinput"></a>`PlanStepContextInput` | interface | [packages/runtime/src/context/index.ts](../../packages/runtime/src/context/index.ts) |
 | <a id="policyawarecache"></a>`PolicyAwareCache` | interface | [packages/runtime/src/intelligence/types.ts](../../packages/runtime/src/intelligence/types.ts) |
 | <a id="policyviolation"></a>`PolicyViolation` | interface | [packages/runtime/src/agents/interfaces/index.ts](../../packages/runtime/src/agents/interfaces/index.ts) |
+| <a id="prepareexternalactionoptions"></a>`PrepareExternalActionOptions` | interface | [packages/runtime/src/sessions/coordination.ts](../../packages/runtime/src/sessions/coordination.ts) |
 | <a id="providerfinalstep"></a>`ProviderFinalStep` | interface | [packages/core/src/types/provider.ts](../../packages/core/src/types/provider.ts) |
 | <a id="providerplancontext"></a>`ProviderPlanContext` | interface | [packages/core/src/types/provider.ts](../../packages/core/src/types/provider.ts) |
 | <a id="providerruntimeadapter"></a>`ProviderRuntimeAdapter` | type | [packages/core/src/types/provider.ts](../../packages/core/src/types/provider.ts) |
@@ -270,11 +332,16 @@ This page documents 238 public root exports from `@fdekit/runtime`: 98 functions
 | <a id="providerstep"></a>`ProviderStep` | type | [packages/core/src/types/provider.ts](../../packages/core/src/types/provider.ts) |
 | <a id="providertoolcallstep"></a>`ProviderToolCallStep` | interface | [packages/core/src/types/provider.ts](../../packages/core/src/types/provider.ts) |
 | <a id="providertoolresult"></a>`ProviderToolResult` | interface | [packages/core/src/types/provider.ts](../../packages/core/src/types/provider.ts) |
+| <a id="purgesessionoptions"></a>`PurgeSessionOptions` | interface | [packages/runtime/src/sessions/types.ts](../../packages/runtime/src/sessions/types.ts) |
 | <a id="readsessioneventsoptions"></a>`ReadSessionEventsOptions` | interface | [packages/runtime/src/sessions/types.ts](../../packages/runtime/src/sessions/types.ts) |
+| <a id="renewsessionleaseoptions"></a>`RenewSessionLeaseOptions` | interface | [packages/runtime/src/sessions/coordination.ts](../../packages/runtime/src/sessions/coordination.ts) |
+| <a id="resolveexternalactionoptions"></a>`ResolveExternalActionOptions` | interface | [packages/runtime/src/sessions/coordination.ts](../../packages/runtime/src/sessions/coordination.ts) |
 | <a id="retrievalmode"></a>`RetrievalMode` | type | [packages/runtime/src/intelligence/types.ts](../../packages/runtime/src/intelligence/types.ts) |
 | <a id="retrievalquery"></a>`RetrievalQuery` | interface | [packages/runtime/src/intelligence/types.ts](../../packages/runtime/src/intelligence/types.ts) |
 | <a id="retrievalresult"></a>`RetrievalResult` | interface | [packages/runtime/src/intelligence/types.ts](../../packages/runtime/src/intelligence/types.ts) |
 | <a id="retrievalstore"></a>`RetrievalStore` | interface | [packages/runtime/src/intelligence/types.ts](../../packages/runtime/src/intelligence/types.ts) |
+| <a id="revisepausedapprovaloptions"></a>`RevisePausedApprovalOptions` | interface | [packages/runtime/src/agents/interfaces/index.ts](../../packages/runtime/src/agents/interfaces/index.ts) |
+| <a id="rundocumentationskillshadowoptions"></a>`RunDocumentationSkillShadowOptions` | interface | [packages/runtime/src/skills/documentation-shadow.ts](../../packages/runtime/src/skills/documentation-shadow.ts) |
 | <a id="runevalsoptions"></a>`RunEvalsOptions` | interface | [packages/runtime/src/evals/interfaces/index.ts](../../packages/runtime/src/evals/interfaces/index.ts) |
 | <a id="runmacroevalsoptions"></a>`RunMacroEvalsOptions` | interface | [packages/runtime/src/macro-evals/interfaces/index.ts](../../packages/runtime/src/macro-evals/interfaces/index.ts) |
 | <a id="s3artifactclient"></a>`S3ArtifactClient` | interface | [packages/core/src/types/deployment.ts](../../packages/core/src/types/deployment.ts) |
@@ -284,9 +351,14 @@ This page documents 238 public root exports from `@fdekit/runtime`: 98 functions
 | <a id="s3listobjectsv2input"></a>`S3ListObjectsV2Input` | interface | [packages/core/src/types/deployment.ts](../../packages/core/src/types/deployment.ts) |
 | <a id="s3listobjectsv2output"></a>`S3ListObjectsV2Output` | interface | [packages/core/src/types/deployment.ts](../../packages/core/src/types/deployment.ts) |
 | <a id="s3putobjectinput"></a>`S3PutObjectInput` | interface | [packages/core/src/types/deployment.ts](../../packages/core/src/types/deployment.ts) |
+| <a id="schedulesessionretryoptions"></a>`ScheduleSessionRetryOptions` | interface | [packages/runtime/src/sessions/lifecycle.ts](../../packages/runtime/src/sessions/lifecycle.ts) |
+| <a id="sessioncheckpointoptions"></a>`SessionCheckpointOptions` | interface | [packages/runtime/src/sessions/coordination.ts](../../packages/runtime/src/sessions/coordination.ts) |
 | <a id="sessionevent"></a>`SessionEvent` | interface | [packages/runtime/src/sessions/types.ts](../../packages/runtime/src/sessions/types.ts) |
 | <a id="sessioneventinput"></a>`SessionEventInput` | interface | [packages/runtime/src/sessions/types.ts](../../packages/runtime/src/sessions/types.ts) |
 | <a id="sessioneventtype"></a>`SessionEventType` | type | [packages/runtime/src/sessions/types.ts](../../packages/runtime/src/sessions/types.ts) |
+| <a id="sessionleasetoken"></a>`SessionLeaseToken` | interface | [packages/runtime/src/sessions/coordination.ts](../../packages/runtime/src/sessions/coordination.ts) |
+| <a id="sessionlifecycleoptions"></a>`SessionLifecycleOptions` | interface | [packages/runtime/src/sessions/lifecycle.ts](../../packages/runtime/src/sessions/lifecycle.ts) |
+| <a id="sessionmessageoptions"></a>`SessionMessageOptions` | interface | [packages/runtime/src/sessions/coordination.ts](../../packages/runtime/src/sessions/coordination.ts) |
 | <a id="sessionprojection"></a>`SessionProjection` | interface | [packages/runtime/src/sessions/types.ts](../../packages/runtime/src/sessions/types.ts) |
 | <a id="sessionsnapshot"></a>`SessionSnapshot` | interface | [packages/runtime/src/sessions/types.ts](../../packages/runtime/src/sessions/types.ts) |
 | <a id="sessionstore"></a>`SessionStore` | interface | [packages/runtime/src/sessions/types.ts](../../packages/runtime/src/sessions/types.ts) |
@@ -304,4 +376,7 @@ This page documents 238 public root exports from `@fdekit/runtime`: 98 functions
 | <a id="traceevent"></a>`TraceEvent` | interface | [packages/runtime/src/traces/interfaces/index.ts](../../packages/runtime/src/traces/interfaces/index.ts) |
 | <a id="usageledger"></a>`UsageLedger` | interface | [packages/runtime/src/intelligence/types.ts](../../packages/runtime/src/intelligence/types.ts) |
 | <a id="usagesummary"></a>`UsageSummary` | interface | [packages/runtime/src/intelligence/types.ts](../../packages/runtime/src/intelligence/types.ts) |
+| <a id="workspacelease"></a>`WorkspaceLease` | interface | [packages/runtime/src/execution/types.ts](../../packages/runtime/src/execution/types.ts) |
+| <a id="workspaceleaserequest"></a>`WorkspaceLeaseRequest` | interface | [packages/runtime/src/execution/types.ts](../../packages/runtime/src/execution/types.ts) |
+| <a id="workspaceseedfile"></a>`WorkspaceSeedFile` | interface | [packages/runtime/src/execution/types.ts](../../packages/runtime/src/execution/types.ts) |
 | <a id="writesessionsnapshotoptions"></a>`WriteSessionSnapshotOptions` | interface | [packages/runtime/src/sessions/types.ts](../../packages/runtime/src/sessions/types.ts) |

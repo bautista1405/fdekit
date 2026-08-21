@@ -45,7 +45,7 @@ Use this track when customer systems do not fit the built-in connector packages.
 | Start or inspect local customer-like systems | `fdekit env start`, `fdekit env seed`, `fdekit env doctor`, `fdekit env describe` | [Local Environment Cookbook](./cookbook/local-environments.md) |
 | Validate config and strict tool metadata | `fdekit validate`, `fdekit validate --strict`, `fdekit validate --json` | [Production Hardening Guide](./production-hardening.md), [Versioning And Migration Notes](./cookbook/versioning-and-migrations.md) |
 | Run an agent | `fdekit run <agent>`, `fdekit run <agent> --strict` | [CLI Reference](./cli-reference.md#runtime-and-evidence), [Reference Architectures](./reference-architectures.md) |
-| Review approvals | `fdekit approvals list`, `fdekit approvals approve <id>`, `fdekit approvals reject <id>` | [Production Hardening Guide](./production-hardening.md) |
+| Review or correct approvals | `fdekit approvals list`, `fdekit approvals edit <id> --args <json>`, `fdekit approvals approve <id>`, `fdekit approvals reject <id>` | [Production Hardening Guide](./production-hardening.md) |
 | Inspect audit evidence | `fdekit audit`, `fdekit feedback export` | [Production Hardening Guide](./production-hardening.md), [Versioning And Migration Notes](./cookbook/versioning-and-migrations.md) |
 | Run lower-level evals | `fdekit eval run` | [Recipes](./recipes.md), [CLI Reference](./cli-reference.md#evals) |
 | Find recurring behavior patterns | `fdekit eval macro` | [Production Hardening Guide](./production-hardening.md), [Reference Architectures](./reference-architectures.md#production-shaped-governance-heavy-setup) |
@@ -90,6 +90,7 @@ Use this track when customer systems do not fit the built-in connector packages.
 - [Durable Artifact Delivery](./specs/artifact-delivery.md): immutable versions, local spool, idempotent retries, checksummed receipts, and partial/out-of-order recovery.
 - [Shared Execution Contracts](./specs/execution-contracts.md): versioned task/run/attempt/step, context, policy, provenance, effect, approval/input, artifact, and usage schemas.
 - [Session Store And Local Run State](./specs/session-store.md): append-only run events, optimistic revisions, restart/replay, state transitions, and immutable snapshots.
+- [Execution Backends And Credential Leases](./specs/execution-backends.md): disposable workspace contracts, constrained local execution, fail-closed isolation requirements, and host-only expiring credentials.
 - [Policy-Aware Context And Inference Planning](./specs/context-planning.md): pre-retrieval authorization, target capabilities, model-visible allowlists, budgets, and selection manifests.
 - [Local Intelligence Primitives](./specs/local-intelligence.md): source-aware chunking/retrieval, scoped memory, provenance-aware knowledge, safe cache identities, and usage/cost ledgers.
 - [Governed Repository Transactions](./specs/repository-transactions.md): immutable-base multi-file changes, expected blobs, shadow validation, and atomic stale-safe publication.

@@ -248,14 +248,30 @@ Runtime owns execution and artifacts. Runtime-specific interfaces live here rath
 | `executeGovernedToolSequence()` | Execute exact caller-planned tool calls through runtime policy, approval, audit, trace, and durable pause/resume without provider re-planning. |
 | `resumeAgentRun()` | Resume either a provider run or governed exact sequence from its recorded approved call without replaying completed writes. |
 | `AgentRunOptions` | Input contract for `runAgent()`. |
+| `AgentContextPlanningOptions` | Opt-in effective policy, route candidates, objectives, and model-context candidates compiled for every provider step. |
 | `GovernedToolCall`, `GovernedToolSequenceOptions` | Exact call and sequence input contracts for deterministic orchestrators. |
-| `AgentRunResult` | Output contract for a run, including final answer, tools, policies, approvals, cost, latency, and trace. |
+| `AgentRunResult` | Output contract for a run, including final answer, tools, policies, approvals, normalized usage, cost, latency, and trace. |
 | `AgentRunStatus` | Terminal, limited, rejected, and approval-paused runtime outcomes. |
 | `AgentToolCall` | Runtime tool-call artifact. |
 | `PolicyViolation` | Runtime policy violation artifact. |
 | `createDevTrace()` | Create a lightweight development trace from a deployment. |
 
 Provider runtime resolution is explicit. `runAgent()` uses `ProviderConfig.runtime` when the selected provider config supplies one, or `AgentRunOptions.providerRegistry` when a caller wants to keep adapters outside `fde.config.ts`. The CLI supplies its built-in registry for configs using `providerFromEnv()`. Programmatic runtime callers should use provider package helpers or pass a registry themselves; the runtime only has a built-in mock fallback.
+
+When `AgentRunOptions.contextPlanning` is supplied, the selected inference
+endpoint and target model override the agent's default provider route. The
+runtime compiles a new allowlisted `ModelContext` per step, blocks tools omitted
+by that plan, and records redacted plan evidence in the durable session. A
+planned run paused for approval must be resumed with matching context-planning
+inputs.
+
+Provider steps may report normalized `ProviderUsage`. The runtime persists one
+measured or explicitly unknown `UsageMeasurement` per provider step, applies
+the selected target's declared pricing, and enforces planned output and cost
+limits. Input totals include cache reads and writes, and output totals include
+reasoning; those subsets remain available for price calculation and telemetry.
+Advanced planning remains opt-in and does not expand the default `fde.config.ts`
+scaffold.
 
 Runtime strict mode is also explicit. `runAgent({ strict: true })` requires every available tool to declare `argsSchema`, `scopes`, and `environments`, then validates provider-planned args at the runtime edge before the tool handler executes. Standard runs are permissive about missing metadata, but declared schemas and environments are still enforced.
 
@@ -277,6 +293,22 @@ without invoking a provider or replaying completed writes. See the
 | `SessionRevisionConflictError`, `SessionEventConflictError`, `SessionCorruptionError`, `SessionSnapshotConflictError` | Explicit concurrency, idempotency, integrity, and immutability failures. |
 
 Agent trace events are appended while the run is alive, and the final trace artifact projects the same sequence. `runAgent()` and `resumeAgentRun()` accept an injected `SessionStore`; without one they use the durable local implementation. The OSS interface does not provide an application server.
+
+### Execution Backends And Credentials
+
+| Export | Purpose |
+| --- | --- |
+| `ExecutionBackend`, `WorkspaceLease`, `WorkspaceLeaseRequest` | Capability-advertised disposable workspace contract. |
+| `ExecutionCommand`, `ExecutionCommandResult` | Allowlisted command input and explicit completion/limit outcome. |
+| `CredentialBroker`, `CredentialLease` | Host-only, expiring credential-reference materialization contract. |
+| `createLocalExecutionBackend()` | Constrained trusted-host implementation with command/environment allowlists, time/output limits, and cleanup. |
+| `createEnvironmentCredentialBroker()` | Resolve configured credential references from host environment variables without serializing secret material. |
+
+The local backend is not a security sandbox and advertises filesystem, process,
+and network isolation as unavailable. It rejects leases that require those
+controls. These APIs are imported explicitly from `@fdekit/runtime/execution`;
+they do not add fields to the starter `fde.config.ts`. See the
+[execution backend specification](./specs/execution-backends.md).
 
 ### Context And Inference Planning
 

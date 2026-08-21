@@ -28,7 +28,7 @@ fdekit CLI
 The direction matters:
 
 - `@fdekit/core` owns authoring types and helpers. It should not depend on runtime, CLI, console, providers, connectors, or filesystem artifacts.
-- `@fdekit/runtime` owns execution plus the `ArtifactStore` and append-only `SessionStore` contracts. Local `artifacts/` is the default evidence and session root. It should not depend on concrete provider, connector, or storage SDK packages.
+- `@fdekit/runtime` owns execution plus the `ExecutionBackend`, `CredentialBroker`, `ArtifactStore`, and append-only `SessionStore` contracts. Local implementations are explicit and replaceable; local host execution does not claim sandbox isolation. Local `artifacts/` is the default evidence and session root. Runtime should not depend on concrete provider, connector, or storage SDK packages.
 - Provider packages turn `ProviderConfig` into `AgentProvider` adapters.
 - Connector packages expose `ConnectorDefinition` and typed tools. Runtime only sees tools.
 - `@fdekit/catalog` owns typed provider, connector, and recipe manifests shared by CLI scaffolding, generated docs, and other deployment surfaces.
@@ -181,7 +181,7 @@ Runtime does not import the AWS SDK. The S3 store consumes a tiny adapter shape 
 | --- | --- | --- |
 | `fdekit validate` | `deployments/latest.json`, `deployments/snapshots/deployment-*.json`, `deployments/execution-plan.json` | `fde.config.ts` |
 | `fdekit run` | `traces/<trace-id>.json`, `approvals/*.json` when needed, `audit/audit.jsonl` when audit is enabled | `fde.config.ts`, approval files when resuming gated work |
-| `fdekit approvals approve/reject` | `approvals/<id>.json`, `audit/audit.jsonl` | existing approval file |
+| `fdekit approvals edit/approve/reject` | `approvals/<id>.json`, `runs/<run-id>.json`, `audit/audit.jsonl` | existing approval and paused-run files |
 | `fdekit eval run` | `evals/latest.json`, `evals/<eval-id>.json`, optional eval trace files | `fde.config.ts`, datasets referenced by eval definitions |
 | `fdekit eval macro` | `evals/macro/latest.json`, `evals/macro/<id>.json`, `evals/macro/report.md` | traces, latest eval artifact |
 | `fdekit feedback export` | `feedback/eval-candidates.json`, `feedback/eval-cases.json` | decided approvals plus original run inputs recovered from traces or audit events |

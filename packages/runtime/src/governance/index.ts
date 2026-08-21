@@ -33,7 +33,7 @@ export type {
 export { redactForGovernance } from './helpers/index.js';
 
 export function approvalFingerprint(input: Pick<ApprovalRequestInput,
-  'deployment' | 'environment' | 'agent' | 'policy' | 'phase' | 'toolName' | 'args' | 'target'
+  'deployment' | 'environment' | 'agent' | 'policy' | 'phase' | 'toolName' | 'args' | 'target' | 'supersedesId'
 >): string {
   return createHash('sha256')
     .update(stableStringify({
@@ -50,6 +50,7 @@ export function approvalFingerprint(input: Pick<ApprovalRequestInput,
       target: input.target && Object.keys(input.target).length > 0
         ? redactForGovernance(input.target)
         : undefined,
+      supersedesId: input.supersedesId,
     }))
     .digest('hex');
 }
@@ -88,6 +89,7 @@ export async function requestApproval(
       : undefined,
     reason: input.reason ?? `Tool call "${input.toolName}" requires approval`,
     requestedBy: input.requestedBy ?? 'agent',
+    supersedesId: input.supersedesId,
   };
 
   await writeApproval(projectDir, approval, artifactStore);
@@ -176,6 +178,47 @@ export async function markApprovalExecuted(
 
   await writeApproval(projectDir, next, artifactStore);
 
+  return next;
+}
+
+export async function supersedeApproval(
+  projectDir: string,
+  id: string,
+  replacementId: string,
+  options: { actor: string; reason?: string },
+  artifactStore?: ArtifactStore,
+): Promise<ApprovalArtifact> {
+  const approval = await readApproval(projectDir, id, artifactStore);
+  if (!approval) throw new Error(`Approval request not found: ${id}`);
+  if (approval.status === 'superseded' && approval.supersededBy === replacementId) return approval;
+  if (approval.status !== 'pending') {
+    throw new Error(`Only a pending approval can be superseded; ${id} is ${approval.status}`);
+  }
+  const now = new Date().toISOString();
+  const next: ApprovalArtifact = {
+    ...approval,
+    status: 'superseded',
+    updatedAt: now,
+    supersededBy: replacementId,
+    supersededAt: now,
+    supersededByActor: options.actor,
+  };
+  await writeApproval(projectDir, next, artifactStore);
+  await appendAuditLog(projectDir, {
+    deployment: next.deployment,
+    environment: next.environment,
+    agent: next.agent,
+    runId: next.runId,
+    traceId: next.traceId,
+    actor: options.actor,
+    action: 'approval.superseded',
+    outcome: 'requested',
+    toolName: next.toolName,
+    policy: next.policy,
+    approvalId: next.id,
+    message: options.reason,
+    metadata: { replacementId },
+  }, artifactStore);
   return next;
 }
 

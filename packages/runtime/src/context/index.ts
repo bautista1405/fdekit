@@ -33,6 +33,10 @@ export interface PlanStepContextInput {
   items?: ContextPlannerCandidate[];
   skills?: SkillPlannerCandidate[];
   tools?: ToolPlannerCandidate[];
+  compression?: {
+    mode: 'when_needed' | 'prefer';
+    minimumSavingsTokens?: number;
+  };
 }
 
 export function authorizeRetrieval(input: AuthorizeRetrievalInput): RetrievalAuthorizationPlan {
@@ -120,9 +124,15 @@ export function planStepContext(input: PlanStepContextInput): StepContextPlan {
   const feasibilityReasons: string[] = [];
   let feasibility: StepContextPlan['feasibility']['status'] = 'feasible';
 
-  if (input.authorization.policyFingerprint !== input.policy.fingerprint) {
+  if (input.policy.targetAllowlist && !input.policy.targetAllowlist.includes(input.target.id)) {
+    feasibility = 'blocked';
+    feasibilityReasons.push(`Inference target ${input.target.id} is not allowed by the effective policy.`);
+  } else if (input.authorization.policyFingerprint !== input.policy.fingerprint) {
     feasibility = 'blocked';
     feasibilityReasons.push('Retrieval authorization was evaluated against a different effective policy.');
+  } else if (input.policy.decision === 'needs_approval') {
+    feasibility = 'needs_approval';
+    feasibilityReasons.push('Effective policy requires approval before execution.');
   } else if (input.authorization.decision === 'needs_approval') {
     feasibility = 'needs_approval';
     feasibilityReasons.push('One or more requested sources require approval before retrieval.');
@@ -139,6 +149,7 @@ export function planStepContext(input: PlanStepContextInput): StepContextPlan {
   let estimatedInputTokens = 0;
   let retrievalItems = 0;
   let toolCount = 0;
+  const selectedDeduplicationKeys = new Set<string>();
 
   const candidates = normalizeCandidates(input);
 
@@ -146,6 +157,7 @@ export function planStepContext(input: PlanStepContextInput): StepContextPlan {
     const sourceIds = candidate.sourceIds ?? [];
     const sourceAuthorized = sourceIds.every((id) => input.authorization.allowedSourceIds.includes(id));
     let exclusion: ContextExclusionReason | undefined;
+    let selectedCandidate = candidate;
 
     if (feasibility !== 'feasible') {
       exclusion = input.authorization.decision === 'needs_approval'
@@ -153,6 +165,11 @@ export function planStepContext(input: PlanStepContextInput): StepContextPlan {
         : 'policy_denied';
     } else if (!sourceAuthorized) {
       exclusion = 'source_not_authorized';
+    } else if (
+      candidate.category === 'item'
+      && selectedDeduplicationKeys.has(candidate.deduplicationKey)
+    ) {
+      exclusion = 'duplicate';
     } else if (
       candidate.category === 'item'
       && isRetrievalItem(candidate.value.item.kind)
@@ -166,23 +183,35 @@ export function planStepContext(input: PlanStepContextInput): StepContextPlan {
       && toolCount >= input.budget.maxToolCalls
     ) {
       exclusion = 'tool_limit';
-    } else if (estimatedInputTokens + candidate.estimatedTokens > inputTokenLimit) {
-      exclusion = 'token_budget';
+    } else {
+      selectedCandidate = selectCompressionVariant(
+        candidate,
+        input.compression,
+        estimatedInputTokens,
+        inputTokenLimit,
+      );
+      if (estimatedInputTokens + selectedCandidate.estimatedTokens > inputTokenLimit) {
+        exclusion = 'token_budget';
+      }
     }
 
     const entry: ContextSelectionEntry = {
       id: candidate.id,
       kind: candidate.kind,
-      estimatedTokens: candidate.estimatedTokens,
+      estimatedTokens: selectedCandidate.estimatedTokens,
       required: candidate.required,
       decision: exclusion ? 'excluded' : 'selected',
       reason: exclusion ?? (candidate.required ? 'required' : 'ranked'),
       ...(sourceIds.length > 0 ? { sourceIds } : {}),
+      ...(selectedCandidate.originalEstimatedTokens === undefined ? {} : {
+        originalEstimatedTokens: selectedCandidate.originalEstimatedTokens,
+        compression: selectedCandidate.compression,
+      }),
     };
 
     if (exclusion) {
       excluded.push(entry);
-      if (candidate.required && feasibility === 'feasible') {
+      if (candidate.required && exclusion !== 'duplicate' && feasibility === 'feasible') {
         feasibility = exclusion === 'approval_required' ? 'needs_approval' : 'blocked';
         feasibilityReasons.push(`Required ${candidate.kind} ${candidate.id} was excluded: ${exclusion}.`);
       }
@@ -190,14 +219,15 @@ export function planStepContext(input: PlanStepContextInput): StepContextPlan {
     }
 
     selected.push(entry);
-    estimatedInputTokens += candidate.estimatedTokens;
-    if (candidate.category === 'item') {
-      selectedItems.push(candidate.value);
-      if (isRetrievalItem(candidate.value.item.kind)) retrievalItems += 1;
-    } else if (candidate.category === 'skill') {
-      selectedSkills.push(candidate.value);
+    estimatedInputTokens += selectedCandidate.estimatedTokens;
+    if (selectedCandidate.category === 'item') {
+      selectedItems.push(selectedCandidate.value);
+      selectedDeduplicationKeys.add(selectedCandidate.deduplicationKey);
+      if (isRetrievalItem(selectedCandidate.value.item.kind)) retrievalItems += 1;
+    } else if (selectedCandidate.category === 'skill') {
+      selectedSkills.push(selectedCandidate.value);
     } else {
-      selectedTools.push(candidate.value);
+      selectedTools.push(selectedCandidate.value);
       toolCount += 1;
     }
   }
@@ -283,10 +313,13 @@ interface NormalizedCandidateBase {
   priority: number;
   score: number;
   sourceIds?: string[];
+  originalEstimatedTokens?: number;
+  compression?: { method: string; savedTokens: number };
 }
 
 interface NormalizedItemCandidate extends NormalizedCandidateBase {
   category: 'item';
+  deduplicationKey: string;
   value: ContextPlannerCandidate;
 }
 
@@ -305,6 +338,9 @@ interface NormalizedToolCandidate extends NormalizedCandidateBase {
 function normalizeCandidates(input: PlanStepContextInput): NormalizedCandidate[] {
   const items: NormalizedItemCandidate[] = (input.items ?? []).map((candidate) => {
     assertTokenEstimate(candidate.estimatedTokens, candidate.item.id);
+    if (candidate.compressed) {
+      assertTokenEstimate(candidate.compressed.estimatedTokens, `${candidate.item.id} compressed`);
+    }
     const sourceIds = [...new Set(candidate.sourceIds ?? candidate.item.sourceIds ?? [])].sort();
     return {
       category: 'item',
@@ -314,6 +350,8 @@ function normalizeCandidates(input: PlanStepContextInput): NormalizedCandidate[]
       required: candidate.required ?? false,
       priority: candidate.priority ?? 0,
       score: objectiveScore(candidate.scores, input.objectives),
+      deduplicationKey: candidate.deduplicationKey
+        ?? `${candidate.item.kind}:${normalizeDeduplicationContent(candidate.item.content)}`,
       ...(sourceIds.length > 0 ? { sourceIds } : {}),
       value: candidate,
     };
@@ -351,6 +389,51 @@ function normalizeCandidates(input: PlanStepContextInput): NormalizedCandidate[]
       || right.priority - left.priority
       || right.score - left.score
       || left.id.localeCompare(right.id));
+}
+
+function selectCompressionVariant(
+  candidate: NormalizedCandidate,
+  compression: PlanStepContextInput['compression'],
+  usedTokens: number,
+  tokenLimit: number,
+): NormalizedCandidate {
+  if (candidate.category !== 'item' || !candidate.value.compressed || !compression) return candidate;
+  const compact = candidate.value.compressed;
+  const savedTokens = candidate.estimatedTokens - compact.estimatedTokens;
+  if (savedTokens <= 0 || savedTokens < (compression.minimumSavingsTokens ?? 1)) return candidate;
+  const originalFits = usedTokens + candidate.estimatedTokens <= tokenLimit;
+  if (compression.mode === 'when_needed' && originalFits) return candidate;
+
+  return {
+    ...candidate,
+    estimatedTokens: compact.estimatedTokens,
+    originalEstimatedTokens: candidate.estimatedTokens,
+    compression: { method: compact.method, savedTokens },
+    value: {
+      ...candidate.value,
+      item: { ...candidate.value.item, content: compact.content },
+    },
+  };
+}
+
+function normalizeDeduplicationContent(content: string): string {
+  return content.trim().replace(/\s+/g, ' ');
+}
+
+/** Reserve a bounded delegation slot for orchestrators before dispatching work. */
+export function reserveDelegationBudget(
+  budget: Pick<StepContextPlan['budget'], 'maxDelegations'>,
+  used: number,
+  requested = 1,
+): number {
+  if (!Number.isInteger(used) || used < 0 || !Number.isInteger(requested) || requested < 1) {
+    throw new Error('Delegation counts must be non-negative integers and requested must be at least one.');
+  }
+  const next = used + requested;
+  if (budget.maxDelegations !== undefined && next > budget.maxDelegations) {
+    throw new Error(`Delegation budget exceeded: ${next} requested, limit ${budget.maxDelegations}`);
+  }
+  return next;
 }
 
 function objectiveScore(

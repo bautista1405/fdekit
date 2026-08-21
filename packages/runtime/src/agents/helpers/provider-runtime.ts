@@ -1,3 +1,4 @@
+import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { getString } from '@fdekit/core';
 import type {
   AgentConfig,
@@ -8,14 +9,22 @@ import type {
   ProviderRuntimeRegistry,
   ProviderToolResult,
   ProviderStep,
+  InputRequestRecord,
+  StepContextPlan,
 } from '@fdekit/core';
 import { redactForGovernance } from '../../governance/index.js';
 import { createMockProvider, type MockPlanner, type MockProviderOptions } from '../../providers/mock.js';
 import type { TraceEvent } from '../../traces/index.js';
 import { appendAudit } from './audit.js';
+import {
+  compileRunStepContext,
+  enforceContextPlannedTool,
+  type ContextInferenceRoute,
+} from './context-planning.js';
 import { callTool } from './tool-runner.js';
 import { recordRunEvent } from './session-events.js';
 import type { RunState } from './types.js';
+import { recordProviderUsage } from './usage.js';
 
 interface SteeringState {
   enabled: boolean;
@@ -24,33 +33,96 @@ interface SteeringState {
   feedback: ProviderToolResult[];
 }
 
+export class InputRequiredError extends Error {
+  constructor(readonly request: InputRequestRecord) {
+    super(request.prompt);
+    this.name = 'InputRequiredError';
+  }
+}
+
 export async function runProviderLoop(state: RunState, maxSteps: number, startStep = 0): Promise<string> {
   const steering = createSteeringState(state);
 
   for (let stepIndex = startStep; stepIndex < maxSteps; stepIndex += 1) {
     state.lastStepIndex = stepIndex;
+    const contextPlan = await compileRunStepContext(state, stepIndex);
+    const providerStartedAt = Date.now();
     const step = await state.provider.planNextStep({
-      deployment: state.deployment,
+      deployment: contextPlan ? providerBoundaryDeployment(state.deployment) : state.deployment,
       agentName: state.agentName,
-      agent: state.agent,
-      input: state.input,
-      instructions: state.instructions,
-      toolResults: [
+      agent: contextPlan ? { instructions: '' } : state.agent,
+      input: contextPlan ? {} : state.input,
+      instructions: contextPlan ? '' : state.instructions,
+      toolResults: contextPlan ? [] : [
         ...state.toolCalls,
+        ...state.inputAnswers,
         ...steering.feedback,
       ],
       stepIndex,
       maxSteps,
+      outputTokenLimit: contextPlan
+        ? Math.min(
+          contextPlan.budget.maxOutputTokens ?? contextPlan.target.capabilities.maxOutputTokens,
+          contextPlan.target.capabilities.maxOutputTokens,
+        )
+        : undefined,
+      modelContext: contextPlan?.model,
     });
 
-    await recordRunEvent(state, providerStepEvent(state.provider.name, step, stepIndex));
+    await recordRunEvent(state, providerStepEvent(state.provider.name, step, stepIndex, contextPlan));
+    await recordProviderUsage(state, step, contextPlan, Date.now() - providerStartedAt, stepIndex);
 
     if (step.type === 'final') {
       return step.message;
     }
 
     if (step.type === 'input_request') {
-      throw new Error('Provider input requests require durable host resume support');
+      const deadlineAt = state.inputGate?.deadlineAt;
+      if (deadlineAt) {
+        const deadline = Date.parse(deadlineAt);
+        if (!Number.isFinite(deadline)) throw new Error(`Invalid input deadlineAt: ${deadlineAt}`);
+        if (deadline <= Date.now()) throw new Error(`Input deadline ${deadlineAt} has already elapsed`);
+      }
+      const inputResumeToken = state.inputGate?.requireResumeToken
+        ? randomBytes(32).toString('base64url')
+        : undefined;
+      const request: InputRequestRecord = {
+        schemaVersion: 1,
+        requestId: randomUUID(),
+        identity: contextPlan?.identity ?? {
+          taskId: state.taskId,
+          runId: state.runId,
+          attemptId: state.attemptId,
+          stepId: `${state.runId}:step:${stepIndex}`,
+        },
+        session: { sessionId: state.runId, revision: state.sessionRevision },
+        status: 'pending',
+        prompt: step.prompt,
+        inputSchema: step.inputSchema,
+        requestedAt: new Date().toISOString(),
+        requestedBy: { id: state.agentName, kind: 'system' },
+        ...(state.inputGate?.audience ? { audience: state.inputGate.audience } : {}),
+        ...(state.inputGate?.disclosure ?? step.disclosure
+          ? { disclosure: state.inputGate?.disclosure ?? step.disclosure }
+          : {}),
+        ...(deadlineAt ? { deadlineAt } : {}),
+        ...(inputResumeToken ? {
+          resumeTokenDigest: `sha256:${createHash('sha256').update(inputResumeToken).digest('hex')}`,
+        } : {}),
+        ...(step.defaultValue === undefined ? {} : { defaultValue: step.defaultValue }),
+      };
+      state.inputRequests.push(request);
+      state.pendingInput = request;
+      state.inputResumeToken = inputResumeToken;
+      await recordRunEvent(state, {
+        type: 'input.requested',
+        requestId: request.requestId,
+        prompt: request.prompt,
+        disclosure: request.disclosure,
+        inputSchema: request.inputSchema,
+        stepIndex,
+      }, 'needs_input');
+      throw new InputRequiredError(request);
     }
 
     if (steering.enabled && isRepeatedToolCall(state, step)) {
@@ -67,10 +139,20 @@ export async function runProviderLoop(state: RunState, maxSteps: number, startSt
       throw new Error(message);
     }
 
+    await enforceContextPlannedTool(state, step.toolName, stepIndex);
     await callTool(state, step.toolName, step.args);
   }
 
   throw new Error(`Agent run exceeded max steps (${maxSteps}) before producing a final answer`);
+}
+
+function providerBoundaryDeployment(deployment: DeploymentDefinition): DeploymentDefinition {
+  return {
+    name: deployment.name,
+    environment: deployment.environment,
+    providers: {},
+    agents: {},
+  };
 }
 
 function createSteeringState(state: RunState): SteeringState {
@@ -195,9 +277,26 @@ export async function resolveProvider(
   deployment: DeploymentDefinition,
   agent: AgentConfig,
   registry: ProviderRuntimeRegistry = {},
+  route?: ContextInferenceRoute,
 ): Promise<AgentProvider> {
-  const providerName = agent.provider ?? 'mock';
-  const providerConfig = deployment.providers[providerName];
+  const providerName = route?.provider ?? agent.provider ?? 'mock';
+  const providerAlias = route?.endpointId && deployment.providers[route.endpointId]
+    ? route.endpointId
+    : providerName;
+  const configured = deployment.providers[providerAlias]
+    ?? Object.values(deployment.providers).find((candidate) => candidate.name === providerName);
+  const providerConfig = configured
+    ? {
+      ...configured,
+      model: route?.model ?? agent.model ?? configured.model,
+    }
+    : undefined;
+
+  if (route && providerConfig && providerConfig.name !== route.provider) {
+    throw new Error(
+      `Inference endpoint ${route.endpointId} is configured as ${providerConfig.name}, not ${route.provider}`,
+    );
+  }
 
   if (providerConfig?.runtime) {
     return resolveRuntimeAdapter(providerConfig.runtime, providerConfig);
@@ -206,7 +305,10 @@ export async function resolveProvider(
   const registryAdapter = providerRuntimeFromRegistry(providerName, providerConfig, registry);
 
   if (registryAdapter) {
-    return resolveRuntimeAdapter(registryAdapter, providerConfig ?? { name: providerName });
+    return resolveRuntimeAdapter(registryAdapter, providerConfig ?? {
+      name: providerName,
+      model: route?.model ?? agent.model,
+    });
   }
 
   if (providerName === 'mock' || providerConfig?.name === 'mock') {
@@ -224,12 +326,24 @@ export async function resolveProvider(
   );
 }
 
-function providerStepEvent(provider: string, step: ProviderStep, stepIndex: number): TraceEvent {
+function providerStepEvent(
+  provider: string,
+  step: ProviderStep,
+  stepIndex: number,
+  contextPlan?: StepContextPlan,
+): TraceEvent {
+  const route = contextPlan ? {
+    targetId: contextPlan.target.id,
+    endpointId: contextPlan.endpoint.id,
+    model: contextPlan.target.model,
+  } : {};
+
   if (step.type === 'final') {
     return {
       type: 'provider.step.final',
       provider,
       stepIndex,
+      ...route,
       message: step.message,
       metadata: step.metadata,
     };
@@ -237,9 +351,10 @@ function providerStepEvent(provider: string, step: ProviderStep, stepIndex: numb
 
   if (step.type === 'input_request') {
     return {
-      type: 'provider.step.input_request',
+      type: 'provider.step.input_requested',
       provider,
       stepIndex,
+      ...route,
       prompt: step.prompt,
       disclosure: step.disclosure,
       metadata: step.metadata,
@@ -250,6 +365,7 @@ function providerStepEvent(provider: string, step: ProviderStep, stepIndex: numb
     type: 'provider.step.tool_call',
     provider,
     stepIndex,
+    ...route,
     toolName: step.toolName,
     args: step.args,
     reason: step.reason,

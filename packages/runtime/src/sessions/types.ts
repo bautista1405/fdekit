@@ -7,17 +7,25 @@ export const SESSION_EVENT_TYPES = [
   'state.transitioned',
   'checkpoint.saved',
   'heartbeat.recorded',
+  'lease.acquired',
+  'lease.renewed',
+  'lease.released',
   'cancellation.requested',
   'retry.scheduled',
   'approval.requested',
   'approval.resolved',
+  'approval.revised',
   'input.requested',
   'input.answered',
   'action.planned',
+  'action.prepared',
   'action.started',
+  'action.dispatched',
+  'action.observed',
   'action.committed',
   'action.uncertain',
   'action.reconciled',
+  'action.failed',
   'artifact.linked',
   'outbox.enqueued',
   'outbox.delivered',
@@ -91,8 +99,18 @@ export interface AppendSessionEventResult<Payload = unknown> {
   appended: boolean;
 }
 
+export interface AppendSessionEventBatchResult {
+  events: SessionEvent[];
+  projection: SessionProjection;
+  appendedCount: number;
+}
+
 export interface WriteSessionSnapshotOptions {
   expectedRevision: number;
+}
+
+export interface PurgeSessionOptions {
+  expectedRevision?: number;
 }
 
 export interface SessionStore {
@@ -101,6 +119,13 @@ export interface SessionStore {
     event: SessionEventInput<Payload>,
     options?: AppendSessionEventOptions,
   ): Promise<AppendSessionEventResult<Payload>>;
+
+  /** Commit several ordered events with one durability boundary. */
+  appendBatch?(
+    sessionId: string,
+    events: SessionEventInput[],
+    options?: AppendSessionEventOptions,
+  ): Promise<AppendSessionEventBatchResult>;
 
   readEvents<Payload = unknown>(
     sessionId: string,
@@ -116,6 +141,9 @@ export interface SessionStore {
   ): Promise<SessionSnapshot<State>>;
 
   readLatestSnapshot<State = unknown>(sessionId: string): Promise<SessionSnapshot<State> | null>;
+
+  /** Permanently remove a tombstoned session. */
+  purge(sessionId: string, options?: PurgeSessionOptions): Promise<void>;
 }
 
 export interface FileSessionStoreOptions {

@@ -14,7 +14,14 @@ import type {
   PolicyResult,
   ToolCallContext,
 } from '@fdekit/core';
-import { approveApproval, findApproval, rejectApproval, requestApproval } from '../../governance/index.js';
+import {
+  approvalFingerprint,
+  approveApproval,
+  findApproval,
+  readApproval,
+  rejectApproval,
+  requestApproval,
+} from '../../governance/index.js';
 import type { ApprovalArtifact } from '../../governance/index.js';
 import { appendAudit } from './audit.js';
 import { recordRunEvent } from './session-events.js';
@@ -215,7 +222,18 @@ async function resolveApproval(
     reason: decision.reason,
   };
   const existing = await findApproval(state.projectDir, input, state.artifactStore);
-  let approval = existing ?? await requestApproval(state.projectDir, input, state.artifactStore);
+  let corrected: ApprovalArtifact | undefined;
+  for (const replacementId of Object.values(state.approvalReplacements)) {
+    const replacement = await readApproval(state.projectDir, replacementId, state.artifactStore);
+    if (replacement && approvalFingerprint(input) === approvalFingerprint({
+      ...replacement,
+      supersedesId: undefined,
+    })) {
+      corrected = replacement;
+      break;
+    }
+  }
+  let approval = corrected ?? existing ?? await requestApproval(state.projectDir, input, state.artifactStore);
 
   if (approval.status === 'pending' && state.approvalOverride) {
     approval = await autoDecideApproval(state, approval);

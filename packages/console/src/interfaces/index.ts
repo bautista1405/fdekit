@@ -227,7 +227,7 @@ export interface ConnectorEvidence {
 export interface ApprovalQueueItem {
   policy: string;
   toolName: string;
-  status: 'pending approval' | 'approved' | 'rejected' | 'blocked';
+  status: 'pending approval' | 'approved' | 'rejected' | 'superseded' | 'blocked';
   reason: string;
   traceId: string;
   createdAt: string;

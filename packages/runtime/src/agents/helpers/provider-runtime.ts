@@ -49,6 +49,10 @@ export async function runProviderLoop(state: RunState, maxSteps: number, startSt
       return step.message;
     }
 
+    if (step.type === 'input_request') {
+      throw new Error('Provider input requests require durable host resume support');
+    }
+
     if (steering.enabled && isRepeatedToolCall(state, step)) {
       const message = repeatedToolCallMessage(step.toolName, step.args);
 
@@ -227,6 +231,17 @@ function providerStepEvent(provider: string, step: ProviderStep, stepIndex: numb
       provider,
       stepIndex,
       message: step.message,
+      metadata: step.metadata,
+    };
+  }
+
+  if (step.type === 'input_request') {
+    return {
+      type: 'provider.step.input_request',
+      provider,
+      stepIndex,
+      prompt: step.prompt,
+      disclosure: step.disclosure,
       metadata: step.metadata,
     };
   }

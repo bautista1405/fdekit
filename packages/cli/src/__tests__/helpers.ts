@@ -390,6 +390,17 @@ export default defineDeployment({
           name: 'issue.create',
           category: 'issue',
           tags: ['action', 'escalation', 'issue'],
+          argsSchema: {
+            type: 'object',
+            required: ['ticketId', 'title', 'body', 'priority'],
+            properties: {
+              ticketId: { type: 'string' },
+              title: { type: 'string', minLength: 1 },
+              body: { type: 'string' },
+              priority: { type: 'string' },
+            },
+            additionalProperties: false,
+          },
           handler(args) {
             return { id: 'iss_123', ...args };
           },

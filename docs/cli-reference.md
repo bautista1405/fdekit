@@ -74,6 +74,7 @@ See [Versioning And Migration Notes](./cookbook/versioning-and-migrations.md) fo
 | `fdekit run <agent> --resume [runId]` | Continue a run paused on an approval: executes the exact approved tool call (no re-planning) and resumes the loop without replaying earlier writes. Without `runId`, resumes the agent's latest paused run. |
 | `fdekit approvals list [--status <s>] [--tool <t>] [--json]` | Show approval requests with their args and execution target; filter by status or tool. |
 | `fdekit approvals show <id> [--json]` | Show one request in full: args, target system, decision history, execution record. |
+| `fdekit approvals edit <id> --args <json> [--by <user>] [--reason <reason>]` | Validate corrected tool arguments, supersede the pending request, and issue a fresh exact approval fingerprint. |
 | `fdekit approvals approve <id> [--by <user>] [--reason <reason>] [--force]` | Approve a queued request. `--by` defaults to the OS username; `--force` is required to overturn an existing decision (history is preserved). |
 | `fdekit approvals reject <id> [--by <user>] [--reason <reason>] [--force]` | Reject a queued request; a rejected run reports `Status: rejected`. |
 | `fdekit audit [--limit <n>]` | Show recent audit log entries. |

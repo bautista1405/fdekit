@@ -338,6 +338,61 @@ describe('cli runtime commands', () => {
     expect(workbenchHtml).toContain(approvals[0].id);
   });
 
+  it('corrects schema-valid pending args through approvals edit before a fresh decision', async () => {
+    const projectDir = await createCliProject({ requireIssueApproval: true });
+    await captureCommand(() => cmdRun({
+      cwd: projectDir,
+      args: ['supportTriage', '--ticket', 'tick_1001'],
+    }));
+    const [original] = await readJsonDir(path.join(projectDir, 'artifacts', 'approvals')) as Array<{
+      id: string;
+      runId: string;
+      status: string;
+      args: Record<string, unknown>;
+    }>;
+    const correctedArgs = { ...original.args, title: '[HIGH] Corrected billing escalation' };
+    const edit = await captureCommand(() => cmdApprovals({
+      cwd: projectDir,
+      args: [
+        'edit',
+        original.id,
+        '--args',
+        JSON.stringify(correctedArgs),
+        '--by',
+        'bautista',
+        '--reason',
+        'Correct the issue title',
+      ],
+    }));
+    expect(edit.exitCode).toBeUndefined();
+    expect(edit.stdout).toContain(`Approval revised: ${original.id} -> appr_`);
+
+    const approvals = await readJsonDir(path.join(projectDir, 'artifacts', 'approvals')) as Array<{
+      id: string;
+      status: string;
+      supersedesId?: string;
+      supersededBy?: string;
+      args: Record<string, unknown>;
+    }>;
+    const revised = approvals.find((approval) => approval.supersedesId === original.id)!;
+    expect(revised).toMatchObject({ status: 'pending', args: correctedArgs });
+    expect(approvals.find((approval) => approval.id === original.id)).toMatchObject({
+      status: 'superseded',
+      supersededBy: revised.id,
+    });
+
+    await captureCommand(() => cmdApprovals({
+      cwd: projectDir,
+      args: ['approve', revised.id, '--by', 'bautista'],
+    }));
+    const resumed = await captureCommand(() => cmdRun({
+      cwd: projectDir,
+      args: ['supportTriage', '--resume', original.runId],
+    }));
+    expect(resumed.exitCode).toBeUndefined();
+    expect(resumed.stdout).toContain('Status: completed');
+  });
+
 
   it('runs evals, writes latest results, and renders reports/viewers', async () => {
     const projectDir = await createCliProject();

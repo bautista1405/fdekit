@@ -337,6 +337,7 @@ function sortApprovals(approvals: ApprovalArtifact[]): ApprovalArtifact[] {
     pending: 0,
     rejected: 1,
     approved: 2,
+    superseded: 3,
   };
 
   return [...approvals].sort((left, right) => {

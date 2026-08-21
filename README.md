@@ -78,6 +78,20 @@ examples/support-triage/recipes/support-renewal-risk/
 
 The console shows traces, tool calls, policy checks, eval status, macro patterns, report content, and connector evidence. The captured recipe is the reusable handoff artifact: config, workflow notes, agent prompt, evals, and a deployment snapshot that can be installed into the next customer project.
 
+After the support walkthrough, run the other credential-free demos from the
+repository root:
+
+```bash
+npm run demo:codebase
+npm run demo:sales
+npm run demo:loadtest
+```
+
+They exercise repository evidence and governed issue creation, account research
+and governed CRM updates, and bounded performance evidence respectively. See
+[Demo Script](./docs/demo.md) for the value shown by each workflow and the
+manual approval/resume commands.
+
 For a fresh project using the npm package:
 
 ```bash

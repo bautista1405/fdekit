@@ -35,10 +35,13 @@ const recipes = [
       'fde.config.ts',
       'agents/codebase-agent.md',
       'evals/codebase-agent.json',
+      'evals/codebase-agent-review.json',
+      'evals/codebase-agent-review-injection.json',
       'scripts/demo.mjs',
       'sample-repo/README.md',
       'sample-repo/package.json',
       'sample-repo/src/billing.ts',
+      'sample-repo/src/onboarding.ts',
       'sample-repo/src/support.ts',
       {
         generated: 'recipes/codebase-agent/mock-planner.mjs',

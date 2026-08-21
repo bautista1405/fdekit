@@ -197,6 +197,7 @@ describe('cli runtime commands', () => {
 
     const approvals = await readJsonDir(path.join(projectDir, 'artifacts', 'approvals')) as Array<{
       id: string;
+      runId: string;
       status: string;
       toolName: string;
     }>;
@@ -226,7 +227,7 @@ describe('cli runtime commands', () => {
 
     const secondRun = await captureCommand(() => cmdRun({
       cwd: projectDir,
-      args: ['supportTriage', '--ticket', 'tick_1001'],
+      args: ['supportTriage', '--resume', approvals[0].runId],
     }));
 
     expect(secondRun.exitCode).toBeUndefined();
@@ -330,7 +331,9 @@ describe('cli runtime commands', () => {
     }));
 
     const consoleOutput = await captureCommand(() => cmdConsole({ cwd: projectDir, args: [] }));
-    expect(consoleOutput.stdout).toContain('Approvals loaded: 1');
+    // The original human decision plus one run-scoped auto-approval for each
+    // eval suite remain independently auditable.
+    expect(consoleOutput.stdout).toContain('Approvals loaded: 3');
     expect(consoleOutput.stdout).toContain('Audit entries loaded:');
     const workbenchHtml = await readFile(path.join(projectDir, 'artifacts', 'workbench.html'), 'utf8');
     expect(workbenchHtml).toContain('Governance Review');

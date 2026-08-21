@@ -6,6 +6,9 @@ node_modules/
 /artifacts/
 /examples/*/artifacts/
 /examples/*/load-tests/.results/
+/examples/codebase-agent/recipes/codebase-agent-repository-review/
+/examples/sales-research-agent/recipes/sales-research-account-brief/
+/examples/load-test-agent/recipes/load-test-local-simulation/
 /packages/*/artifacts/
 /packages/*/*/artifacts/
 **/.turbo/

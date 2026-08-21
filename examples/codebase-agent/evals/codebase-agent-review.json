@@ -1,0 +1,13 @@
+[
+  {
+    "name": "shadow review produces grounded findings",
+    "input": {
+      "task": "Review pull request #1 in shadow mode",
+      "pr": 1,
+      "reviewMode": "shadow"
+    },
+    "expected": {
+      "findings": true
+    }
+  }
+]

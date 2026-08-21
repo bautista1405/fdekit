@@ -1342,11 +1342,11 @@ describe('runAgent', () => {
       reason: 'Customer approved issue creation',
     });
 
-    const completed = await runAgent({
+    const completed = await resumeAgentRun({
       deployment,
       projectDir,
       agentName: 'supportTriage',
-      input: { ticketId: 'tick_1001' },
+      runId: pending.id,
     });
 
     expect(completed.status).toBe('completed');
@@ -2008,7 +2008,7 @@ describe('approval review loop', () => {
     expect(counters['issue.create']).toBeUndefined();
   });
 
-  it('reports a rejected decision as a distinct run status', async () => {
+  it('reports rejection for the paused run and requires fresh review on a later run', async () => {
     const counters: Record<string, number> = {};
     const deployment = createGatedDeployment(counters);
     const projectDir = await mkRunProjectDir();
@@ -2020,7 +2020,12 @@ describe('approval review loop', () => {
     expect(resumed.status).toBe('rejected');
 
     const rerun = await runAgent({ deployment, projectDir, agentName: 'triage', input: {} });
-    expect(rerun.status).toBe('rejected');
+    expect(rerun.status).toBe('waiting_approval');
+    expect(rerun.approvals[0].id).not.toBe(paused.approvals[0].id);
+    expect(rerun.approvals[0]).toMatchObject({
+      status: 'pending',
+      runId: rerun.id,
+    });
     expect(counters['issue.create']).toBeUndefined();
   });
 

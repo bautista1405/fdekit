@@ -32,13 +32,30 @@ For repeated recordings after a successful build:
 npm run demo:fast
 ```
 
+Choose the workflow that matches the value you want to inspect:
+
+```bash
+npm run demo:support   # governed support action, approval, exact resume
+npm run demo:codebase  # source-grounded repository work and issue handoff
+npm run demo:sales     # account research and governed CRM note
+npm run demo:loadtest  # bounded performance evidence and thresholds
+```
+
+All four use local fixtures and the deterministic mock provider by default, so
+they require no API key and do not write to an external system. The support and
+codebase demos display every pending action, record a named demo approval, and
+resume the same durable run. This automatic approval is for the repeatable
+walkthrough only; the manual CLI flow below leaves the decision to the operator.
+
 The script:
 
 1. Builds the monorepo.
 2. Checks that scaffold-owned examples still match the recipe templates.
 3. Starts the support-triage customer API if it is not already running.
 4. Runs doctor and validation checks.
-5. Runs the support triage agent loop.
+5. Runs the support triage agent loop, pauses before each external action,
+   displays the exact request, records approval, and resumes without replaying
+   completed steps.
 6. Exports feedback into eval candidates.
 7. Runs lower-level evals and macro evals.
 8. Generates a report and local console.
@@ -107,7 +124,9 @@ npm run demo:fast
 Narrate the command output:
 
 - validation checks config shape and governance,
-- run executes the agent loop,
+- run executes the agent loop and pauses external effects for review,
+- approval inspection shows the exact tool, arguments, policy, actor, and run,
+- resume continues the durable run without repeating completed lookups or writes,
 - eval proves required tool calls and policy behavior,
 - macro eval finds recurring behavior patterns,
 - report and console produce stakeholder-facing evidence,
@@ -213,6 +232,18 @@ npm run example:console
 cd examples/support-triage
 node ../../packages/cli/dist/index.js recipe capture support-renewal-risk --force
 ```
+
+When stepping through an approval manually, `fdekit run` exits with code `2`
+to mean “waiting for a human,” not “failed.” Follow the identifiers printed by
+the command:
+
+```bash
+fdekit approvals show <approval-id>
+fdekit approvals approve <approval-id> --by <name> --reason "reviewed exact action"
+fdekit run supportTriage --resume <run-id>
+```
+
+Repeat those three commands if the workflow reaches another governed effect.
 
 ## What Not To Demo
 

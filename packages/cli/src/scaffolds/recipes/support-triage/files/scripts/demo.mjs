@@ -64,7 +64,7 @@ async function runGovernedAgent() {
 
     for (const approval of pending) {
       printHeader(`Human review round ${round}: approving ${approval.toolName}`);
-      console.log(`A reviewer would inspect this with: fdekit approvals show ${approval.id}`);
+      await run('fdekit', ['approvals', 'show', approval.id]);
       await run('fdekit', [
         'approvals', 'approve', approval.id,
         '--by', 'fdekit-demo',

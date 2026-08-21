@@ -27,20 +27,127 @@ import {
   AgentRunError,
   executeGovernedToolSequence,
   resumeAgentRun,
+  revisePausedApproval,
   runAgent,
+  type AgentContextPlanningOptions,
   type PausedRunArtifact,
 } from '../agents/index.js';
 import {
   ApprovalDecisionConflictError,
   approveApproval,
+  readApproval,
   readApprovals,
   readAuditLog,
   rejectApproval,
 } from '../governance/index.js';
 import { readJsonArtifact } from '../artifact-store/index.js';
-import { createFileSessionStore } from '../sessions/index.js';
+import { createFileSessionStore, type SessionStore } from '../sessions/index.js';
+
+function plannedContextOptions(
+  overrides: Partial<AgentContextPlanningOptions> = {},
+): AgentContextPlanningOptions {
+  return {
+    policy: {
+      schemaVersion: 1,
+      version: 'review-policy.v1',
+      fingerprint: 'policy-fingerprint',
+      evaluatedAt: '2026-08-20T12:00:00.000Z',
+      decision: 'allow',
+      capabilities: ['source:read', 'tool:execute'],
+      approvalRequiredFor: [],
+      sourceAllowlist: ['repo-authorized'],
+      targetAllowlist: ['review-target'],
+      budget: { maxInputTokens: 10_000, maxOutputTokens: 1_000, maxToolCalls: 4 },
+      reasons: ['Test policy allows the review route'],
+    },
+    routes: [{
+      target: {
+        id: 'review-target',
+        provider: 'routed-provider',
+        model: 'review-model',
+        capabilities: {
+          inputModalities: ['text'],
+          outputModalities: ['text'],
+          contextWindowTokens: 32_000,
+          maxOutputTokens: 4_000,
+          toolCalls: true,
+          structuredOutput: true,
+          streaming: false,
+          reasoning: false,
+          promptCaching: false,
+        },
+      },
+      endpoint: {
+        id: 'private-us',
+        provider: 'routed-provider',
+        credentialRef: 'secret://routed-provider',
+        region: 'us-east',
+        trustBoundary: 'private',
+      },
+    }],
+    requirements: { inputModalities: ['text'], outputModalities: ['text'] },
+    objectives: {
+      relevance: 1,
+      freshness: 0.5,
+      authority: 1,
+      completeness: 0.5,
+      latency: 0.2,
+      cost: 0.2,
+    },
+    requestedSourceIds: ['repo-authorized'],
+    items: [{
+      item: {
+        id: 'authorized-evidence',
+        kind: 'evidence',
+        content: 'Grounded repository evidence',
+        sourceIds: ['repo-authorized'],
+      },
+      estimatedTokens: 8,
+      priority: 10,
+    }],
+    ...overrides,
+  };
+}
 
 describe('runAgent', () => {
+  it('batches non-critical telemetry between immediate lifecycle boundaries', async () => {
+    const projectDir = await mkRunProjectDir();
+    const fileStore = createFileSessionStore({ projectDir });
+    const batchSizes: number[] = [];
+    const sessionStore: SessionStore = {
+      ...fileStore,
+      async appendBatch(sessionId, events, options) {
+        batchSizes.push(events.length);
+        return fileStore.appendBatch!(sessionId, events, options);
+      },
+    };
+    const deployment = defineDeployment({
+      name: 'batched-observability',
+      providers: {
+        deterministic: {
+          name: 'deterministic',
+          runtime: {
+            name: 'deterministic',
+            planNextStep: () => ({ type: 'final', message: 'done' }),
+          },
+        },
+      },
+      agents: { observer: defineAgent({ provider: 'deterministic', instructions: 'Observe.' }) },
+    });
+
+    const result = await runAgent({
+      deployment,
+      projectDir,
+      agentName: 'observer',
+      input: {},
+      sessionStore,
+    });
+
+    expect(result.status).toBe('completed');
+    expect(batchSizes).toEqual([1, 5]);
+    expect(await fileStore.readEvents(result.id)).toHaveLength(6);
+  });
+
   it('runs a deterministic support escalation loop with tool calls and traces', async () => {
     const deployment = createSupportTriageDeployment();
     const projectDir = await mkRunProjectDir();
@@ -78,7 +185,7 @@ describe('runAgent', () => {
       state: 'completed',
       revision: result.trace.events.length,
     });
-  });
+  }, 15_000);
 
   it('keeps standard support tickets out of the escalation path', async () => {
     const deployment = createSupportTriageDeployment();
@@ -120,6 +227,7 @@ describe('runAgent', () => {
       agents: {
         customAgent: defineAgent({
           provider: 'custom',
+          model: 'agent-model',
           instructions: 'Use the custom provider',
         }),
       },
@@ -134,7 +242,648 @@ describe('runAgent', () => {
 
     expect(result.status).toBe('completed');
     expect(result.provider).toBe('custom');
-    expect(result.finalAnswer).toBe('Config runtime completed with custom-model');
+    expect(result.finalAnswer).toBe('Config runtime completed with agent-model');
+  });
+
+  it('routes policy-planned steps through the selected endpoint and exposes only compiled model context', async () => {
+    const projectDir = await mkRunProjectDir();
+    let configuredModel: string | undefined;
+    let receivedContext: ProviderPlanContext | undefined;
+    const deployment = defineDeployment({
+      name: 'test-context-routed-runtime',
+      environment: 'local',
+      providers: {
+        fallback: {
+          name: 'fallback',
+          runtime: {
+            name: 'fallback',
+            planNextStep: () => {
+              throw new Error('fallback provider must not run');
+            },
+          },
+        },
+        'private-us': {
+          name: 'routed-provider',
+          model: 'deployment-default',
+          runtime: (config) => {
+            configuredModel = config.model;
+            return {
+              name: config.name,
+              planNextStep(context) {
+                receivedContext = context;
+                return { type: 'final', message: 'Routed review complete' };
+              },
+            };
+          },
+        },
+      },
+      agents: {
+        reviewer: defineAgent({
+          provider: 'fallback',
+          instructions: 'Review only authorized evidence.',
+        }),
+      },
+    });
+    const contextPlanning = plannedContextOptions();
+
+    const result = await runAgent({
+      deployment,
+      projectDir,
+      agentName: 'reviewer',
+      input: { objective: 'review pull request 42' },
+      taskId: 'task-42',
+      attemptId: 'attempt-1',
+      contextPlanning,
+    });
+
+    expect(result.status).toBe('completed');
+    expect(result.provider).toBe('routed-provider');
+    expect(configuredModel).toBe('review-model');
+    expect(receivedContext).toMatchObject({
+      deployment: { name: 'test-context-routed-runtime', providers: {}, agents: {} },
+      agent: { instructions: '' },
+      input: {},
+      instructions: '',
+      toolResults: [],
+      outputTokenLimit: 1_000,
+      modelContext: {
+        evidence: [{ id: 'authorized-evidence', content: 'Grounded repository evidence' }],
+      },
+    });
+    expect(receivedContext).not.toHaveProperty('contextPlan');
+    expect(receivedContext?.modelContext?.instructions.map((item) => item.id)).toEqual([
+      'fdekit:agent-instructions',
+      'fdekit:run-input',
+    ]);
+
+    const planEvent = result.trace.events.find((event) => event.type === 'context.plan.selected');
+    expect(planEvent).toMatchObject({
+      identity: { taskId: 'task-42', attemptId: 'attempt-1', stepId: expect.stringContaining(':step:0') },
+      policy: { fingerprint: 'policy-fingerprint', decision: 'allow' },
+      target: { id: 'review-target', provider: 'routed-provider', model: 'review-model' },
+      endpoint: { id: 'private-us', provider: 'routed-provider', region: 'us-east' },
+      model: { evidenceIds: ['authorized-evidence'] },
+    });
+    expect(JSON.stringify(planEvent)).not.toContain('secret://routed-provider');
+    expect(JSON.stringify(planEvent)).not.toContain('Grounded repository evidence');
+    expect(result.usage).toEqual([
+      expect.objectContaining({
+        provider: 'routed-provider',
+        model: 'review-model',
+        status: 'unknown',
+        toolCalls: 0,
+      }),
+    ]);
+    expect(result.usage[0]).not.toHaveProperty('inputTokens');
+  });
+
+  it('records measured provider usage and estimated target cost without inventing fields', async () => {
+    const projectDir = await mkRunProjectDir();
+    const contextPlanning = plannedContextOptions();
+    contextPlanning.routes[0].target.pricing = {
+      currency: 'USD',
+      inputPerMillionTokens: 10,
+      cachedInputPerMillionTokens: 2,
+      cacheWriteInputPerMillionTokens: 12,
+      outputPerMillionTokens: 20,
+    };
+    const deployment = defineDeployment({
+      name: 'test-context-usage',
+      environment: 'local',
+      providers: {
+        'private-us': {
+          name: 'routed-provider',
+          runtime: {
+            name: 'routed-provider',
+            planNextStep: () => ({
+              type: 'final',
+              message: 'Measured review complete',
+              usage: {
+                inputTokens: 105,
+                cachedInputTokens: 20,
+                cacheWriteInputTokens: 5,
+                outputTokens: 50,
+                reasoningTokens: 5,
+              },
+            }),
+          },
+        },
+      },
+      agents: {
+        reviewer: defineAgent({ instructions: 'Review the change.' }),
+      },
+    });
+
+    const result = await runAgent({
+      deployment,
+      projectDir,
+      agentName: 'reviewer',
+      input: {},
+      taskId: 'usage-task',
+      attemptId: 'usage-attempt',
+      contextPlanning,
+    });
+
+    expect(result.costUsd).toBeCloseTo(0.0019);
+    expect(result.usage).toEqual([expect.objectContaining({
+      schemaVersion: 1,
+      identity: expect.objectContaining({ taskId: 'usage-task', attemptId: 'usage-attempt' }),
+      provider: 'routed-provider',
+      model: 'review-model',
+      inputTokens: 105,
+      cachedInputTokens: 20,
+      cacheWriteInputTokens: 5,
+      outputTokens: 50,
+      reasoningTokens: 5,
+      toolCalls: 0,
+      cost: 0.0019,
+      currency: 'USD',
+      status: 'measured',
+      metadata: { costStatus: 'estimated' },
+    })]);
+    expect(result.trace.events).toContainEqual(expect.objectContaining({
+      type: 'provider.usage',
+      status: 'measured',
+      inputTokens: 105,
+      outputTokens: 50,
+      cost: 0.0019,
+    }));
+  });
+
+  it('durably pauses for structured input and resumes only with a schema-valid answer', async () => {
+    const projectDir = await mkRunProjectDir();
+    let resumedToolResults: unknown[] = [];
+    const deployment = defineDeployment({
+      name: 'test-needs-input',
+      environment: 'local',
+      providers: {
+        interactive: {
+          name: 'interactive',
+          runtime: {
+            name: 'interactive',
+            planNextStep(context) {
+              if (context.stepIndex === 0) {
+                return {
+                  type: 'input_request',
+                  prompt: 'Which repository should be reviewed?',
+                  inputSchema: {
+                    type: 'object',
+                    required: ['repository'],
+                    properties: { repository: { type: 'string', minLength: 1 } },
+                    additionalProperties: false,
+                  },
+                  disclosure: 'restricted',
+                };
+              }
+              resumedToolResults = context.toolResults;
+              return { type: 'final', message: 'Input accepted' };
+            },
+          },
+        },
+      },
+      agents: {
+        reviewer: defineAgent({ provider: 'interactive', instructions: 'Review a repository.' }),
+      },
+    });
+
+    const paused = await runAgent({
+      deployment,
+      projectDir,
+      agentName: 'reviewer',
+      input: {},
+      inputGate: {
+        audience: [{ id: 'developer-1', kind: 'user' }],
+        requireResumeToken: true,
+        disclosure: 'restricted',
+      },
+    });
+    expect(paused).toMatchObject({
+      status: 'waiting_input',
+      inputRequests: [expect.objectContaining({
+        status: 'pending',
+        prompt: 'Which repository should be reviewed?',
+        disclosure: 'restricted',
+      })],
+    });
+    expect(paused.inputResumeToken).toEqual(expect.any(String));
+    const pausedArtifact = await readJsonArtifact<PausedRunArtifact>(
+      projectDir,
+      'runs',
+      `${paused.id}.json`,
+    );
+    expect(JSON.stringify(pausedArtifact)).not.toContain(paused.inputResumeToken);
+    const sessions = createFileSessionStore({ projectDir });
+    expect(await sessions.getProjection(paused.id)).toMatchObject({ state: 'needs_input' });
+
+    const stillPaused = await resumeAgentRun({ deployment, projectDir, runId: paused.id });
+    expect(stillPaused.status).toBe('waiting_input');
+    await expect(resumeAgentRun({
+      deployment,
+      projectDir,
+      runId: paused.id,
+      inputAnswer: {
+        value: {},
+        answeredBy: { id: 'developer-1', kind: 'user' },
+        resumeToken: paused.inputResumeToken,
+      },
+    })).rejects.toThrow('Input answer $.repository: Required property is missing');
+    await expect(resumeAgentRun({
+      deployment,
+      projectDir,
+      runId: paused.id,
+      inputAnswer: {
+        value: { repository: 'fdekit' },
+        answeredBy: { id: 'developer-2', kind: 'user' },
+        resumeToken: paused.inputResumeToken,
+      },
+    })).rejects.toThrow('Actor developer-2 is not an intended principal');
+    await expect(resumeAgentRun({
+      deployment,
+      projectDir,
+      runId: paused.id,
+      inputAnswer: {
+        value: { repository: 'fdekit' },
+        answeredBy: { id: 'developer-1', kind: 'user' },
+        resumeToken: 'wrong-token',
+      },
+    })).rejects.toThrow('requires its valid resume token');
+
+    const completed = await resumeAgentRun({
+      deployment,
+      projectDir,
+      runId: paused.id,
+      inputAnswer: {
+        value: { repository: 'fdekit' },
+        answeredBy: { id: 'developer-1', kind: 'user' },
+        resumeToken: paused.inputResumeToken,
+      },
+    });
+    expect(completed.status).toBe('completed');
+    expect(resumedToolResults).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        name: 'fdekit.input',
+        result: { repository: 'fdekit' },
+      }),
+    ]));
+    expect(completed.trace.events).toContainEqual(expect.objectContaining({
+      type: 'input.answered',
+      answeredBy: 'developer-1',
+    }));
+  });
+
+  it('fails closed when a configured human-input deadline has already elapsed', async () => {
+    const projectDir = await mkRunProjectDir();
+    const deployment = defineDeployment({
+      name: 'expired-input-deadline',
+      environment: 'local',
+      providers: {
+        interactive: {
+          name: 'interactive',
+          runtime: {
+            name: 'interactive',
+            planNextStep: () => ({
+              type: 'input_request',
+              prompt: 'Confirm the target',
+              inputSchema: { type: 'string' },
+            }),
+          },
+        },
+      },
+      agents: {
+        reviewer: defineAgent({ provider: 'interactive', instructions: 'Review.' }),
+      },
+    });
+
+    await expect(runAgent({
+      deployment,
+      projectDir,
+      agentName: 'reviewer',
+      input: {},
+      inputGate: { deadlineAt: '2020-01-01T00:00:00.000Z' },
+    })).rejects.toMatchObject({
+      name: 'AgentRunError',
+      result: expect.objectContaining({
+        status: 'failed',
+        finalAnswer: expect.stringContaining('has already elapsed'),
+      }),
+    });
+  });
+
+  it('fails after a measured provider step exceeds the declared cost budget', async () => {
+    const projectDir = await mkRunProjectDir();
+    let providerCalls = 0;
+    const contextPlanning = plannedContextOptions({
+      budget: { maxInputTokens: 10_000, maxOutputTokens: 1_000, maxCost: 0.001 },
+    });
+    contextPlanning.routes[0].target.pricing = {
+      currency: 'USD',
+      inputPerMillionTokens: 10,
+      outputPerMillionTokens: 20,
+    };
+    const deployment = defineDeployment({
+      name: 'test-context-cost-budget',
+      environment: 'local',
+      providers: {
+        'private-us': {
+          name: 'routed-provider',
+          runtime: {
+            name: 'routed-provider',
+            planNextStep: () => {
+              providerCalls += 1;
+              return {
+                type: 'final',
+                message: 'This answer is over budget',
+                usage: { inputTokens: 100, outputTokens: 50 },
+              };
+            },
+          },
+        },
+      },
+      agents: {
+        reviewer: defineAgent({ instructions: 'Review the change.' }),
+      },
+    });
+
+    await expect(runAgent({
+      deployment,
+      projectDir,
+      agentName: 'reviewer',
+      input: {},
+      contextPlanning,
+    })).rejects.toMatchObject({
+      name: 'AgentRunError',
+      result: {
+        status: 'failed',
+        finalAnswer: 'Inference cost budget exceeded: 0.002 USD used, limit 0.001 USD',
+        costUsd: 0.002,
+        usage: [expect.objectContaining({ status: 'measured', cost: 0.002 })],
+      },
+    });
+    expect(providerCalls).toBe(1);
+  });
+
+  it('fails a hard cost budget when cache-write usage has no declared price', async () => {
+    const projectDir = await mkRunProjectDir();
+    const contextPlanning = plannedContextOptions({
+      budget: { maxInputTokens: 10_000, maxOutputTokens: 1_000, maxCost: 0.01 },
+    });
+    contextPlanning.routes[0].target.pricing = {
+      currency: 'USD',
+      inputPerMillionTokens: 10,
+      cachedInputPerMillionTokens: 2,
+      outputPerMillionTokens: 20,
+    };
+    const deployment = defineDeployment({
+      name: 'test-context-cache-write-cost',
+      environment: 'local',
+      providers: {
+        'private-us': {
+          name: 'routed-provider',
+          runtime: {
+            name: 'routed-provider',
+            planNextStep: () => ({
+              type: 'final',
+              message: 'Cache write price is missing',
+              usage: {
+                inputTokens: 105,
+                cacheWriteInputTokens: 5,
+                outputTokens: 25,
+              },
+            }),
+          },
+        },
+      },
+      agents: {
+        reviewer: defineAgent({ instructions: 'Review the change.' }),
+      },
+    });
+
+    await expect(runAgent({
+      deployment,
+      projectDir,
+      agentName: 'reviewer',
+      input: {},
+      contextPlanning,
+    })).rejects.toMatchObject({
+      name: 'AgentRunError',
+      result: {
+        status: 'failed',
+        finalAnswer: 'Inference cost budget could not be verified because provider usage was unavailable or incomplete',
+        usage: [expect.objectContaining({
+          status: 'measured',
+          inputTokens: 105,
+          cacheWriteInputTokens: 5,
+        })],
+      },
+    });
+  });
+
+  it('rejects an unenforceable cost budget before calling an unpriced target', async () => {
+    const projectDir = await mkRunProjectDir();
+    let providerCalls = 0;
+    const deployment = defineDeployment({
+      name: 'test-context-unpriced-budget',
+      environment: 'local',
+      providers: {
+        'private-us': {
+          name: 'routed-provider',
+          runtime: {
+            name: 'routed-provider',
+            planNextStep: () => {
+              providerCalls += 1;
+              return { type: 'final', message: 'Must not execute' };
+            },
+          },
+        },
+      },
+      agents: {
+        reviewer: defineAgent({ instructions: 'Review the change.' }),
+      },
+    });
+
+    await expect(runAgent({
+      deployment,
+      projectDir,
+      agentName: 'reviewer',
+      input: {},
+      contextPlanning: plannedContextOptions({
+        budget: { maxInputTokens: 10_000, maxOutputTokens: 1_000, maxCost: 0.01 },
+      }),
+    })).rejects.toMatchObject({
+      name: 'AgentRunError',
+      result: {
+        status: 'failed',
+        finalAnswer: 'Inference cost budget cannot be enforced for unpriced target "review-target"',
+      },
+    });
+    expect(providerCalls).toBe(0);
+  });
+
+  it('fails a hard cost budget when a priced provider omits usage', async () => {
+    const projectDir = await mkRunProjectDir();
+    const contextPlanning = plannedContextOptions({
+      budget: { maxInputTokens: 10_000, maxOutputTokens: 1_000, maxCost: 0.01 },
+    });
+    contextPlanning.routes[0].target.pricing = {
+      currency: 'USD',
+      inputPerMillionTokens: 10,
+      outputPerMillionTokens: 20,
+    };
+    const deployment = defineDeployment({
+      name: 'test-context-unknown-cost',
+      environment: 'local',
+      providers: {
+        'private-us': {
+          name: 'routed-provider',
+          runtime: {
+            name: 'routed-provider',
+            planNextStep: () => ({ type: 'final', message: 'Usage unavailable' }),
+          },
+        },
+      },
+      agents: {
+        reviewer: defineAgent({ instructions: 'Review the change.' }),
+      },
+    });
+
+    await expect(runAgent({
+      deployment,
+      projectDir,
+      agentName: 'reviewer',
+      input: {},
+      contextPlanning,
+    })).rejects.toMatchObject({
+      name: 'AgentRunError',
+      result: {
+        status: 'failed',
+        finalAnswer: 'Inference cost budget could not be verified because provider usage was unavailable or incomplete',
+        usage: [expect.objectContaining({ status: 'unknown' })],
+      },
+    });
+  });
+
+  it('blocks provider calls to tools excluded by the step context budget', async () => {
+    const projectDir = await mkRunProjectDir();
+    let betaCalls = 0;
+    const deployment = defineDeployment({
+      name: 'test-context-tool-budget',
+      environment: 'local',
+      providers: {
+        'private-us': {
+          name: 'routed-provider',
+          runtime: {
+            name: 'routed-provider',
+            planNextStep: () => ({ type: 'tool_call', toolName: 'beta.write', args: {} }),
+          },
+        },
+      },
+      agents: {
+        reviewer: defineAgent({
+          instructions: 'Use an allowed tool.',
+          tools: [
+            defineTool({ name: 'alpha.read', handler: () => ({ ok: true }) }),
+            defineTool({
+              name: 'beta.write',
+              handler: () => {
+                betaCalls += 1;
+                return { ok: true };
+              },
+            }),
+          ],
+        }),
+      },
+    });
+
+    await expect(runAgent({
+      deployment,
+      projectDir,
+      agentName: 'reviewer',
+      input: {},
+      contextPlanning: plannedContextOptions({
+        budget: { maxInputTokens: 10_000, maxOutputTokens: 1_000, maxToolCalls: 1 },
+      }),
+    })).rejects.toMatchObject({
+      name: 'AgentRunError',
+      result: {
+        status: 'failed',
+        finalAnswer: 'Context plan does not allow tool "beta.write" at step 0',
+      },
+    });
+    expect(betaCalls).toBe(0);
+  });
+
+  it('preserves the governing context plan across approval pause and resume', async () => {
+    const projectDir = await mkRunProjectDir();
+    let writes = 0;
+    const deployment = defineDeployment({
+      name: 'test-context-planned-resume',
+      environment: 'local',
+      providers: {
+        'private-us': {
+          name: 'routed-provider',
+          runtime: {
+            name: 'routed-provider',
+            planNextStep(context) {
+              return context.modelContext?.recentActions.length
+                ? { type: 'final', message: 'Approved write completed' }
+                : { type: 'tool_call', toolName: 'issue.create', args: { title: 'Review finding' } };
+            },
+          },
+        },
+      },
+      agents: {
+        reviewer: defineAgent({
+          instructions: 'Create the reviewed issue.',
+          tools: [defineTool({
+            name: 'issue.create',
+            handler: () => {
+              writes += 1;
+              return { id: 'ISSUE-42' };
+            },
+          })],
+          policies: [requireApproval({ tools: ['issue.create'], reason: 'Writes require review' })],
+        }),
+      },
+    });
+    const contextPlanning = plannedContextOptions();
+    const paused = await runAgent({
+      deployment,
+      projectDir,
+      agentName: 'reviewer',
+      input: {},
+      contextPlanning,
+    });
+
+    expect(paused.status).toBe('waiting_approval');
+    expect(writes).toBe(0);
+    const artifact = await readJsonArtifact<PausedRunArtifact>(projectDir, 'runs', `${paused.id}.json`);
+    expect(artifact).toMatchObject({
+      contextPlanningRequired: true,
+      contextPolicyFingerprint: 'policy-fingerprint',
+      contextPlan: {
+        target: { id: 'review-target' },
+        endpoint: { id: 'private-us' },
+        model: { tools: [{ name: 'issue.create' }] },
+      },
+    });
+    await expect(resumeAgentRun({
+      deployment,
+      projectDir,
+      runId: paused.id,
+    })).rejects.toThrow('requires contextPlanning options');
+
+    await approveApproval(projectDir, paused.approvals[0].id, { actor: 'reviewer' });
+    const completed = await resumeAgentRun({
+      deployment,
+      projectDir,
+      runId: paused.id,
+      contextPlanning,
+    });
+
+    expect(completed.status).toBe('completed');
+    expect(completed.finalAnswer).toBe('Approved write completed');
+    expect(writes).toBe(1);
+    expect(completed.toolCalls.map((call) => call.name)).toEqual(['issue.create']);
   });
 
   it('runs a provider adapter supplied by a runtime registry', async () => {
@@ -626,6 +1375,81 @@ describe('runAgent', () => {
       approvalId: pending.approvals[0].id,
       actor: 'agent',
     });
+  });
+
+  it('validates corrected pending args and requires a fresh approval subject before resume', async () => {
+    const projectDir = await mkRunProjectDir();
+    let executedArgs: unknown;
+    const deployment = defineDeployment({
+      name: 'correct-before-approve',
+      providers: {
+        deterministic: {
+          name: 'deterministic',
+          runtime: {
+            name: 'deterministic',
+            planNextStep: (context) => context.toolResults.length === 0
+              ? { type: 'tool_call', toolName: 'invoice.adjust', args: { invoiceId: 'inv-1', amount: 100 } }
+              : { type: 'final', message: 'Adjustment recorded' },
+          },
+        },
+      },
+      agents: {
+        operator: defineAgent({
+          provider: 'deterministic',
+          instructions: 'Adjust the invoice only after approval.',
+          policies: [requireApproval({ tools: ['invoice.adjust'] })],
+          tools: [defineTool<{ invoiceId: string; amount: number }>({
+            name: 'invoice.adjust',
+            argsSchema: {
+              type: 'object',
+              required: ['invoiceId', 'amount'],
+              properties: {
+                invoiceId: { type: 'string', minLength: 1 },
+                amount: { type: 'number', minimum: 1 },
+              },
+              additionalProperties: false,
+            },
+            handler(args) {
+              executedArgs = args;
+              return { adjusted: true };
+            },
+          })],
+        }),
+      },
+    });
+    const paused = await runAgent({ deployment, projectDir, agentName: 'operator', input: {} });
+    const original = paused.approvals[0]!;
+
+    await expect(revisePausedApproval({
+      deployment,
+      projectDir,
+      approvalId: original.id,
+      args: { invoiceId: 'inv-1', amount: 0 },
+      actor: 'reviewer-1',
+    })).rejects.toThrow('Replacement args $.amount: Expected number >= 1');
+
+    const revision = await revisePausedApproval({
+      deployment,
+      projectDir,
+      approvalId: original.id,
+      args: { invoiceId: 'inv-1', amount: 50 },
+      actor: 'reviewer-1',
+      reason: 'Correct the amount before approval',
+    });
+    expect(revision.current).toMatchObject({
+      status: 'pending',
+      args: { invoiceId: 'inv-1', amount: 50 },
+      supersedesId: original.id,
+    });
+    expect(await readApproval(projectDir, original.id)).toMatchObject({
+      status: 'superseded',
+      supersededBy: revision.current.id,
+    });
+
+    await approveApproval(projectDir, revision.current.id, { actor: 'reviewer-1' });
+    const completed = await resumeAgentRun({ deployment, projectDir, runId: paused.id });
+    expect(completed.status).toBe('completed');
+    expect(executedArgs).toEqual({ invoiceId: 'inv-1', amount: 50 });
   });
 
   it('redacts secret-like values before writing traces and audit metadata', async () => {

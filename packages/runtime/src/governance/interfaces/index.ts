@@ -1,4 +1,4 @@
-export type ApprovalStatus = 'pending' | 'approved' | 'rejected';
+export type ApprovalStatus = 'pending' | 'approved' | 'rejected' | 'superseded';
 
 export type AuditOutcome = 'requested' | 'allowed' | 'blocked' | 'succeeded' | 'failed' | 'approved' | 'rejected';
 
@@ -36,6 +36,12 @@ export interface ApprovalArtifact {
   /** Set when the approved tool call actually executed. */
   executedAt?: string;
   executedRunId?: string;
+  /** Prior approval subject replaced by this corrected request. */
+  supersedesId?: string;
+  /** New approval subject that replaced this request before decision. */
+  supersededBy?: string;
+  supersededAt?: string;
+  supersededByActor?: string;
 }
 
 export interface ApprovalRequestInput {
@@ -51,6 +57,7 @@ export interface ApprovalRequestInput {
   target?: Record<string, unknown>;
   reason?: string;
   requestedBy?: string;
+  supersedesId?: string;
 }
 
 export interface AuditLogEntry {

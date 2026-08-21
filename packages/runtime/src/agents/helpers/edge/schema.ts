@@ -6,7 +6,7 @@ export interface SchemaValidationIssue {
 }
 
 export function validateToolArgsSchema(schema: unknown, args: unknown): SchemaValidationIssue[] {
-  const issues = validateSchemaValue(schema, args, '$');
+  const issues = validateJsonSchema(schema, args);
 
   if (issues.length > 0) {
     return issues;
@@ -16,6 +16,10 @@ export function validateToolArgsSchema(schema: unknown, args: unknown): SchemaVa
   return record.type === 'object'
     ? []
     : [{ path: '$', message: 'Tool argsSchema must be an object schema' }];
+}
+
+export function validateJsonSchema(schema: unknown, value: unknown): SchemaValidationIssue[] {
+  return validateSchemaValue(schema, value, '$');
 }
 
 function validateSchemaValue(schema: unknown, value: unknown, path: string): SchemaValidationIssue[] {

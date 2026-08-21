@@ -1,18 +1,28 @@
-import { readApproval, redactForGovernance } from '../governance/index.js';
+import { createHash, randomUUID, timingSafeEqual } from 'node:crypto';
+import type { InputAnswerRecord } from '@fdekit/core';
+import {
+  readApproval,
+  redactForGovernance,
+  requestApproval,
+  supersedeApproval,
+} from '../governance/index.js';
 import { createArtifactStore, readJsonArtifact, readJsonArtifacts, writeJsonArtifact } from '../artifact-store/index.js';
 import type { ArtifactStore } from '../artifact-store/index.js';
 import { createFileSessionStore, type SessionStore } from '../sessions/index.js';
 import type { TraceArtifact, TraceEvent } from '../traces/index.js';
 import type {
   AgentResumeOptions,
+  AgentContextPlanningOptions,
   AgentRunOptions,
   AgentRunResult,
   AgentRunStatus,
   GovernedToolCall,
   GovernedToolSequenceOptions,
   PausedRunArtifact,
+  RevisePausedApprovalOptions,
 } from './interfaces/index.js';
 export type {
+  AgentContextPlanningOptions,
   AgentResumeOptions,
   AgentRunOptions,
   AgentRunResult,
@@ -21,6 +31,7 @@ export type {
   GovernedToolCall,
   GovernedToolSequenceOptions,
   PausedRunArtifact,
+  RevisePausedApprovalOptions,
   PolicyViolation,
 } from './interfaces/index.js';
 import {
@@ -32,13 +43,18 @@ import {
   collectToolTargets,
   createRunId,
   enforceToolCatalogEdge,
+  enforceContextPlannedTool,
   governanceProfileEvent,
+  InputRequiredError,
   loadInstructions,
   recordRunEvent,
+  selectContextInferenceRoute,
   resolveProvider,
   resolveRuntimeEdgeMode,
   runProviderLoop,
   type RunState,
+  validateJsonSchema,
+  validateToolArgsSchema,
 } from './helpers/index.js';
 
 const PAUSED_RUNS_GROUP = 'runs';
@@ -61,7 +77,10 @@ export async function runAgent(options: AgentRunOptions): Promise<AgentRunResult
     throw new Error(`Agent "${options.agentName}" is not defined in deployment "${options.deployment.name}"`);
   }
 
-  const provider = await resolveProvider(options.deployment, agent, options.providerRegistry);
+  const route = options.contextPlanning
+    ? selectContextInferenceRoute(options.contextPlanning)
+    : undefined;
+  const provider = await resolveProvider(options.deployment, agent, options.providerRegistry, route);
   const maxSteps = options.maxSteps ?? 8;
   const artifactStore = createArtifactStore({
     deployment: options.deployment,
@@ -69,6 +88,7 @@ export async function runAgent(options: AgentRunOptions): Promise<AgentRunResult
     store: options.artifactStore,
   });
   const sessionStore = resolveSessionStore(options.projectDir, options.sessionStore);
+  const runId = createRunId();
   const state: RunState = {
     deployment: options.deployment,
     projectDir: options.projectDir,
@@ -76,11 +96,17 @@ export async function runAgent(options: AgentRunOptions): Promise<AgentRunResult
     sessionStore,
     sessionRevision: 0,
     sessionState: undefined,
-    runId: createRunId(),
+    pendingSessionEvents: [],
+    runId,
+    taskId: options.taskId ?? runId,
+    attemptId: options.attemptId ?? `${runId}:attempt:1`,
+    startedAt,
     agentName: options.agentName,
     agent,
     provider,
+    contextPlanning: options.contextPlanning,
     input: options.input,
+    inputGate: options.inputGate,
     instructions: await loadInstructions(options.projectDir, agent.instructions),
     tools: collectAgentTools(options.deployment, agent),
     toolTargets: collectToolTargets(options.deployment),
@@ -89,8 +115,13 @@ export async function runAgent(options: AgentRunOptions): Promise<AgentRunResult
     toolCalls: [],
     policyViolations: [],
     approvals: [],
+    approvalReplacements: {},
+    inputRequests: [],
+    inputResumeToken: undefined,
+    inputAnswers: [],
     events: [],
     costUsd: 0,
+    usage: [],
     approvalOverride: options.approvalOverride,
     satisfiedApprovalIds: [],
     lastStepIndex: 0,
@@ -154,6 +185,7 @@ export async function executeGovernedToolSequence(
   });
   const sessionStore = resolveSessionStore(options.projectDir, options.sessionStore);
   const input = options.input ?? {};
+  const runId = createRunId();
   const state: RunState = {
     deployment: options.deployment,
     projectDir: options.projectDir,
@@ -161,11 +193,16 @@ export async function executeGovernedToolSequence(
     sessionStore,
     sessionRevision: 0,
     sessionState: undefined,
-    runId: createRunId(),
+    pendingSessionEvents: [],
+    runId,
+    taskId: runId,
+    attemptId: `${runId}:attempt:1`,
+    startedAt,
     agentName: options.agentName,
     agent,
     provider,
     input,
+    inputGate: undefined,
     instructions: '',
     tools: collectAgentTools(options.deployment, agent),
     toolTargets: collectToolTargets(options.deployment),
@@ -174,8 +211,13 @@ export async function executeGovernedToolSequence(
     toolCalls: [],
     policyViolations: [],
     approvals: [],
+    approvalReplacements: {},
+    inputRequests: [],
+    inputResumeToken: undefined,
+    inputAnswers: [],
     events: [],
     costUsd: 0,
+    usage: [],
     approvalOverride: options.approvalOverride,
     satisfiedApprovalIds: [],
     lastStepIndex: 0,
@@ -183,7 +225,6 @@ export async function executeGovernedToolSequence(
     resumeMode: 'tool_sequence',
     remainingCalls: [],
   };
-
   await recordRunEvent(state, {
     type: 'agent.run.started',
     message: `Started governed tool sequence for ${options.agentName}`,
@@ -233,15 +274,32 @@ export async function resumeAgentRun(options: AgentResumeOptions): Promise<Agent
     throw new Error(`Agent "${paused.agent}" from paused run ${paused.runId} is not defined in deployment "${options.deployment.name}"`);
   }
 
-  const approval = await readApproval(options.projectDir, paused.pending.approvalId, artifactStore);
-
-  if (!approval) {
-    throw new Error(`Approval ${paused.pending.approvalId} for paused run ${paused.runId} was not found`);
+  if (paused.contextPlanningRequired && !options.contextPlanning) {
+    throw new Error(`Paused run ${paused.runId} requires contextPlanning options to resume safely`);
   }
-
+  const route = options.contextPlanning
+    ? selectContextInferenceRoute(options.contextPlanning)
+    : undefined;
+  if (paused.contextPlan && route && (
+    paused.contextPlan.endpoint.id !== route.endpointId
+    || paused.contextPlan.target.id !== route.target.id
+    || paused.contextPlan.target.model !== route.model
+  )) {
+    throw new Error(
+      `Paused run ${paused.runId} must resume through target ${paused.contextPlan.target.id} `
+      + `and endpoint ${paused.contextPlan.endpoint.id}`,
+    );
+  }
+  if (
+    paused.contextPolicyFingerprint
+    && options.contextPlanning
+    && paused.contextPolicyFingerprint !== options.contextPlanning.policy.fingerprint
+  ) {
+    throw new Error(`Paused run ${paused.runId} must resume under the same effective policy`);
+  }
   const provider = paused.resumeMode === 'tool_sequence'
     ? exactToolSequenceProvider(paused.provider)
-    : await resolveProvider(options.deployment, agent, options.providerRegistry);
+    : await resolveProvider(options.deployment, agent, options.providerRegistry, route);
   const projection = await sessionStore.getProjection(paused.runId);
   const state: RunState = {
     deployment: options.deployment,
@@ -250,11 +308,18 @@ export async function resumeAgentRun(options: AgentResumeOptions): Promise<Agent
     sessionStore,
     sessionRevision: projection?.revision ?? paused.sessionRevision ?? 0,
     sessionState: projection?.state,
+    pendingSessionEvents: [],
     runId: paused.runId,
+    taskId: paused.taskId ?? paused.runId,
+    attemptId: paused.attemptId ?? `${paused.runId}:attempt:1`,
+    startedAt,
     agentName: paused.agent,
     agent,
     provider,
+    contextPlanning: options.contextPlanning,
+    activeContextPlan: paused.contextPlan,
     input: paused.input,
+    inputGate: undefined,
     instructions: paused.resumeMode === 'tool_sequence'
       ? ''
       : await loadInstructions(options.projectDir, agent.instructions),
@@ -265,14 +330,32 @@ export async function resumeAgentRun(options: AgentResumeOptions): Promise<Agent
     toolCalls: [...paused.toolCalls],
     policyViolations: [],
     approvals: [],
+    approvalReplacements: { ...(paused.approvalReplacements ?? {}) },
+    inputRequests: [...(paused.inputRequests ?? (paused.pendingInput ? [paused.pendingInput] : []))],
+    inputResumeToken: undefined,
+    inputAnswers: [...(paused.inputAnswers ?? [])],
     events: [...(paused.events as TraceEvent[])],
     costUsd: paused.costUsd,
+    usage: [...(paused.usage ?? [])],
     satisfiedApprovalIds: [],
     lastStepIndex: paused.nextStepIndex,
     resumedFromPause: true,
     resumeMode: paused.resumeMode ?? 'provider',
     remainingCalls: [...(paused.remainingCalls ?? [])],
   };
+
+  if ((paused.pauseReason ?? 'approval') === 'input') {
+    return resumeInputRun(state, paused, options, startedAt);
+  }
+
+  if (!paused.pending) {
+    throw new Error(`Paused approval run ${paused.runId} is missing its exact pending call`);
+  }
+  const pending = paused.pending;
+  const approval = await readApproval(options.projectDir, pending.approvalId, artifactStore);
+  if (!approval) {
+    throw new Error(`Approval ${paused.pending.approvalId} for paused run ${paused.runId} was not found`);
+  }
 
   for (const approvalId of paused.approvalIds) {
     const restored = approvalId === approval.id
@@ -315,30 +398,245 @@ export async function resumeAgentRun(options: AgentResumeOptions): Promise<Agent
     agent: paused.agent,
     provider: provider.name,
     approvalId: approval.id,
-    toolName: paused.pending.toolName,
+    toolName: pending.toolName,
     nextStepIndex: paused.nextStepIndex,
   }, 'running');
   await appendAudit(state, {
     action: 'agent.run.resumed',
     outcome: 'allowed',
     approvalId: approval.id,
-    toolName: paused.pending.toolName,
+    toolName: pending.toolName,
     message: `Resumed run ${paused.runId} after approval ${approval.id}`,
   });
 
   return executeRun(state, startedAt, paused.maxSteps, async () => {
     await enforceToolCatalogEdge(state);
     // Execute the approved call exactly as recorded at pause time.
-    await callTool(state, paused.pending.toolName, paused.pending.args);
+    await enforceContextPlannedTool(state, pending.toolName, paused.nextStepIndex);
+    await callTool(state, pending.toolName, pending.args);
 
     if (state.resumeMode === 'tool_sequence') {
-      await ensureLastToolCallSucceeded(state, paused.pending.toolName);
+      await ensureLastToolCallSucceeded(state, pending.toolName);
       await runExactToolCalls(state, paused.remainingCalls ?? [], paused.nextStepIndex + 1);
       return exactToolSequenceAnswer(state);
     }
 
     // Provider runs continue planning with the full restored history, so
     // already-executed writes are not replayed.
+    return runProviderLoop(state, paused.maxSteps, paused.nextStepIndex + 1);
+  });
+}
+
+/** Replace a pending tool call with schema-valid args and a fresh approval subject. */
+export async function revisePausedApproval(
+  options: RevisePausedApprovalOptions,
+): Promise<{ previous: Awaited<ReturnType<typeof supersedeApproval>>; current: NonNullable<Awaited<ReturnType<typeof readApproval>>>; runId: string }> {
+  const artifactStore = createArtifactStore({
+    deployment: options.deployment,
+    projectDir: options.projectDir,
+    store: options.artifactStore,
+  });
+  const pausedRuns = await readJsonArtifacts<PausedRunArtifact>(
+    options.projectDir,
+    PAUSED_RUNS_GROUP,
+    artifactStore,
+  );
+  const paused = pausedRuns.find((candidate) => (
+    candidate.status === 'paused'
+    && candidate.pauseReason !== 'input'
+    && candidate.pending?.approvalId === options.approvalId
+  ));
+  if (!paused?.pending) {
+    throw new Error(`No paused run has pending approval ${options.approvalId}`);
+  }
+  const approval = await readApproval(options.projectDir, options.approvalId, artifactStore);
+  if (!approval) throw new Error(`Approval request not found: ${options.approvalId}`);
+  if (approval.status !== 'pending') {
+    throw new Error(`Only a pending approval can be revised; ${approval.id} is ${approval.status}`);
+  }
+  const agent = options.deployment.agents[paused.agent];
+  if (!agent) throw new Error(`Agent "${paused.agent}" is not defined`);
+  const tool = collectAgentTools(options.deployment, agent).get(paused.pending.toolName);
+  if (!tool) throw new Error(`Tool "${paused.pending.toolName}" is not available to agent "${paused.agent}"`);
+  if (!tool.argsSchema) {
+    throw new Error(`Tool "${tool.name}" requires argsSchema before pending args can be corrected`);
+  }
+  const issues = validateToolArgsSchema(tool.argsSchema, options.args);
+  if (issues.length > 0) {
+    throw new Error(`Replacement args ${issues.map((issue) => `${issue.path}: ${issue.message}`).join('; ')}`);
+  }
+
+  const current = await requestApproval(options.projectDir, {
+    deployment: approval.deployment,
+    environment: approval.environment,
+    agent: approval.agent,
+    runId: approval.runId,
+    traceId: approval.traceId,
+    policy: approval.policy,
+    phase: approval.phase,
+    toolName: approval.toolName,
+    args: options.args,
+    target: approval.target,
+    reason: options.reason ?? approval.reason,
+    requestedBy: options.actor,
+    supersedesId: approval.id,
+  }, artifactStore);
+  const rootId = Object.entries(paused.approvalReplacements ?? {})
+    .find(([, replacementId]) => replacementId === approval.id)?.[0] ?? approval.id;
+  const nextPaused: PausedRunArtifact = {
+    ...paused,
+    pending: { ...paused.pending, args: options.args, approvalId: current.id },
+    approvalIds: [...new Set([...paused.approvalIds, current.id])],
+    approvalReplacements: {
+      ...(paused.approvalReplacements ?? {}),
+      [rootId]: current.id,
+    },
+    pausedAt: new Date().toISOString(),
+  };
+  await writeJsonArtifact(
+    options.projectDir,
+    PAUSED_RUNS_GROUP,
+    `${paused.runId}.json`,
+    nextPaused,
+    artifactStore,
+  );
+
+  const sessionStore = resolveSessionStore(options.projectDir, options.sessionStore);
+  const projection = await sessionStore.getProjection(paused.runId);
+  if (projection) {
+    const eventId = randomUUID();
+    await sessionStore.append(paused.runId, {
+      eventId,
+      idempotencyKey: eventId,
+      type: 'approval.revised',
+      occurredAt: new Date().toISOString(),
+      state: projection.state,
+      actor: { id: options.actor, kind: 'user' },
+      payload: {
+        previousApprovalId: approval.id,
+        approvalId: current.id,
+        toolName: approval.toolName,
+        args: redactForGovernance(options.args),
+        reason: options.reason,
+      },
+    }, { expectedRevision: projection.revision });
+  }
+  const previous = await supersedeApproval(
+    options.projectDir,
+    approval.id,
+    current.id,
+    { actor: options.actor, reason: options.reason },
+    artifactStore,
+  );
+  return { previous, current, runId: paused.runId };
+}
+
+async function resumeInputRun(
+  state: RunState,
+  paused: PausedRunArtifact,
+  options: AgentResumeOptions,
+  startedAt: number,
+): Promise<AgentRunResult> {
+  const request = paused.pendingInput;
+  if (!request) {
+    throw new Error(`Paused input run ${paused.runId} is missing its pending input request`);
+  }
+
+  if (!options.inputAnswer) {
+    const message = `Input required: ${request.prompt}`;
+    await recordRunEvent(state, {
+      type: 'agent.run.resume_blocked',
+      message,
+      requestId: request.requestId,
+      prompt: request.prompt,
+    }, 'needs_input');
+    await appendAudit(state, {
+      action: 'agent.run.resume_blocked',
+      outcome: 'requested',
+      message,
+      metadata: { requestId: request.requestId },
+    });
+    return createAgentRunResult(
+      state,
+      startedAt,
+      state.provider.name,
+      'waiting_input',
+      message,
+    );
+  }
+  const inputAnswer = options.inputAnswer;
+
+  if (request.deadlineAt && Date.now() >= Date.parse(request.deadlineAt)) {
+    throw new Error(`Input request ${request.requestId} expired at ${request.deadlineAt}`);
+  }
+  if (request.audience?.length && !request.audience.some((actor) => (
+    actor.id === inputAnswer.answeredBy.id
+    && actor.kind === inputAnswer.answeredBy.kind
+  ))) {
+    throw new Error(`Actor ${inputAnswer.answeredBy.id} is not an intended principal for input request ${request.requestId}`);
+  }
+  if (request.resumeTokenDigest) {
+    const received = inputAnswer.resumeToken
+      ? `sha256:${createHash('sha256').update(inputAnswer.resumeToken).digest('hex')}`
+      : '';
+    const expectedBuffer = Buffer.from(request.resumeTokenDigest);
+    const receivedBuffer = Buffer.from(received);
+    if (
+      expectedBuffer.byteLength !== receivedBuffer.byteLength
+      || !timingSafeEqual(expectedBuffer, receivedBuffer)
+    ) {
+      throw new Error(`Input request ${request.requestId} requires its valid resume token`);
+    }
+  }
+
+  const issues = validateJsonSchema(request.inputSchema, inputAnswer.value);
+  if (issues.length > 0) {
+    throw new Error(`Input answer ${issues.map((issue) => `${issue.path}: ${issue.message}`).join('; ')}`);
+  }
+
+  const answer: InputAnswerRecord = {
+    schemaVersion: 1,
+    requestId: request.requestId,
+    answerId: randomUUID(),
+    value: inputAnswer.value,
+    answeredAt: new Date().toISOString(),
+    answeredBy: inputAnswer.answeredBy,
+  };
+  state.inputRequests = state.inputRequests.map((candidate) => candidate.requestId === request.requestId
+    ? { ...candidate, status: 'answered' }
+    : candidate);
+  state.inputAnswers.push({
+    name: 'fdekit.input',
+    args: { requestId: request.requestId, prompt: request.prompt },
+    result: answer.value,
+    latencyMs: 0,
+  });
+  state.pendingInput = undefined;
+
+  await recordRunEvent(state, {
+    type: 'input.answered',
+    requestId: answer.requestId,
+    answerId: answer.answerId,
+    answeredBy: answer.answeredBy.id,
+    value: redactForGovernance(answer.value),
+  }, 'running');
+  await appendAudit(state, {
+    action: 'input.answered',
+    outcome: 'allowed',
+    message: `Answered input request ${answer.requestId}`,
+    metadata: {
+      requestId: answer.requestId,
+      answerId: answer.answerId,
+      answeredBy: answer.answeredBy.id,
+      value: redactForGovernance(answer.value),
+    },
+  });
+  // Consume the human-response capability before any further provider/tool
+  // work. A later input request will create a new paused artifact and token.
+  await consumePausedRun(state);
+
+  return executeRun(state, startedAt, paused.maxSteps, async () => {
+    await enforceToolCatalogEdge(state);
     return runProviderLoop(state, paused.maxSteps, paused.nextStepIndex + 1);
   });
 }
@@ -358,7 +656,11 @@ async function executeRun(
     status = resolveTerminalStatus(state);
     await consumePausedRun(state);
   } catch (err) {
-    if (!(err instanceof ApprovalRequiredError)) {
+    if (err instanceof InputRequiredError) {
+      status = 'waiting_input';
+      finalAnswer = err.message;
+      await writePausedRun(state, maxSteps);
+    } else if (!(err instanceof ApprovalRequiredError)) {
       const message = err instanceof Error ? err.message : String(err);
       await appendAudit(state, {
         action: 'agent.run.failed',
@@ -389,6 +691,7 @@ async function executeRun(
     status,
     latencyMs,
     costUsd: state.costUsd,
+    usage: state.usage,
     toolCalls: state.toolCalls.map((call) => call.name),
     failedToolCalls: state.toolCalls.filter((call) => call.is_error).map((call) => call.name),
     policyViolations: state.policyViolations,
@@ -398,6 +701,12 @@ async function executeRun(
       toolName: approval.toolName,
       policy: approval.policy,
     })),
+    inputRequests: state.inputRequests.map((request) => ({
+      requestId: request.requestId,
+      status: request.status,
+      prompt: request.prompt,
+      disclosure: request.disclosure,
+    })),
   }, executionStateForStatus(status));
   const result = createAgentRunResult(state, startedAt, state.provider.name, status, finalAnswer);
   await appendAudit(state, {
@@ -405,6 +714,7 @@ async function executeRun(
     outcome: status === 'completed' || status === 'completed_with_errors'
       ? 'succeeded'
       : status === 'waiting_approval'
+        || status === 'waiting_input'
         ? 'requested'
         : status === 'rejected'
           ? 'rejected'
@@ -438,8 +748,9 @@ function resolveTerminalStatus(state: RunState): AgentRunStatus {
 
 async function writePausedRun(state: RunState, maxSteps: number): Promise<void> {
   const pending = state.pendingResume;
+  const pendingInput = state.pendingInput;
 
-  if (!pending) {
+  if (!pending && !pendingInput) {
     return;
   }
 
@@ -451,16 +762,29 @@ async function writePausedRun(state: RunState, maxSteps: number): Promise<void> 
     environment: state.deployment.environment,
     agent: state.agentName,
     provider: state.provider.name,
+    taskId: state.taskId,
+    attemptId: state.attemptId,
     input: state.input,
     maxSteps,
     nextStepIndex: state.lastStepIndex,
     costUsd: state.costUsd,
+    usage: state.usage,
     toolCalls: state.toolCalls,
     events: state.events,
     approvalIds: state.approvals.map((approval) => approval.id),
-    pending,
+    approvalReplacements: state.approvalReplacements,
+    pauseReason: pendingInput ? 'input' : 'approval',
+    ...(pending ? { pending } : {}),
+    ...(pendingInput ? { pendingInput } : {}),
+    inputRequests: state.inputRequests,
+    inputAnswers: state.inputAnswers,
     resumeMode: state.resumeMode,
     remainingCalls: state.resumeMode === 'tool_sequence' ? state.remainingCalls : undefined,
+    contextPlan: state.resumeMode === 'provider' ? state.activeContextPlan : undefined,
+    contextPolicyFingerprint: state.resumeMode === 'provider'
+      ? state.contextPlanning?.policy.fingerprint
+      : undefined,
+    contextPlanningRequired: state.resumeMode === 'provider' && Boolean(state.contextPlanning),
     pausedAt: new Date().toISOString(),
     sessionRevision: state.sessionRevision,
   };
@@ -596,8 +920,11 @@ function createAgentRunResult(
     toolCalls: state.toolCalls,
     policyViolations: state.policyViolations,
     approvals: state.approvals,
+    inputRequests: state.inputRequests,
+    ...(state.inputResumeToken ? { inputResumeToken: state.inputResumeToken } : {}),
     latencyMs,
     costUsd: state.costUsd,
+    usage: state.usage,
     trace,
   };
 }
@@ -614,6 +941,8 @@ function executionStateForStatus(status: AgentRunStatus) {
       return 'completed_with_limits' as const;
     case 'waiting_approval':
       return 'needs_approval' as const;
+    case 'waiting_input':
+      return 'needs_input' as const;
     case 'rejected':
       return 'cancelled' as const;
     case 'failed':

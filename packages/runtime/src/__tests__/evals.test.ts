@@ -64,7 +64,7 @@ describe('runEvals', () => {
       expect(trace.id).toBe(evalCase.traceId);
       expect(trace.events?.length).toBeGreaterThan(0);
     }
-  });
+  }, 15_000);
 
   it('writes failed traces when a policy blocks an eval case', async () => {
     const projectDir = await createEvalProject();

@@ -7,6 +7,7 @@ import type {
 import {
   authorizeRetrieval,
   planStepContext,
+  reserveDelegationBudget,
   selectInferenceTarget,
 } from '../context/index.js';
 
@@ -226,6 +227,113 @@ describe('policy-aware context planning', () => {
     expect(stale.feasibility.status).toBe('blocked');
     expect(stale.model.instructions).toEqual([]);
     expect(stale.manifest.excluded[0]?.reason).toBe('policy_denied');
+  });
+
+  it('blocks a target excluded by the effective policy allowlist', () => {
+    const policy = { ...effectivePolicy(), targetAllowlist: ['approved-target'] };
+    const selectedRoute = route('unapproved-target', {});
+    const plan = planStepContext({
+      target: selectedRoute.target,
+      endpoint: selectedRoute.endpoint,
+      policy,
+      authorization: authorizeRetrieval({ policy, requestedSourceIds: [] }),
+      budget: { maxInputTokens: 1_000 },
+      objectives,
+      items: [{
+        item: { id: 'instruction', kind: 'instruction', content: 'Review the change.' },
+        estimatedTokens: 4,
+        required: true,
+      }],
+    });
+
+    expect(plan.feasibility).toMatchObject({
+      status: 'blocked',
+      reasons: ['Inference target unapproved-target is not allowed by the effective policy.'],
+    });
+    expect(plan.model.instructions).toEqual([]);
+  });
+
+  it('deduplicates repeated semantic content and uses explicit compression only when opted in', () => {
+    const policy = effectivePolicy();
+    const selectedRoute = route('compressed', { contextWindowTokens: 50, maxOutputTokens: 20 });
+    const plan = planStepContext({
+      target: selectedRoute.target,
+      endpoint: selectedRoute.endpoint,
+      policy,
+      authorization: authorizeRetrieval({ policy, requestedSourceIds: [] }),
+      budget: { maxInputTokens: 50, maxOutputTokens: 20 },
+      objectives,
+      compression: { mode: 'when_needed' },
+      items: [
+        {
+          item: { id: 'primary', kind: 'instruction', content: 'Keep this semantic rule.' },
+          estimatedTokens: 20,
+          priority: 2,
+        },
+        {
+          item: { id: 'duplicate', kind: 'instruction', content: 'Keep   this semantic rule.' },
+          estimatedTokens: 20,
+          priority: 1,
+        },
+        {
+          item: { id: 'large', kind: 'instruction', content: 'A long host-produced context value.' },
+          estimatedTokens: 20,
+          compressed: { content: 'Compact context.', estimatedTokens: 8, method: 'extractive-v1' },
+        },
+      ],
+    });
+
+    expect(plan.estimatedInputTokens).toBe(28);
+    expect(plan.model.instructions).toEqual([
+      expect.objectContaining({ id: 'primary', content: 'Keep this semantic rule.' }),
+      expect.objectContaining({ id: 'large', content: 'Compact context.' }),
+    ]);
+    expect(plan.manifest.excluded).toContainEqual(expect.objectContaining({
+      id: 'duplicate',
+      reason: 'duplicate',
+    }));
+    expect(plan.manifest.selected).toContainEqual(expect.objectContaining({
+      id: 'large',
+      estimatedTokens: 8,
+      originalEstimatedTokens: 20,
+      compression: { method: 'extractive-v1', savedTokens: 12 },
+    }));
+  });
+
+  it('reserves delegation slots before an orchestrator dispatches work', () => {
+    expect(reserveDelegationBudget({ maxDelegations: 2 }, 0)).toBe(1);
+    expect(reserveDelegationBudget({ maxDelegations: 2 }, 1)).toBe(2);
+    expect(() => reserveDelegationBudget({ maxDelegations: 2 }, 2)).toThrow(
+      'Delegation budget exceeded: 3 requested, limit 2',
+    );
+  });
+
+  it('requires approval when the effective execution policy does, even without retrieval', () => {
+    const policy: EffectivePolicy = {
+      ...effectivePolicy(),
+      decision: 'needs_approval',
+      reasons: ['Execution requires reviewer approval'],
+    };
+    const selectedRoute = route('approved-target', {});
+    const plan = planStepContext({
+      target: selectedRoute.target,
+      endpoint: selectedRoute.endpoint,
+      policy,
+      authorization: authorizeRetrieval({ policy, requestedSourceIds: [] }),
+      budget: { maxInputTokens: 1_000 },
+      objectives,
+      items: [{
+        item: { id: 'instruction', kind: 'instruction', content: 'Wait for approval.' },
+        estimatedTokens: 4,
+        required: true,
+      }],
+    });
+
+    expect(plan.feasibility).toMatchObject({
+      status: 'needs_approval',
+      reasons: ['Effective policy requires approval before execution.'],
+    });
+    expect(plan.model.instructions).toEqual([]);
   });
 });
 

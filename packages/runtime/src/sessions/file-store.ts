@@ -6,9 +6,11 @@ import { assertExecutionStateTransition } from './state-machine.js';
 import {
   SESSION_PROTOCOL_VERSION,
   type AppendSessionEventOptions,
+  type AppendSessionEventBatchResult,
   type AppendSessionEventResult,
   type FileSessionStoreOptions,
   type ReadSessionEventsOptions,
+  type PurgeSessionOptions,
   type SessionEvent,
   type SessionEventInput,
   type SessionProjection,
@@ -171,6 +173,79 @@ export function createFileSessionStore(options: FileSessionStoreOptions): Sessio
       });
     },
 
+    async appendBatch(
+      sessionId: string,
+      inputs: SessionEventInput[],
+      appendOptions: AppendSessionEventOptions = {},
+    ): Promise<AppendSessionEventBatchResult> {
+      assertSessionId(sessionId);
+      if (inputs.length === 0) throw new Error('A session event batch requires at least one event.');
+      inputs.forEach(assertEventInput);
+      const sessionDir = sessionPath(root, sessionId);
+
+      return withSessionLock(sessionId, sessionDir, lockTimeoutMs, staleLockMs, async () => {
+        const existing = await readEventsFile(sessionId, eventsPath(sessionDir));
+        const initialProjection = projectSession(sessionId, existing);
+        const actualRevision = initialProjection?.revision ?? 0;
+        if (
+          appendOptions.expectedRevision !== undefined
+          && appendOptions.expectedRevision !== actualRevision
+        ) {
+          throw new SessionRevisionConflictError(
+            sessionId,
+            appendOptions.expectedRevision,
+            actualRevision,
+          );
+        }
+        if (initialProjection?.tombstonedAt) throw new SessionTombstonedError(sessionId);
+
+        const working = [...existing];
+        const selected: SessionEvent[] = [];
+        const appended: SessionEvent[] = [];
+        for (const input of inputs) {
+          const digest = eventDigest(sessionId, input);
+          const duplicate = working.find((event) => event.idempotencyKey === input.idempotencyKey);
+          if (duplicate) {
+            if (duplicate.contentDigest !== digest) {
+              throw new SessionEventConflictError(sessionId, `idempotency key ${input.idempotencyKey}`);
+            }
+            selected.push(duplicate);
+            continue;
+          }
+          if (working.some((event) => event.eventId === input.eventId)) {
+            throw new SessionEventConflictError(sessionId, `event id ${input.eventId}`);
+          }
+
+          const projection = projectSession(sessionId, working);
+          if (!projection && !input.state) {
+            throw new SessionCorruptionError(sessionId, 'the first event must establish an execution state.');
+          }
+          if (projection?.tombstonedAt) throw new SessionTombstonedError(sessionId);
+          if (projection && input.state) assertExecutionStateTransition(projection.state, input.state);
+
+          const event: SessionEvent = {
+            ...input,
+            schemaVersion: SESSION_PROTOCOL_VERSION,
+            sessionId,
+            sequence: working.length + 1,
+            recordedAt: now().toISOString(),
+            contentDigest: digest,
+          };
+          working.push(event);
+          selected.push(event);
+          appended.push(event);
+        }
+
+        if (appended.length > 0) await appendBatchDurably(eventsPath(sessionDir), appended);
+        const projection = projectSession(sessionId, working);
+        if (!projection) {
+          throw new SessionCorruptionError(sessionId, 'the committed batch did not produce a projection.');
+        }
+        await writeProjection(sessionDir, projection);
+        return { events: selected, projection, appendedCount: appended.length };
+      });
+    },
+
     async readEvents<Payload>(
       sessionId: string,
       readOptions: ReadSessionEventsOptions = {},
@@ -261,6 +336,30 @@ export function createFileSessionStore(options: FileSessionStoreOptions): Sessio
         .sort((left, right) => Number.parseInt(right, 10) - Number.parseInt(left, 10))[0];
 
       return latest ? readSnapshotFile<State>(sessionId, path.join(dir, latest)) : null;
+    },
+
+    async purge(sessionId: string, purgeOptions: PurgeSessionOptions = {}): Promise<void> {
+      assertSessionId(sessionId);
+      const sessionDir = sessionPath(root, sessionId);
+      await withSessionLock(sessionId, sessionDir, lockTimeoutMs, staleLockMs, async () => {
+        const events = await readEventsFile(sessionId, eventsPath(sessionDir));
+        const projection = projectSession(sessionId, events);
+        if (!projection) return;
+        if (!projection.tombstonedAt) {
+          throw new Error(`Session ${sessionId} must be tombstoned before it can be purged.`);
+        }
+        if (
+          purgeOptions.expectedRevision !== undefined
+          && purgeOptions.expectedRevision !== projection.revision
+        ) {
+          throw new SessionRevisionConflictError(
+            sessionId,
+            purgeOptions.expectedRevision,
+            projection.revision,
+          );
+        }
+        await fs.rm(sessionDir, { recursive: true, force: true });
+      });
     },
   };
 }
@@ -486,6 +585,17 @@ async function appendDurably(filePath: string, value: unknown): Promise<void> {
   const handle = await fs.open(filePath, 'a', 0o600);
   try {
     await handle.writeFile(`${JSON.stringify(value)}\n`, 'utf8');
+    await handle.sync();
+  } finally {
+    await handle.close();
+  }
+}
+
+async function appendBatchDurably(filePath: string, values: readonly unknown[]): Promise<void> {
+  await fs.mkdir(path.dirname(filePath), { recursive: true });
+  const handle = await fs.open(filePath, 'a', 0o600);
+  try {
+    await handle.writeFile(values.map((value) => `${JSON.stringify(value)}\n`).join(''), 'utf8');
     await handle.sync();
   } finally {
     await handle.close();

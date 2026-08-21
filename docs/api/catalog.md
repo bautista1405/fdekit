@@ -3,7 +3,7 @@
 <!-- Maintained via scripts/generate-api-docs.mjs. -->
 Run `npm run docs:api` to refresh this page after changing public exports.
 
-Applies to `@fdekit/catalog` v0.5.3.
+Applies to `@fdekit/catalog` v0.6.0.
 
 Declaration source: `packages/catalog/dist/index.d.ts`.
 

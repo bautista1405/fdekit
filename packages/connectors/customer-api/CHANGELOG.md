@@ -1,5 +1,11 @@
 # @fdekit/connector-customer-api
 
+## 0.6.0
+
+### Minor Changes
+
+- Align every published @fdekit package on a single version. `@fdekit/catalog` supplies the version that `fdekit init` and `fdekit recipe install` pin scaffolded projects to, and it had drifted ahead to 0.6.0 while the runtime packages stayed on 0.5.6. Scaffolds pinned a version that was never published, so `npm install` failed with `ETARGET` in every new project. The catalog now sits in the changesets fixed group and versions with everything else.
+
 ## 0.5.6
 
 ### Patch Changes

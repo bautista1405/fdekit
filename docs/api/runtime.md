@@ -3,7 +3,7 @@
 <!-- Maintained via scripts/generate-api-docs.mjs. -->
 Run `npm run docs:api` to refresh this page after changing public exports.
 
-Applies to `@fdekit/runtime` v0.5.4.
+Applies to `@fdekit/runtime` v0.6.0.
 
 Declaration source: `packages/runtime/dist/index.d.ts`.
 

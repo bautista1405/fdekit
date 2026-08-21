@@ -4,6 +4,7 @@
   "commit": false,
   "fixed": [
     [
+      "@fdekit/catalog",
       "@fdekit/cli",
       "@fdekit/core",
       "@fdekit/runtime",

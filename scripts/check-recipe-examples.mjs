@@ -13,6 +13,7 @@ const recipes = [
     exampleDir: 'support-triage',
     deploymentName: 'support-triage-example',
     paths: [
+      'package.json',
       '.env.example',
       'fde.config.ts',
       'agents/support-triage.md',
@@ -31,6 +32,7 @@ const recipes = [
     exampleDir: 'codebase-agent',
     deploymentName: 'codebase-agent-example',
     paths: [
+      'package.json',
       '.env.example',
       'fde.config.ts',
       'agents/codebase-agent.md',
@@ -54,6 +56,7 @@ const recipes = [
     exampleDir: 'load-test-agent',
     deploymentName: 'load-test-agent',
     paths: [
+      'package.json',
       '.env.example',
       'fde.config.ts',
       'agents/load-test-agent.md',
@@ -72,6 +75,7 @@ const recipes = [
     exampleDir: 'sales-research-agent',
     deploymentName: 'sales-research-agent-example',
     paths: [
+      'package.json',
       '.env.example',
       'fde.config.ts',
       'agents/sales-research-agent.md',
@@ -112,7 +116,6 @@ try {
       const generatedPath = join(generatedDir, paths.generated);
       const examplePath = join(rootDir, 'examples', recipe.exampleDir, paths.example);
       const generated = await readFile(generatedPath, 'utf8');
-      const expected = materializeExample(paths.example, generated, recipe);
       const example = await readFile(examplePath, 'utf8').catch((error) => {
         if (error?.code === 'ENOENT') {
           return null;
@@ -120,6 +123,7 @@ try {
 
         throw error;
       });
+      const expected = materializeExample(paths.example, generated, recipe, example);
 
       if (
         example !== null
@@ -158,7 +162,11 @@ if (changed.length === 0) {
   process.exitCode = 1;
 }
 
-function materializeExample(relativePath, value, recipe) {
+function materializeExample(relativePath, value, recipe, existing) {
+  if (relativePath === 'package.json') {
+    return materializeExamplePackageJson(value, existing);
+  }
+
   if (relativePath !== 'fde.config.ts') {
     return value;
   }
@@ -174,8 +182,65 @@ function materializeExample(relativePath, value, recipe) {
     );
 }
 
+/**
+ * Examples own their workspace identity - name, privacy, and the npm scripts the
+ * repository drives them with. The scaffold owns the `@fdekit/*` dependency pins,
+ * which is the half that has to keep matching what a real `recipe install` emits,
+ * so only those entries are replaced here.
+ */
+function materializeExamplePackageJson(generated, existing) {
+  const generatedPackageJson = JSON.parse(generated);
+
+  if (existing === null) {
+    return `${JSON.stringify(generatedPackageJson, null, 2)}\n`;
+  }
+
+  const merged = JSON.parse(existing);
+
+  for (const field of ['dependencies', 'devDependencies']) {
+    const next = sortByKey({
+      ...withoutFdekitPins(merged[field]),
+      ...fdekitPins(generatedPackageJson[field]),
+    });
+
+    if (Object.keys(next).length === 0) {
+      delete merged[field];
+      continue;
+    }
+
+    merged[field] = next;
+  }
+
+  return `${JSON.stringify(merged, null, 2)}\n`;
+}
+
+function fdekitPins(dependencies) {
+  return filterDependencies(dependencies, (name) => name.startsWith('@fdekit/'));
+}
+
+function withoutFdekitPins(dependencies) {
+  return filterDependencies(dependencies, (name) => !name.startsWith('@fdekit/'));
+}
+
+function filterDependencies(dependencies, predicate) {
+  return Object.fromEntries(Object.entries(dependencies ?? {}).filter(([name]) => predicate(name)));
+}
+
+function sortByKey(record) {
+  return Object.fromEntries(Object.entries(record).sort(([left], [right]) => left.localeCompare(right)));
+}
+
 function normalize(relativePath, value) {
   const normalized = value.replace(/\r\n/g, '\n');
+
+  if (relativePath === 'package.json') {
+    const packageJson = JSON.parse(normalized);
+
+    return JSON.stringify({
+      dependencies: sortByKey(fdekitPins(packageJson.dependencies)),
+      devDependencies: sortByKey(fdekitPins(packageJson.devDependencies)),
+    });
+  }
 
   if (relativePath !== 'fde.config.ts') {
     return normalized;

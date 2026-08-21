@@ -1,5 +1,12 @@
 # @fdekit/runtime
 
+## 0.5.6
+
+### Patch Changes
+
+- fa9b821: Scope approval decisions to one exact run, and keep the credential-free CLI demos aligned with durable approval and resume behavior.
+  - @fdekit/core@0.5.6
+
 ## 0.5.5
 
 ### Patch Changes

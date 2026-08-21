@@ -1,5 +1,11 @@
 # @fdekit/connector-linear
 
+## 0.5.6
+
+### Patch Changes
+
+- @fdekit/core@0.5.6
+
 ## 0.5.5
 
 ### Patch Changes

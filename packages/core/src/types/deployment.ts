@@ -16,7 +16,8 @@ import type {
 
 export type ArtifactStoreDefinition =
   | LocalArtifactStoreDefinition
-  | S3ArtifactStoreDefinition;
+  | S3ArtifactStoreDefinition
+  | HttpArtifactStoreDefinition;
 
 export interface LocalArtifactStoreDefinition {
   kind?: 'local';
@@ -29,6 +30,28 @@ export interface S3ArtifactStoreDefinition {
   prefix?: string;
   region?: string;
   client: S3ArtifactClient;
+}
+
+/**
+ * Writes artifacts to an HTTP endpoint instead of a path or a bucket.
+ *
+ * This is what lets a deployment report into a control plane. Traces, runs,
+ * reviews, evals, and audit entries are all written through the artifact store,
+ * so pointing the store at an endpoint sends the whole evidence trail without
+ * changing a single recipe — the alternative being a separate push step that
+ * runs after the fact and is forgotten exactly when a run fails.
+ *
+ * The token identifies the deployment to the receiver. It is read from the
+ * environment rather than committed, like every other credential.
+ */
+export interface HttpArtifactStoreDefinition {
+  kind: 'http';
+  /** Base URL of the ingest API, e.g. https://app.example.com/api/ingest */
+  endpoint: string;
+  /** Environment variable holding the worker token. */
+  tokenEnv?: string;
+  /** Direct token. Prefer `tokenEnv`; this exists for tests. */
+  token?: string;
 }
 
 export interface S3ArtifactClient {

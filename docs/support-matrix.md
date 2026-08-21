@@ -18,6 +18,7 @@ Maturity levels:
 | TypeScript | TS 5.x, ESM output | Ready | Source imports use `.js` specifiers intentionally so emitted NodeNext ESM is valid. |
 | Runtime mode | Local filesystem runtime | Ready | Traces, evals, approvals, audit logs, reports, exports, and console output default to `artifacts/`. |
 | Artifact storage | S3 artifact store | Beta | Configurable through deployment `artifacts`; requires a caller-supplied S3 adapter client and project-owned bucket permissions. |
+| Artifact transport | HTTP artifact store protocol v1 | Experimental | Versioned synchronous evidence transport with explicit failure reporting; durable spool/retry, idempotent delivery, and immutable history remain planned. |
 | Runtime environments | `runtimeEnvironment` plus `fdekit env` commands | Experimental | Used for local customer-like environments such as Docker Compose or Floci. Agent runs still talk to the customer API URL. |
 | Hosted runtime service | Not included | Planned | Runtime-as-a-service, auth, tenancy, and durable multi-tenant trace/audit APIs are roadmap items. |
 
@@ -66,6 +67,7 @@ This repository uses npm workspaces and Turborepo.
 
 | Runtime package | Purpose |
 | --- | --- |
+| `@fdekit/catalog` | Typed provider, connector, recipe, and scaffold metadata shared by CLI, docs, and deployment surfaces. |
 | `@fdekit/core` | Public TypeScript primitives for deployments, agents, tools, connector schemas, governance, policies, evals, and recipes. |
 | `@fdekit/runtime` | Config loading, agent loop execution, traces, approvals, audit logs, evals, reports, and artifact store IO. |
 | `@fdekit/cli` | CLI package that installs the `fdekit` binary. |

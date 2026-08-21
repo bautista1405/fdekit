@@ -28,10 +28,11 @@ fdekit CLI
 The direction matters:
 
 - `@fdekit/core` owns authoring types and helpers. It should not depend on runtime, CLI, console, providers, connectors, or filesystem artifacts.
-- `@fdekit/runtime` owns execution and the `ArtifactStore` contract. Local `artifacts/` is the default store. It should not depend on concrete provider, connector, or storage SDK packages.
+- `@fdekit/runtime` owns execution plus the `ArtifactStore` and append-only `SessionStore` contracts. Local `artifacts/` is the default evidence and session root. It should not depend on concrete provider, connector, or storage SDK packages.
 - Provider packages turn `ProviderConfig` into `AgentProvider` adapters.
 - Connector packages expose `ConnectorDefinition` and typed tools. Runtime only sees tools.
-- `fdekit` owns command behavior, starter scaffolds, built-in catalog manifests, docs snippets, and the built-in provider registry used by CLI runs.
+- `@fdekit/catalog` owns typed provider, connector, and recipe manifests shared by CLI scaffolding, generated docs, and other deployment surfaces.
+- `fdekit` owns command behavior, starter scaffolds, catalog presentation, docs rendering, and the built-in provider registry used by CLI runs.
 - `@fdekit/console` renders already-written artifacts. It should not execute agents or mutate deployment state.
 
 ## Source Map
@@ -39,11 +40,11 @@ The direction matters:
 | Area | Main Files | Owns |
 | --- | --- | --- |
 | Core authoring | `packages/core/src/definitions`, `packages/core/src/types`, `packages/core/src/policies`, `packages/core/src/evals`, `packages/core/src/schema` | Deployment, agent, connector, tool, provider, policy, eval, recipe, governance, and schema contracts. |
-| Runtime execution | `packages/runtime/src/agents`, `packages/runtime/src/evals`, `packages/runtime/src/governance`, `packages/runtime/src/deployments`, `packages/runtime/src/artifacts.ts` | Config loading, provider loop, tool execution, policy enforcement, approvals, audit logs, traces, eval artifacts, snapshots, reports. |
+| Runtime execution | `packages/runtime/src/agents`, `packages/runtime/src/sessions`, `packages/runtime/src/evals`, `packages/runtime/src/governance`, `packages/runtime/src/deployments`, `packages/runtime/src/artifact-store` | Config loading, provider loop, append-only sessions, tool execution, policy enforcement, approvals, audit logs, traces, eval artifacts, snapshots, reports. |
 | Provider adapters | `packages/providers/*/src/index.ts`, `helpers`, `interfaces` | Provider config helper plus runtime adapter. |
 | Connector adapters | `packages/connectors/*/src/index.ts`, `helpers`, `interfaces` | Connector factory, tool schemas, local/API modes, connector-specific option and result types. |
 | CLI commands | `packages/cli/src/index.ts`, `packages/cli/src/commands/*` | Command parsing and orchestration around runtime APIs. |
-| CLI catalog | `packages/cli/src/catalog/*`, `packages/cli/src/catalog/connectors/*` | Typed manifests for providers, connectors, recipes, CLI help, add scaffolds, support matrix rows, docs snippets. |
+| Shared catalog | `packages/catalog/src/*`, `packages/catalog/src/connectors/*` | Typed manifests for providers, connectors, recipes, scaffold metadata, support matrix rows, and docs snippets. |
 | Recipes | `packages/cli/src/scaffolds/recipes/*` | Built-in project scaffolds, local files, config renderers, package/env patches, recipe install behavior. |
 | Console | `packages/console/src/view-models`, `sections`, `html-shell`, `exports` | Static dashboard HTML and CSV/Markdown/JSON export bundle from existing artifacts. |
 | Docs generation | `scripts/generate-catalog-docs.mjs` | Rewrites marker-delimited catalog snippets in docs. |
@@ -57,6 +58,7 @@ CLI command
   -> requireConfigFile(cwd)
   -> loadDeployment(fde.config.ts)
   -> createArtifactStore(deployment.artifacts ?? local artifacts/)
+  -> createFileSessionStore(local artifacts/sessions/) or inject SessionStore
   -> runAgent({
        deployment,
        projectDir,
@@ -74,7 +76,7 @@ CLI command
       -> emit runtime.edge.profile
       -> in strict mode, validate every available tool has argsSchema, scopes, and environments
       -> loop provider.planNextStep()
-          -> record provider step event
+          -> append provider step event to the durable session log
           -> if final: finish
           -> if tool call:
                enforce runtime edge gates
@@ -84,7 +86,7 @@ CLI command
                enforce beforeToolCall policies
                run tool handler
                enforce afterToolCall policies
-               record tool call event and audit entries
+               append tool call event and audit entries
       -> return AgentRunResult with TraceArtifact
   -> write traces/<trace-id>.json through ArtifactStore
 ```
@@ -143,7 +145,12 @@ Runtime edge events are part of the trace vocabulary:
 
 ## Artifact Lifecycle
 
-Runtime artifacts are written through `ArtifactStore`. The default store is the local `artifacts/` directory. Deployments can opt into S3 by setting `artifacts` in `fde.config.ts`; command output then prints `s3://...` URIs.
+Runtime artifacts are written through `ArtifactStore`. The default store is the local `artifacts/` directory. Deployments can opt into S3 or the experimental versioned HTTP transport by setting `artifacts` in `fde.config.ts`. The HTTP adapter is synchronous and is not yet a durable spool or retry queue; see the [HTTP Artifact Store Protocol](./specs/http-artifact-store-protocol.md).
+
+Live run state is separate: `SessionStore` appends versioned events under
+`artifacts/sessions/<runId>/events.jsonl` by default. That log is authoritative;
+the adjacent projection is rebuildable, and immutable snapshots only accelerate
+recovery. See [Session Store And Local Run State](./specs/session-store.md).
 
 ```ts
 import { defineDeployment } from '@fdekit/core';
@@ -186,7 +193,7 @@ Prefer adding runtime artifacts through `writeJsonArtifact()`, `writeTextArtifac
 ### Adding An Artifact Store
 
 1. Extend `ArtifactStoreDefinition` in `@fdekit/core` with serializable configuration and the smallest injected adapter contract needed by the runtime; snapshots and compiled plans must omit live clients.
-2. Add a runtime implementation behind `packages/runtime/src/artifacts.ts`.
+2. Add a runtime implementation under `packages/runtime/src/artifact-store/`.
 3. Keep SDK clients injected so `@fdekit/runtime` does not gain cloud-provider dependencies.
 4. Make `compileDeployment()` return the normalized store and artifact URIs without instantiating clients.
 5. Thread the store through runtime entrypoints instead of letting commands or connectors write artifacts directly.
@@ -201,7 +208,7 @@ Use this path when the provider should be a package people can import in `fde.co
 3. Export a config helper that returns `ProviderConfig` and attaches `runtime: create<Name>Provider`.
 4. Export `create<Name>Provider(config, options)` implementing `AgentProvider.planNextStep()`.
 5. Parse the model response into `ProviderStep` values. Keep the provider step contract aligned with [Provider Step And Tool Schema Spec](./specs/provider-steps-and-tool-schemas.md).
-6. Add the provider to `packages/cli/src/catalog/providers.ts` if it is a built-in CLI scaffold.
+6. Add the provider to `packages/catalog/src/providers.ts` if it is a built-in scaffold.
 7. Add the runtime adapter to `packages/cli/src/providers/registry.ts` only if plain CLI configs should run without importing the provider helper.
 8. Add package references and tests for the new package.
 
@@ -217,7 +224,7 @@ Use this path when adding a customer-system adapter.
 4. Define every tool through `defineTool()` and include an args schema for production-facing tools.
 5. Add `category` and `tags` for behavior semantics that runtime, evals, docs, or reports may need to understand.
 6. Put local/demo behavior behind an explicit local mode. Put live API behavior behind env requirements and resilience helpers when doing HTTP.
-7. Add a manifest in the matching `packages/cli/src/catalog/connectors/<domain>.ts` file. Use a new domain file only when the existing shelves are a poor fit.
+7. Add a manifest in the matching `packages/catalog/src/connectors/<domain>.ts` file. Use a new domain file only when the existing shelves are a poor fit.
 8. Include scaffold imports, dependencies, env examples, and support notes in the manifest so CLI add, docs, and support matrix stay in sync.
 9. Add tests for local mode and mocked API mode.
 
@@ -229,7 +236,7 @@ Built-in recipes live in `packages/cli/src/scaffolds/recipes/<recipe>`.
 
 1. Add a recipe folder with `index.ts` plus the smallest helper files needed for checks, docs, and generated assets.
 2. Define the install spec with `defineRecipe()` from `packages/cli/src/scaffolds/recipes/spec.ts`; keep file lists, scripts, dependencies, env examples, and validation checks in that typed spec instead of scattering them through command logic.
-3. Add the recipe manifest to `packages/cli/src/catalog/recipes.ts`.
+3. Add the recipe manifest to `packages/catalog/src/recipes.ts`.
 4. Set `manifest: requireRecipeManifest('<recipe>')` in the recipe spec.
 5. Export the recipe from `packages/cli/src/scaffolds/recipes/index.ts`.
 6. Use shared renderers from `packages/cli/src/scaffolds/recipes/config-renderers.ts` for imports, provider choices, runtime settings, eval setup, recipe metadata, and module paths.

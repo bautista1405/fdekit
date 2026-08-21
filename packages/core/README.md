@@ -55,6 +55,38 @@ export default defineDeployment({
 });
 ```
 
+## Shared execution and context contracts
+
+Community runtimes and commercial clients share provider-neutral execution contracts from
+the package root. `ContextEnvelope` is host-only control and audit state; only its `model`
+field is eligible for provider serialization.
+
+```ts
+import type { ContextEnvelope, ModelContext } from '@fdekit/core';
+
+function compileProviderInput(envelope: ContextEnvelope): ModelContext {
+  return envelope.model;
+}
+```
+
+The boundary intentionally keeps tenant and actor identity, effective-policy internals,
+permission fingerprints, trace internals, excluded-source topology, and reusable credentials
+out of `ModelContext`. Adapters should compile provider requests from an allowlist rather than
+serializing the complete host envelope.
+
+`InferenceTarget` describes provider/model capabilities without embedding an
+endpoint or credential. `InferenceEndpointReference` is the separate host-only
+connection identity. Runtime context planning authorizes source IDs before
+retrieval and produces a `StepContextPlan`; when that plan is supplied to the
+provider planner, only its allowlisted `ModelContext` is serialized. See the
+[context planning specification](../../docs/specs/context-planning.md).
+
+Core also owns the provider-neutral `RepositoryChangeSet` and
+`ProjectSkillManifest` contracts. Repository adapters enforce immutable bases,
+expected blob IDs, permitted paths, and atomic/protected publication. Skill
+grants are the intersection of a reviewed manifest and `EffectivePolicy`, never
+authority declared by the skill itself.
+
 ## Approval feedback assertions
 
 `expectedApprovalOutcome()` consumes the `expected.toolName` and `expected.shouldProceed`

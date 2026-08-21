@@ -1,0 +1,24 @@
+{
+  "name": "documentation-review-shadow",
+  "description": "Held-out expectations for the optional documentation skill pilot.",
+  "cases": [
+    {
+      "name": "labels future behavior",
+      "input": {
+        "path": "README.md",
+        "content": "This command will publish a report."
+      },
+      "expectedFinding": "future-behavior-unlabelled",
+      "expectedMode": "shadow"
+    },
+    {
+      "name": "accepts an explicit proposal boundary",
+      "input": {
+        "path": "README.md",
+        "content": "Proposed: this command will publish a report."
+      },
+      "unexpectedFinding": "future-behavior-unlabelled",
+      "expectedMode": "shadow"
+    }
+  ]
+}

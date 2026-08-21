@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "name": "documentation-review",
+  "version": "1.0.0",
+  "description": "Deterministically checks documentation boundaries and emits shadow-only proposals.",
+  "license": "MIT",
+  "entrypoint": "index.mjs",
+  "executionModes": ["diff_only", "shadow"],
+  "requestedCapabilities": ["source:read"],
+  "requestedSourceIds": ["repo-a"],
+  "tools": [],
+  "evalRefs": ["evals/documentation-review.json"],
+  "provenance": {
+    "source": "fdekit:original-documentation-pilot",
+    "digest": "sha256:949c294d1bf1783c98175c76ad625e0f22d77f9a6780d9bd557a4a4b3814a7db",
+    "reviewedAt": "2026-08-20T00:00:00.000Z"
+  },
+  "metadata": {
+    "publication": "disabled",
+    "licenseReview": "Original FDEKit MIT implementation; no third-party skill code included."
+  }
+}

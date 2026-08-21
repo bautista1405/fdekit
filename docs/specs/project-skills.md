@@ -17,3 +17,16 @@ itself authority.
 rejects unsafe or symlink escapes, and verifies the entrypoint digest. Loading
 does not import or execute the entrypoint. Execution remains the responsibility
 of a bounded runtime that enforces the returned policy grant and eval mode.
+
+`runDocumentationSkillShadow()` is the first bounded pilot. It accepts only
+`diff_only` or `shadow`, requires an allow decision from the exact effective
+policy, rejects ungranted document sources, and requires filesystem, process,
+and network isolation from the execution backend. The entrypoint receives
+documents over stdin inside a disposable workspace. Only a schema-validated
+finding/change/validation proposal is returned; there is deliberately no apply
+or publish code path.
+
+The codebase-agent example contains an original MIT documentation pilot with a
+pinned entrypoint digest and held-out eval cases. It distinguishes proposed
+from implemented behavior and checks for examples without importing the
+third-party documentation skill referenced by the roadmap.

@@ -3,6 +3,8 @@ import { promises as fs } from 'fs';
 import * as path from 'path';
 import { validateProjectSkillManifest, type ProjectSkillManifest } from '@fdekit/core';
 
+export * from './documentation-shadow.js';
+
 export interface LoadedProjectSkill {
   manifest: ProjectSkillManifest;
   directory: string;

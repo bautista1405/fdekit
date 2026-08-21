@@ -43,6 +43,10 @@
       "import": "./dist/evals/index.js",
       "types": "./dist/evals/index.d.ts"
     },
+    "./execution": {
+      "import": "./dist/execution/index.js",
+      "types": "./dist/execution/index.d.ts"
+    },
     "./grader": {
       "import": "./dist/grader/index.js",
       "types": "./dist/grader/index.d.ts"

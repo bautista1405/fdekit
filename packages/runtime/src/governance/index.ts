@@ -33,13 +33,17 @@ export type {
 export { redactForGovernance } from './helpers/index.js';
 
 export function approvalFingerprint(input: Pick<ApprovalRequestInput,
-  'deployment' | 'environment' | 'agent' | 'policy' | 'phase' | 'toolName' | 'args' | 'target' | 'supersedesId'
+  'deployment' | 'environment' | 'agent' | 'runId' | 'policy' | 'phase' | 'toolName' | 'args' | 'target' | 'supersedesId'
 >): string {
   return createHash('sha256')
     .update(stableStringify({
       deployment: input.deployment,
       environment: input.environment ?? 'local',
       agent: input.agent,
+      // A human decision authorizes one exact paused run. Identical arguments
+      // in a later run require a fresh decision instead of becoming a standing
+      // grant (or carrying a previous rejection forward forever).
+      runId: input.runId,
       policy: input.policy,
       phase: input.phase,
       toolName: input.toolName,
@@ -117,7 +121,7 @@ export async function requestApproval(
 
 export async function findApproval(
   projectDir: string,
-  input: Pick<ApprovalRequestInput, 'deployment' | 'environment' | 'agent' | 'policy' | 'phase' | 'toolName' | 'args' | 'target'>,
+  input: Pick<ApprovalRequestInput, 'deployment' | 'environment' | 'agent' | 'runId' | 'policy' | 'phase' | 'toolName' | 'args' | 'target'>,
   artifactStore?: ArtifactStore,
 ): Promise<ApprovalArtifact | null> {
   return readApproval(projectDir, approvalIdFromFingerprint(approvalFingerprint(input)), artifactStore);

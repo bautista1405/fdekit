@@ -1,5 +1,70 @@
 # @fdekit/runtime
 
+## 0.5.5
+
+### Patch Changes
+
+- 0aef42f: Add a correct-before-approve flow that validates replacement tool arguments,
+  supersedes the pending request, issues a fresh exact approval fingerprint, and
+  resumes only against the corrected request.
+- 98a9a9b: Add decoupled inference target and endpoint capability contracts, pre-retrieval
+  source authorization, policy-aware per-step context planning, budgeted
+  tool/skill selection, selected/excluded manifests, and allowlisted provider
+  serialization.
+- eebfa56: Add context deduplication, explicit compression variants, compression evidence, cumulative runtime budget checks, and delegation-slot reservation.
+- b782405: Add immutable versioned artifact delivery envelopes, a durable local spool,
+  idempotent restart-safe retries, checksummed receipts, ordered partial-failure
+  handling, and a versioned HTTP delivery target.
+- cc7d8d5: Add the versioned append-only `SessionStore`, a durable local JSONL
+  implementation with optimistic revisions, idempotent appends, immutable
+  snapshots, state-transition validation, and live agent-run event recording.
+- c1bb2cd: Add exact governed tool sequences with policy, approval, audit, trace, durable
+  multi-approval resume, and no provider re-planning; migrate the graded codebase
+  review delivery path away from direct connector handler calls.
+- eebfa56: Add optional intended-principal, disclosure, deadline, and one-time capability
+  gates for durable human input without persisting raw resume tokens.
+- b145c5f: Add local source-aware chunking and authorized exact/full-text/vector/hybrid
+  retrieval, scoped working/episodic memory, provenance-aware entity knowledge,
+  policy/tenant/source-safe exact caching, and explicit cost/usage ledgers.
+- 1933233: Add versioned project-local skill manifests, effective-policy subset grants,
+  safe manifest validation, and an integrity-checking local loader that never
+  executes skill code.
+- eebfa56: Normalize provider-reported token usage, pass runtime output-token limits into
+  built-in provider requests, record measured or explicitly unknown usage for
+  every inference step, estimate declared target cost, and enforce hard cost
+  budgets without inventing unavailable telemetry. Normalized totals include
+  provider-specific reasoning and cache activity, with optional cache-write
+  pricing for exact budget enforcement.
+- eebfa56: Make policy-aware context plans load-bearing in agent runs by routing through
+  selected inference endpoints and models, exposing only compiled model context
+  to provider planners, enforcing planned tool and duration budgets, recording
+  redacted durable plan evidence, and preserving plans across approval resume.
+- 5e07466: Integrate execution backends with governed tools and add a hardened network-disabled Docker execution backend for isolated workloads.
+- 835ab11: Add a policy-bound documentation skill pilot that runs only in isolated diff-only or shadow mode and returns validated proposals without publishing changes.
+- eebfa56: Add structured provider input requests, schema-validated durable resume, explicit session lifecycle operations, and single-sync batching for non-critical run telemetry.
+- eee6769: Add opt-in execution-backend, disposable workspace, and expiring credential
+  lease contracts with a constrained local implementation that enforces command
+  and environment allowlists, time and output limits, cleanup, and fail-closed
+  isolation requirements without expanding the starter configuration.
+- d599da8: Add durable worker leases with monotonic fencing epochs, fenced checkpoints and
+  heartbeats, safe external-action reconciliation, idempotent inbox/outbox
+  helpers, and atomic domain-event plus outbox batches.
+- 8826660: Add the versioned HTTP artifact-store contract, tested runtime adapter, protocol
+  documentation, and grader entrypoint
+- Updated dependencies [0aef42f]
+- Updated dependencies [e9c43a7]
+- Updated dependencies [98a9a9b]
+- Updated dependencies [e36d267]
+- Updated dependencies [eebfa56]
+- Updated dependencies [eebfa56]
+- Updated dependencies [1933233]
+- Updated dependencies [eebfa56]
+- Updated dependencies [eebfa56]
+- Updated dependencies [eebfa56]
+- Updated dependencies [d599da8]
+- Updated dependencies [8826660]
+  - @fdekit/core@0.5.5
+
 ## 0.5.4
 
 ### Patch Changes

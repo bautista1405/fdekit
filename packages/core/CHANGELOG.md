@@ -1,5 +1,47 @@
 # @fdekit/core
 
+## 0.5.5
+
+### Patch Changes
+
+- 0aef42f: Add a correct-before-approve flow that validates replacement tool arguments,
+  supersedes the pending request, issues a fresh exact approval fingerprint, and
+  resumes only against the corrected request.
+- e9c43a7: Add immutable-base multi-file repository change-set contracts and a typed local
+  Git implementation with permitted paths, expected blob IDs, shadow validation,
+  validator evidence, atomic expected-old-ref publication, stale detection, and
+  protected fallback signaling.
+- 98a9a9b: Add decoupled inference target and endpoint capability contracts, pre-retrieval
+  source authorization, policy-aware per-step context planning, budgeted
+  tool/skill selection, selected/excluded manifests, and allowlisted provider
+  serialization.
+- e36d267: Add versioned provider-neutral execution identity and state records, host-only
+  `ContextEnvelope`, allowlisted `ModelContext`, effective-policy evidence,
+  provenance, artifact, approval/input, planned-action, trace, budget, and usage
+  contracts for shared Community and commercial clients.
+- eebfa56: Add context deduplication, explicit compression variants, compression evidence, cumulative runtime budget checks, and delegation-slot reservation.
+- eebfa56: Add optional intended-principal, disclosure, deadline, and one-time capability
+  gates for durable human input without persisting raw resume tokens.
+- 1933233: Add versioned project-local skill manifests, effective-policy subset grants,
+  safe manifest validation, and an integrity-checking local loader that never
+  executes skill code.
+- eebfa56: Normalize provider-reported token usage, pass runtime output-token limits into
+  built-in provider requests, record measured or explicitly unknown usage for
+  every inference step, estimate declared target cost, and enforce hard cost
+  budgets without inventing unavailable telemetry. Normalized totals include
+  provider-specific reasoning and cache activity, with optional cache-write
+  pricing for exact budget enforcement.
+- eebfa56: Make policy-aware context plans load-bearing in agent runs by routing through
+  selected inference endpoints and models, exposing only compiled model context
+  to provider planners, enforcing planned tool and duration budgets, recording
+  redacted durable plan evidence, and preserving plans across approval resume.
+- eebfa56: Add structured provider input requests, schema-validated durable resume, explicit session lifecycle operations, and single-sync batching for non-critical run telemetry.
+- d599da8: Add durable worker leases with monotonic fencing epochs, fenced checkpoints and
+  heartbeats, safe external-action reconciliation, idempotent inbox/outbox
+  helpers, and atomic domain-event plus outbox batches.
+- 8826660: Add the versioned HTTP artifact-store contract, tested runtime adapter, protocol
+  documentation, and grader entrypoint
+
 ## 0.5.4
 
 ### Patch Changes

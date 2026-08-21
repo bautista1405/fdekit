@@ -1,5 +1,45 @@
 # fdekit
 
+## 0.5.5
+
+### Patch Changes
+
+- 0aef42f: Add a correct-before-approve flow that validates replacement tool arguments,
+  supersedes the pending request, issues a fresh exact approval fingerprint, and
+  resumes only against the corrected request.
+- c1bb2cd: Add exact governed tool sequences with policy, approval, audit, trace, durable
+  multi-approval resume, and no provider re-planning; migrate the graded codebase
+  review delivery path away from direct connector handler calls.
+- 6d5cc4b: Extract shared provider, connector, and recipe manifests into @fdekit/catalog
+- Updated dependencies [0aef42f]
+- Updated dependencies [e9c43a7]
+- Updated dependencies [98a9a9b]
+- Updated dependencies [e36d267]
+- Updated dependencies [eebfa56]
+- Updated dependencies [b782405]
+- Updated dependencies [cc7d8d5]
+- Updated dependencies [c1bb2cd]
+- Updated dependencies [eebfa56]
+- Updated dependencies [b145c5f]
+- Updated dependencies [6d5cc4b]
+- Updated dependencies [1933233]
+- Updated dependencies [eebfa56]
+- Updated dependencies [eebfa56]
+- Updated dependencies [5e07466]
+- Updated dependencies [835ab11]
+- Updated dependencies [eebfa56]
+- Updated dependencies [eee6769]
+- Updated dependencies [d599da8]
+- Updated dependencies [8826660]
+  - @fdekit/core@0.5.5
+  - @fdekit/runtime@0.5.5
+  - @fdekit/console@0.5.5
+  - @fdekit/catalog@0.6.0
+  - @fdekit/provider-openai@0.5.5
+  - @fdekit/provider-anthropic@0.5.5
+  - @fdekit/provider-google@0.5.5
+  - @fdekit/provider-ollama@0.5.5
+
 ## 0.5.4
 
 ### Patch Changes

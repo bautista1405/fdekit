@@ -1,5 +1,27 @@
 # @fdekit/connector-codebase
 
+## 0.5.5
+
+### Patch Changes
+
+- e9c43a7: Add immutable-base multi-file repository change-set contracts and a typed local
+  Git implementation with permitted paths, expected blob IDs, shadow validation,
+  validator evidence, atomic expected-old-ref publication, stale detection, and
+  protected fallback signaling.
+- Updated dependencies [0aef42f]
+- Updated dependencies [e9c43a7]
+- Updated dependencies [98a9a9b]
+- Updated dependencies [e36d267]
+- Updated dependencies [eebfa56]
+- Updated dependencies [eebfa56]
+- Updated dependencies [1933233]
+- Updated dependencies [eebfa56]
+- Updated dependencies [eebfa56]
+- Updated dependencies [eebfa56]
+- Updated dependencies [d599da8]
+- Updated dependencies [8826660]
+  - @fdekit/core@0.5.5
+
 ## 0.5.4
 
 ### Patch Changes

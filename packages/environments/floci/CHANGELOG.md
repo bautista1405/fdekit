@@ -1,5 +1,23 @@
 # @fdekit/environment-floci
 
+## 0.5.5
+
+### Patch Changes
+
+- Updated dependencies [0aef42f]
+- Updated dependencies [e9c43a7]
+- Updated dependencies [98a9a9b]
+- Updated dependencies [e36d267]
+- Updated dependencies [eebfa56]
+- Updated dependencies [eebfa56]
+- Updated dependencies [1933233]
+- Updated dependencies [eebfa56]
+- Updated dependencies [eebfa56]
+- Updated dependencies [eebfa56]
+- Updated dependencies [d599da8]
+- Updated dependencies [8826660]
+  - @fdekit/core@0.5.5
+
 ## 0.5.4
 
 ### Patch Changes

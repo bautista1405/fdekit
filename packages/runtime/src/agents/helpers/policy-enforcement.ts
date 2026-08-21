@@ -17,6 +17,7 @@ import type {
 import { approveApproval, findApproval, rejectApproval, requestApproval } from '../../governance/index.js';
 import type { ApprovalArtifact } from '../../governance/index.js';
 import { appendAudit } from './audit.js';
+import { recordRunEvent } from './session-events.js';
 import type { RunState, ToolPolicyPhase } from './types.js';
 
 export async function enforcePolicies(
@@ -35,7 +36,7 @@ export async function enforcePolicies(
 
     const decision = normalizePolicyDecision(await handler(toolName, value, context));
 
-    state.events.push({
+    await recordRunEvent(state, {
       type: 'policy.evaluated',
       phase,
       policy: policy.name,
@@ -64,7 +65,7 @@ export async function enforcePolicies(
       if (decision.approvalRequired) {
         const approval = await resolveApproval(state, policy.name, phase, toolName, value, decision);
 
-        state.events.push({
+        await recordRunEvent(state, {
           type: approval.status === 'approved' ? 'approval.satisfied' : 'approval.requested',
           approvalId: approval.id,
           approvalStatus: approval.status,
@@ -72,7 +73,7 @@ export async function enforcePolicies(
           policy: policy.name,
           toolName,
           reason: approval.reason,
-        });
+        }, approval.status === 'pending' && phase === 'beforeToolCall' ? 'needs_approval' : undefined);
 
         if (approval.status === 'approved') {
           await appendAudit(state, {
@@ -241,7 +242,7 @@ async function autoDecideApproval(state: RunState, approval: ApprovalArtifact): 
     ? await approveApproval(state.projectDir, approval.id, options, state.artifactStore)
     : await rejectApproval(state.projectDir, approval.id, options, state.artifactStore);
 
-  state.events.push({
+  await recordRunEvent(state, {
     type: 'approval.auto_decided',
     approvalId: decided.id,
     approvalStatus: decided.status,

@@ -14,6 +14,7 @@ import { createMockProvider, type MockPlanner, type MockProviderOptions } from '
 import type { TraceEvent } from '../../traces/index.js';
 import { appendAudit } from './audit.js';
 import { callTool } from './tool-runner.js';
+import { recordRunEvent } from './session-events.js';
 import type { RunState } from './types.js';
 
 interface SteeringState {
@@ -42,7 +43,7 @@ export async function runProviderLoop(state: RunState, maxSteps: number, startSt
       maxSteps,
     });
 
-    state.events.push(providerStepEvent(state.provider.name, step, stepIndex));
+    await recordRunEvent(state, providerStepEvent(state.provider.name, step, stepIndex));
 
     if (step.type === 'final') {
       return step.message;
@@ -161,7 +162,7 @@ async function recordSteeringEvent(
     ? 'harness.steer.blocked'
     : 'harness.steer.triggered';
 
-  state.events.push({
+  await recordRunEvent(state, {
     type,
     message,
     stepIndex,

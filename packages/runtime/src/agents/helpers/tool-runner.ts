@@ -6,6 +6,7 @@ import type {
 } from '@fdekit/core';
 import { markApprovalExecuted, redactForGovernance } from '../../governance/index.js';
 import { appendAudit } from './audit.js';
+import { recordRunEvent } from './session-events.js';
 import { enforceToolCallEdge } from './edge/index.js';
 import { enforcePolicies } from './policy-enforcement.js';
 import type { RunState } from './types.js';
@@ -29,7 +30,7 @@ export async function callTool(
 
   const startedAt = Date.now();
   const redactedArgs = redactForGovernance(args);
-  state.events.push({
+  await recordRunEvent(state, {
     type: 'tool.call.started',
     toolName,
     args: redactedArgs,
@@ -37,7 +38,7 @@ export async function callTool(
     toolAllowedEnvironments: tool.environments ?? [],
     toolCategory: tool.category,
     toolTags: tool.tags ?? [],
-  });
+  }, 'running');
   await appendAudit(state, {
     action: 'tool.call.started',
     outcome: 'requested',
@@ -73,7 +74,7 @@ export async function callTool(
     };
 
     state.toolCalls.push(call);
-    state.events.push({
+    await recordRunEvent(state, {
       type: 'tool.call.failed',
       toolName,
       args: redactedArgs,
@@ -127,7 +128,7 @@ export async function callTool(
   };
 
   state.toolCalls.push(call);
-  state.events.push({
+  await recordRunEvent(state, {
     type: 'tool.call.completed',
     toolName,
     args: redactedArgs,
